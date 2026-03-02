@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAS 自動化 × Line Bot — 兩天實戰教學</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f9b0f 0%, #1b5e20 40%, #004d40 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* === Header === */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease;
+        }
+        .header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+        }
+        .header h1 {
+            font-size: 52px;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            font-weight: 800;
+        }
+        .header h1 .accent { color: #69f0ae; }
+        .header p {
+            font-size: 24px;
+            opacity: 0.95;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .header .course-info {
+            margin-top: 20px;
+            font-size: 16px;
+            opacity: 0.85;
+            line-height: 1.8;
+        }
+        .header .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 800;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* === Day Section === */
+        .day-section {
+            background: rgba(255,255,255,0.98);
+            border-radius: 30px;
+            padding: 45px;
+            margin-bottom: 40px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+            animation: fadeInUp 1s ease;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 4px solid #1b5e20;
+        }
+        .section-icon { font-size: 48px; }
+        .section-info { flex: 1; }
+        .section-title {
+            font-size: 34px;
+            font-weight: 700;
+            color: #1b5e20;
+        }
+        .section-subtitle {
+            font-size: 18px;
+            color: #4caf50;
+            font-weight: 400;
+        }
+        .section-description {
+            background: linear-gradient(135deg, rgba(27,94,32,0.06), rgba(0,77,64,0.06));
+            padding: 18px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border-left: 5px solid #1b5e20;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #444;
+        }
+
+        /* === Part Cards === */
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        .part-card {
+            background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%);
+            border-radius: 18px;
+            padding: 25px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .part-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .part-card:hover::before { opacity: 1; }
+        .part-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+        }
+        .part-number {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .part-title {
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+        .part-tag {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Day 2 disabled cards */
+        .part-card.disabled {
+            background: linear-gradient(135deg, #78909c 0%, #546e7a 100%);
+            cursor: default;
+            opacity: 0.7;
+        }
+        .part-card.disabled:hover {
+            transform: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        .part-card.disabled::after {
+            content: '即將推出';
+            position: absolute;
+            top: 12px; right: 12px;
+            background: rgba(255,255,255,0.3);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        /* === Author Section === */
+        .author-section {
+            background: rgba(255,255,255,0.98);
+            border-radius: 30px;
+            padding: 45px;
+            margin-bottom: 40px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+            text-align: center;
+        }
+        .author-section h2 {
+            color: #1b5e20;
+            font-size: 30px;
+            margin-bottom: 25px;
+        }
+        .author-photo {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .author-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto 30px;
+        }
+        .author-info-grid h3 {
+            color: #1b5e20;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        .author-info-grid ul {
+            list-style: none;
+            padding: 0;
+        }
+        .author-info-grid li {
+            padding: 5px 0;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #444;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #1b5e20, #004d40);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .social-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        .social-link.youtube { background: linear-gradient(135deg, #c62828, #e53935); }
+        .social-link.facebook { background: linear-gradient(135deg, #1565c0, #1976d2); }
+        .social-link.email { background: linear-gradient(135deg, #2e7d32, #43a047); }
+
+        /* === Footer === */
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            padding: 35px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+        }
+        .footer h3 { font-size: 24px; margin-bottom: 10px; }
+        .footer p { font-size: 14px; opacity: 0.9; }
+        .license-box {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .license-box strong { color: #69f0ae; }
+
+        /* === Animations === */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === Progress Bar === */
+        .progress-indicator {
+            position: fixed;
+            top: 0; left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #69f0ae 0%, #00c853 100%);
+            z-index: 10000;
+            transition: width 0.3s ease;
+        }
+
+        /* === RWD === */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 30px; }
+            .header p { font-size: 18px; }
+            .header .stats { gap: 20px; }
+            .stat-number { font-size: 24px; }
+            .day-section, .author-section { padding: 25px; }
+            .section-header { flex-direction: column; text-align: center; gap: 10px; }
+            .section-title { font-size: 24px; }
+            .parts-grid { grid-template-columns: 1fr; }
+            .author-info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-indicator" id="progressBar"></div>
+
+    <div class="container">
+
+        <!-- ========== Header ========== -->
+        <div class="header">
+            <div class="badge">GOOGLE APPS SCRIPT × LINE BOT 實戰教學</div>
+            <h1>GAS 自動化 × <span class="accent">Line Bot</span></h1>
+            <p>從零開始，打造 12 個自動化推播系統</p>
+            <div class="course-info">
+                所有實作最終都串接 Line Bot — GAS 負責「做事」，Line Bot 負責「通知」
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">天課程</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">個實作</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">小時</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">個帶走的成品</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Day 1 ========== -->
+        <div class="day-section">
+            <div class="section-header">
+                <div class="section-icon">📗</div>
+                <div class="section-info">
+                    <h2 class="section-title">Day 1：GAS 基礎入門與 Line Bot 串接</h2>
+                    <p class="section-subtitle">Foundation &amp; Line Bot Integration</p>
+                </div>
+            </div>
+            <div class="section-description">
+                從認識 GAS 環境開始，建立你的第一個 Line Bot，學會試算表讀寫、Web App 部署、外部 API 串接，每一步都即時推播到 Line。
+            </div>
+            <div class="parts-grid">
+                <a href="Day1_Part0_GAS環境與LineBot建立.html" class="part-card">
+                    <div class="part-number">單元 0</div>
+                    <div class="part-title">GAS 環境介紹<br>+ Line Bot 建立</div>
+                    <div class="part-tag">40 分鐘 · 環境建置</div>
+                </a>
+                <a href="Day1_Part1_RAG知識庫.html" class="part-card">
+                    <div class="part-number">實作 1</div>
+                    <div class="part-title">RAG 知識庫 API<br>→ Line Bot 查詢回覆</div>
+                    <div class="part-tag">50 分鐘 · doGet/doPost</div>
+                </a>
+                <a href="Day1_Part2_LineBot訊息收集器.html" class="part-card">
+                    <div class="part-number">實作 2</div>
+                    <div class="part-title">Line Bot 訊息收集器<br>→ 試算表 + Drive</div>
+                    <div class="part-tag">50 分鐘 · Webhook</div>
+                </a>
+                <a href="Day1_Part3_第一個GAS.html" class="part-card">
+                    <div class="part-number">實作 3</div>
+                    <div class="part-title">產出第一個 GAS<br>→ Line Bot 報表通知</div>
+                    <div class="part-tag">30 分鐘 · 讀寫基礎</div>
+                </a>
+                <a href="Day1_Part4_HTML表單.html" class="part-card">
+                    <div class="part-number">實作 4</div>
+                    <div class="part-title">HTML 表單部署<br>→ Line Bot 即時通知</div>
+                    <div class="part-tag">40 分鐘 · HtmlService</div>
+                </a>
+                <a href="Day1_Part5_寫入試算表.html" class="part-card">
+                    <div class="part-number">實作 5</div>
+                    <div class="part-title">寫入試算表<br>→ Line Bot 簽到回報</div>
+                    <div class="part-tag">30 分鐘 · 格式化</div>
+                </a>
+                <a href="Day1_Part6_天氣預報.html" class="part-card">
+                    <div class="part-number">實作 6</div>
+                    <div class="part-title">天氣預報 API<br>→ Line Bot 每日推播</div>
+                    <div class="part-tag">40 分鐘 · API + 排程</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ========== Day 2 ========== -->
+        <div class="day-section">
+            <div class="section-header">
+                <div class="section-icon">📘</div>
+                <div class="section-info">
+                    <h2 class="section-title">Day 2：進階應用、RSS 推播與 AI 整合</h2>
+                    <p class="section-subtitle">Advanced Applications &amp; AI Integration</p>
+                </div>
+            </div>
+            <div class="section-description">
+                進階 Line Bot 推播技巧：圖片推播、RSS 新聞推播、群組推播、事件驅動推播，最終整合 Gemini AI 打造全自動發文系統。
+            </div>
+            <div class="parts-grid">
+                <div class="part-card disabled">
+                    <div class="part-number">實作 7</div>
+                    <div class="part-title">每天來張早安圖<br>→ Line Bot 圖片推播</div>
+                    <div class="part-tag">40 分鐘 · DriveApp</div>
+                </div>
+                <div class="part-card disabled">
+                    <div class="part-number">實作 8</div>
+                    <div class="part-title">RSS 新聞推播機器人<br>→ Line Bot 每日新聞</div>
+                    <div class="part-tag">50 分鐘 · XmlService</div>
+                </div>
+                <div class="part-card disabled">
+                    <div class="part-number">實作 9</div>
+                    <div class="part-title">到班出缺席通知<br>→ Line Bot 群組推播</div>
+                    <div class="part-tag">40 分鐘 · 群組推播</div>
+                </div>
+                <div class="part-card disabled">
+                    <div class="part-number">實作 10</div>
+                    <div class="part-title">自動化活動報名系統<br>→ Line Bot 即時通知</div>
+                    <div class="part-tag">50 分鐘 · FormApp</div>
+                </div>
+                <div class="part-card disabled">
+                    <div class="part-number">實作 11</div>
+                    <div class="part-title">GAS 查詢系統<br>→ Line Bot 互動查詢</div>
+                    <div class="part-tag">50 分鐘 · Web App</div>
+                </div>
+                <div class="part-card disabled">
+                    <div class="part-number">實作 12</div>
+                    <div class="part-title">AI 自動發文<br>→ Line Bot AI 推播</div>
+                    <div class="part-tag">50 分鐘 · Gemini API</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 作者資訊 ========== -->
+        <div class="author-section">
+            <h2>👨‍🏫 關於作者</h2>
+            <h3 style="color: #333; font-size: 26px; margin-bottom: 5px;">曾慶良 主任（阿亮老師）</h3>
+
+            <!--
+                ============================================================
+                📸 截圖：作者資訊圖片
+                檔案名稱：screenshots/author_info.png
+                來源：D:\提示詞模板\作者資訊.png
+                說明：阿亮老師的完整作者資訊圖片（含照片、經歷、獲獎）
+                尺寸建議：寬度 600px
+                ============================================================
+            -->
+            <div style="background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 40px; margin: 20px auto; max-width: 620px; color: #999; font-size: 14px;">
+                📸 <strong>作者資訊圖片</strong><br>
+                檔案：screenshots/author_info.png<br>
+                來源：D:\提示詞模板\作者資訊.png
+            </div>
+
+            <div class="author-info-grid">
+                <div>
+                    <h3>📌 現任職務</h3>
+                    <ul>
+                        <li>🎓 新興科技推廣中心主任</li>
+                        <li>🎓 教育部學科中心研究教師</li>
+                        <li>🎓 臺北市資訊教育輔導員</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🏆 獲獎紀錄</h3>
+                    <ul>
+                        <li>🥇 2025年 SETEAM 教學專業講師認證</li>
+                        <li>🥇 2024年 教育部人工智慧講師認證</li>
+                        <li>🥇 2022、2023年 指導學生 XR 競賽特優</li>
+                        <li>🥇 2019年 百大資訊人才獎</li>
+                        <li>🥇 2018、2019年 親子天下創新100教師</li>
+                        <li>🥇 2018年 臺北市特殊優良教師</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="social-links">
+                <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="social-link youtube">🎥 YouTube 頻道</a>
+                <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="social-link facebook">📘 3A 科技研究社</a>
+                <a href="mailto:3a01chatgpt@gmail.com" class="social-link email">📧 3a01chatgpt@gmail.com</a>
+            </div>
+        </div>
+
+        <!-- ========== Footer === ======== -->
+        <div class="footer">
+            <h3>GAS 自動化 × Line Bot 實戰教學</h3>
+            <p>Made with ❤️ by 曾慶良（阿亮老師）</p>
+
+            <div class="license-box">
+                <strong>📜 授權聲明</strong><br><br>
+                © 2026 阿亮老師 版權所有<br><br>
+                本教材僅供「阿亮老師課程學員」學習使用。<br><br>
+                <strong>⚠️ 禁止事項：</strong><br>
+                ❌ 禁止修改本教材內容<br>
+                ❌ 禁止轉傳或散布<br>
+                ❌ 禁止商業使用<br>
+                ❌ 禁止未經授權之任何形式使用<br><br>
+                如有任何授權需求，請聯繫作者。
+            </div>
+
+            <p style="margin-top: 25px; opacity: 0.7; font-size: 13px;">© 2026 GAS 自動化 × Line Bot 實戰教學 | 阿亮老師</p>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.width = scrolled + '%';
+        });
+    </script>
+</body>
+</html>

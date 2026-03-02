@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📗 實作 6 — 天氣預報 × Line Bot 每日推播</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
+        .screenshot-placeholder strong { color: #666; font-size: 16px; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">📗 實作 6 — 天氣預報 × Line Bot 每日推播</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- Slide 1: Cover -->
+        <div class="slide active">
+            <div class="content-card" style="text-align: center;">
+                <div style="font-size: 80px; margin-bottom: 20px;">🌤️</div>
+                <h1 style="font-size: 56px; margin-bottom: 16px;">實作 6：天氣預報 API</h1>
+                <p style="font-size: 28px; color: #2e7d32; margin-bottom: 30px;">串接氣象署 API → Line Bot 每天早上自動推播天氣</p>
+                <div style="display: flex; justify-content: center; gap: 20px; margin: 30px 0;">
+                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">UrlFetchApp</span>
+                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">JSON.parse</span>
+                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">時間驅動觸發</span>
+                </div>
+                <div style="margin-top: 40px; padding: 20px; background: #e8f5e9; border-radius: 16px; display: inline-block;">
+                    <p style="font-size: 22px; color: #1b5e20; margin: 0;">⏱ 40 分鐘 · API + 排程</p>
+                </div>
+                <p style="font-size: 18px; color: #888; margin-top: 30px;">Day 1 最後一個實作 — 完成後你就擁有 7 個成品！</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: 學習目標 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🎯 學習目標</h2>
+                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">完成這個實作後，你將學會以下四大技能：</p>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>🌐 UrlFetchApp.fetch()</h3>
+                        <p>從 GAS 呼叫外部 API，取得遠端伺服器的資料。這是串接任何第三方服務的基礎。</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>📦 JSON.parse()</h3>
+                        <p>解析 API 回傳的 JSON 資料，把字串轉換成 JavaScript 物件，方便取值使用。</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>🌦️ 串接中央氣象署開放資料 API</h3>
+                        <p>使用政府開放資料平台，取得天氣預報、溫度、降雨機率等即時天氣資訊。</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>⏰ 設定時間驅動觸發條件</h3>
+                        <p>排程自動執行！設定每天早上固定時間自動推播天氣預報到 Line。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Vibe Coding 提示詞 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🤖 Vibe Coding — 用 AI 生成這個程式</h2>
+                <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+                    最後一個實作了！一樣先用 <strong>Vibe Coding</strong> 的方式，把需求描述清楚，讓 AI 幫你產出完整程式碼：
+                </p>
+
+                <div style="background: #1a1a2e; border-radius: 16px; padding: 30px; margin: 20px 0; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="color: #69f0ae; font-weight: bold; font-size: 16px;">📋 複製這段提示詞給 AI</span>
+                        <span style="color: #888; font-size: 13px;">Prompt Template</span>
+                    </div>
+                    <pre style="background: #16213e; margin: 0; font-size: 16px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word;"><code style="color: #e2e8f0;">請幫我用 Google Apps Script 製作一個「天氣預報 + Line Bot 每日自動推播」系統。
+
+功能需求：
+1. 串接中央氣象署開放資料 API（資料集 F-C0032-001，36小時天氣預報）
+2. 使用 UrlFetchApp.fetch() 呼叫 API，中文縣市名稱要用 encodeURIComponent 編碼
+3. 取得指定縣市（預設臺北市）的天氣預報資料
+4. 解析 JSON 回傳結果，提取以下欄位：
+   - Wx（天氣現象：晴、多雲、陰天等）
+   - PoP（降雨機率 %）
+   - MinT（最低溫 °C）
+   - MaxT（最高溫 °C）
+   - CI（舒適度）
+5. 格式化成好看的天氣報告，包含 emoji 圖示：
+   - 依天氣狀況顯示不同 emoji（晴天 ☀️、多雲 ⛅、雨天 🌧 等）
+   - 顯示溫度範圍和降雨機率
+   - 降雨機率 >= 50% 時加上「記得帶傘」提醒
+   - 高溫 >= 35°C 提醒防曬，低溫 <= 15°C 提醒保暖
+6. 透過 Line Bot Push API 推播天氣預報
+7. 同時將天氣資料記錄到試算表的「天氣記錄」工作表
+
+API 設定用變數放最上面：
+- LINE_TOKEN（Line Bot Channel Access Token）
+- LINE_USER_ID（Line User ID）
+- CWA_API_KEY（中央氣象署 API 授權碼）
+- TARGET_CITY（查詢的縣市名稱）
+
+另外提供一個 testApiConnection() 測試函式，
+確認 API 連線是否正常。</code></pre>
+                </div>
+
+                <h3 style="margin-top: 25px;">📝 寫好提示詞的三個關鍵</h3>
+                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                        <h3>列出 API 欄位</h3>
+                        <p>告訴 AI 具體要哪些資料欄位（Wx、PoP、MinT、MaxT、CI），而不是只說「天氣資料」。</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">🎯</div>
+                        <h3>說明條件判斷</h3>
+                        <p>明確描述什麼情況要做什麼事（降雨 ≥ 50% 提醒帶傘），讓 AI 生成正確的邏輯。</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">🔑</div>
+                        <h3>說明變數配置</h3>
+                        <p>告訴 AI 哪些是敏感的 API Key 和 Token，要用變數放在最上面方便修改。</p>
+                    </div>
+                </div>
+
+                <div class="box info" style="margin-top: 20px;">
+                    <strong>💡 進階提示：</strong>如果你想要 AI 額外生成「設定排程自動執行」的教學步驟，可以在提示詞最後加上：「請告訴我如何設定時間驅動觸發條件，讓它每天早上 7~8 點自動執行。」
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 成果預覽 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>👀 成果預覽</h2>
+                <p style="font-size: 22px; color: #2e7d32; margin-bottom: 20px;">完成後，你的 Line 每天早上會自動收到天氣預報：</p>
+                <div class="concept-grid">
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 50px; margin-bottom: 10px;">🌅</div>
+                        <h3>每天早上自動推播</h3>
+                        <p>設定早上 7~8 點之間，Line Bot 自動傳送天氣預報，不需手動操作。</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 50px; margin-bottom: 10px;">🌡️</div>
+                        <h3>完整天氣資訊</h3>
+                        <p>包含天氣狀況、最高最低溫度、降雨機率、舒適度等完整資訊。</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 50px; margin-bottom: 10px;">☂️</div>
+                        <h3>下雨天自動提醒帶傘</h3>
+                        <p>當降雨機率超過 50% 時，自動加上「記得帶傘」的貼心提醒。</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 50px; margin-bottom: 10px;">📊</div>
+                        <h3>36 小時天氣預報</h3>
+                        <p>一次顯示三個時段的天氣預報，掌握未來一天半的天氣變化。</p>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 25px;">
+                    <strong>💡 這就是自動化的威力：</strong>設定一次，天天享用！從此不必再手動查天氣。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 步驟 1 — 申請氣象署 API -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 1 — 申請氣象署 API 授權碼</h2>
+                <h3>前往中央氣象署開放資料平台</h3>
+                <p>網址：<a href="https://opendata.cwa.gov.tw/" target="_blank" style="color: #1b5e20; font-weight: bold;">https://opendata.cwa.gov.tw/</a></p>
+                <!-- 截圖 42：中央氣象署開放資料平台首頁 -->
+                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
+                    <!-- 瀏覽器標題列 -->
+                    <div style="background: #e8eaed; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #d0d0d0;">
+                        <span style="width: 12px; height: 12px; background: #ff5f57; border-radius: 50%; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; background: #febc2e; border-radius: 50%; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; background: #28c840; border-radius: 50%; display: inline-block;"></span>
+                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 5px 14px; margin-left: 10px; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #28a745; font-size: 12px;">🔒</span> opendata.cwa.gov.tw
+                        </div>
+                    </div>
+                    <!-- 深藍色頂部 -->
+                    <div style="background: linear-gradient(135deg, #0d1b3e 0%, #1a2f5a 100%); padding: 20px 30px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 42px; height: 42px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">🌤</div>
+                            <div>
+                                <div style="color: #fff; font-size: 18px; font-weight: 700;">中央氣象署</div>
+                                <div style="color: #90caf9; font-size: 13px;">開放資料平台 Open Data</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">加入會員</span>
+                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">|</span>
+                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">登入</span>
+                        </div>
+                    </div>
+                    <!-- 搜尋框 -->
+                    <div style="background: #f5f7fa; padding: 20px 30px; text-align: center;">
+                        <div style="max-width: 500px; margin: 0 auto; display: flex; gap: 0;">
+                            <input type="text" placeholder="搜尋資料集..." disabled style="flex: 1; padding: 10px 16px; border: 2px solid #1a2f5a; border-right: none; border-radius: 8px 0 0 8px; font-size: 14px; background: #fff; color: #333;">
+                            <div style="background: #1a2f5a; color: #fff; padding: 10px 20px; border-radius: 0 8px 8px 0; font-size: 14px; font-weight: 600; display: flex; align-items: center;">🔍 搜尋</div>
+                        </div>
+                    </div>
+                    <!-- 資料分類按鈕 -->
+                    <div style="background: #fff; padding: 16px 30px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; border-top: 1px solid #e0e0e0;">
+                        <span style="padding: 6px 16px; background: #e3f2fd; color: #1565c0; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #90caf9;">🌦 氣象</span>
+                        <span style="padding: 6px 16px; background: #fce4ec; color: #c62828; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ef9a9a;">🌍 地震</span>
+                        <span style="padding: 6px 16px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #a5d6a7;">🌊 海象</span>
+                        <span style="padding: 6px 16px; background: #fff3e0; color: #e65100; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ffcc80;">🌡 氣候</span>
+                        <span style="padding: 6px 16px; background: #f3e5f5; color: #6a1b9a; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ce93d8;">🌏 天文</span>
+                    </div>
+                </div>
+                <h3>申請步驟</h3>
+                <ol>
+                    <li><strong>註冊帳號</strong> — 點右上角「加入會員」，填寫基本資料</li>
+                    <li><strong>登入</strong> — 使用剛註冊的帳號登入</li>
+                    <li><strong>會員中心</strong> — 點右上角帳號名稱 → 「會員中心」</li>
+                    <li><strong>取得 API 授權碼</strong> — 在會員中心頁面找到「API 授權碼」，複製起來</li>
+                </ol>
+                <!-- 截圖 43：會員中心 API 授權碼頁面 -->
+                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
+                    <!-- 瀏覽器標題列 -->
+                    <div style="background: #e8eaed; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #d0d0d0;">
+                        <span style="width: 12px; height: 12px; background: #ff5f57; border-radius: 50%; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; background: #febc2e; border-radius: 50%; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; background: #28c840; border-radius: 50%; display: inline-block;"></span>
+                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 5px 14px; margin-left: 10px; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #28a745; font-size: 12px;">🔒</span> opendata.cwa.gov.tw/userSetting
+                        </div>
+                    </div>
+                    <!-- 頁面內容 -->
+                    <div style="display: flex; min-height: 200px;">
+                        <!-- 左側選單 -->
+                        <div style="width: 180px; background: #f5f7fa; border-right: 1px solid #e0e0e0; padding: 15px 0;">
+                            <div style="padding: 10px 20px; font-size: 14px; color: #666; cursor: pointer; border-left: 3px solid transparent;">👤 會員資料</div>
+                            <div style="padding: 10px 20px; font-size: 14px; color: #1565c0; font-weight: 700; cursor: pointer; background: #e3f2fd; border-left: 3px solid #1565c0;">🔑 API 授權碼</div>
+                            <div style="padding: 10px 20px; font-size: 14px; color: #666; cursor: pointer; border-left: 3px solid transparent;">📋 使用紀錄</div>
+                        </div>
+                        <!-- 右側內容 -->
+                        <div style="flex: 1; padding: 25px 30px; background: #fff;">
+                            <h3 style="font-size: 20px; color: #333; margin: 0 0 8px 0; border: none; padding: 0;">🔑 API 授權碼</h3>
+                            <p style="font-size: 13px; color: #888; margin: 0 0 18px 0;">您的 API 授權碼用於呼叫氣象資料 API，請妥善保管。</p>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="flex: 1; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 16px; font-family: 'Consolas', monospace; font-size: 15px; color: #333; letter-spacing: 0.5px;">CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</div>
+                                <button disabled style="background: #1565c0; color: #fff; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;">📋 複製</button>
+                            </div>
+                            <div style="margin-top: 14px; padding: 10px 14px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #ff9800;">
+                                <span style="font-size: 13px; color: #e65100;">⚠️ 請勿將授權碼公開分享或上傳至公開的程式碼倉庫。</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box info">
+                    <strong>💡 好消息：</strong>API 完全免費！每天有 10,000 次呼叫額度，個人使用綽綽有餘。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: 步驟 2-4 — 建立試算表 + 貼程式碼 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 2-4 — 建立試算表 + 貼程式碼</h2>
+                <h3>步驟 2：建立新試算表</h3>
+                <p>Google 試算表 → 建立新的試算表 → 命名為「<strong>天氣預報</strong>」</p>
+                <h3>步驟 3：開啟 Apps Script</h3>
+                <p>上方選單 → <strong>擴充功能</strong> → <strong>Apps Script</strong></p>
+                <h3>步驟 4：貼上程式碼</h3>
+                <p>清除預設程式碼，貼上 <code>GAS程式碼/06_天氣預報_LineBot.gs</code> 的完整內容。</p>
+                <h3>⚠️ 修改三個設定（最重要！）</h3>
+<pre><code>var LINE_TOKEN = '你的 Channel Access Token';
+var LINE_USER_ID = '你的 User ID';
+var CWA_API_KEY = '你的中央氣象署 API 授權碼';</code></pre>
+                <!-- 截圖 44：程式碼設定位置 -->
+                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
+                    <!-- GAS 編輯器頂部 -->
+                    <div style="background: #3c4043; padding: 8px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #555;">
+                        <span style="font-size: 14px;">📝</span>
+                        <span style="color: #e8eaed; font-size: 14px; font-weight: 600;">Apps Script — 天氣預報</span>
+                        <span style="color: #9aa0a6; font-size: 12px; margin-left: auto;">程式碼.gs</span>
+                    </div>
+                    <!-- 程式碼區域 -->
+                    <div style="background: #282c34; padding: 16px 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; line-height: 2;">
+                        <div style="display: flex; padding: 0 16px; color: #636d83;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">1</span>
+                            <span style="color: #7f848e;">// ========== 設定區 ==========</span>
+                        </div>
+                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">2</span>
+                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_TOKEN</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的Token'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
+                        </div>
+                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">3</span>
+                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_USER_ID</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的UserID'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
+                        </div>
+                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">4</span>
+                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">CWA_API_KEY</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的API授權碼'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
+                        </div>
+                        <div style="display: flex; padding: 0 16px; color: #636d83;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">5</span>
+                            <span style="color: #c678dd;">var</span> <span style="color: #e06c75;"> CITY_NAME</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;"> '臺北市'</span><span style="color: #abb2bf;">;</span>
+                        </div>
+                        <div style="display: flex; padding: 0 16px; color: #636d83;">
+                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">6</span>
+                            <span>&nbsp;</span>
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: 6px; background: #1e2127; color: #fdd835; font-size: 12px; font-weight: 600;">⬆️ 黃色高亮的 3 行是你需要修改的設定值</div>
+                </div>
+                <div class="box warning">
+                    <strong>⚠️ 三個都要改：</strong><br>
+                    1. <code>LINE_TOKEN</code> — 從 Line Developers 取得<br>
+                    2. <code>LINE_USER_ID</code> — 從 Line Developers 取得<br>
+                    3. <code>CWA_API_KEY</code> — 從氣象署會員中心取得
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: 步驟 5 — 修改查詢縣市 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 5 — 修改查詢縣市</h2>
+                <p>程式碼預設查詢 <strong>臺北市</strong>，可以改成你所在的縣市：</p>
+<pre><code>var CITY_NAME = '臺北市';  // 改成你要查詢的縣市</code></pre>
+                <div class="box warning">
+                    <strong>⚠️ 超重要！氣象署用「臺」不是「台」！</strong><br>
+                    這是最常見的錯誤，打錯字 API 會查不到資料！
+                </div>
+                <h3>正確 vs 錯誤寫法對照</h3>
+                <table>
+                    <tr><th>✅ 正確寫法</th><th>❌ 錯誤寫法</th></tr>
+                    <tr><td>臺北市</td><td>台北市</td></tr>
+                    <tr><td>臺中市</td><td>台中市</td></tr>
+                    <tr><td>臺南市</td><td>台南市</td></tr>
+                    <tr><td>臺東縣</td><td>台東縣</td></tr>
+                </table>
+                <div class="box info">
+                    <strong>💡 其他縣市正常使用：</strong>高雄市、新北市、桃園市、新竹市、新竹縣、苗栗縣、彰化縣、南投縣、雲林縣、嘉義市、嘉義縣、屏東縣、宜蘭縣、花蓮縣、澎湖縣、金門縣、連江縣等，都是直接打就好。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: API 資料結構解說 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🔍 API 資料結構解說</h2>
+                <h3>使用資料集：F-C0032-001（一般天氣預報 — 36 小時天氣預報）</h3>
+                <p>API 回傳的 JSON 資料包含以下天氣要素（weatherElement）：</p>
+                <table>
+                    <tr><th>代碼</th><th>名稱</th><th>說明</th><th>範例</th></tr>
+                    <tr><td><code>Wx</code></td><td>天氣現象</td><td>晴、多雲、陰天、雨天等</td><td>多雲時晴</td></tr>
+                    <tr><td><code>PoP</code></td><td>降雨機率</td><td>百分比（%）</td><td>30%</td></tr>
+                    <tr><td><code>MinT</code></td><td>最低溫度</td><td>攝氏溫度（°C）</td><td>18°C</td></tr>
+                    <tr><td><code>MaxT</code></td><td>最高溫度</td><td>攝氏溫度（°C）</td><td>25°C</td></tr>
+                    <tr><td><code>CI</code></td><td>舒適度</td><td>文字描述</td><td>舒適</td></tr>
+                </table>
+                <h3>API URL 組裝方式</h3>
+<pre><code>var DATASET_ID = 'F-C0032-001';
+var url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/' + DATASET_ID;
+url += '?Authorization=' + CWA_API_KEY;
+url += '&locationName=' + encodeURIComponent(cityName);</code></pre>
+                <div class="box info">
+                    <strong>💡 encodeURIComponent()</strong> 是把中文縣市名稱轉成 URL 安全的編碼格式，例如「臺北市」會被編碼成 <code>%E8%87%BA%E5%8C%97%E5%B8%82</code>。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: UrlFetchApp 解說 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🌐 UrlFetchApp 解說</h2>
+                <p style="font-size: 22px; color: #2e7d32;">GAS 內建的 HTTP 請求工具，用來呼叫外部 API</p>
+                <h3>基本用法</h3>
+<pre><code>// 1. 呼叫 API
+var response = UrlFetchApp.fetch(url, {
+  muteHttpExceptions: true   // 錯誤時不中斷程式
+});
+
+// 2. 檢查回應狀態碼
+var code = response.getResponseCode();
+// 200 = 成功, 401 = 授權失敗, 404 = 找不到
+
+// 3. 解析 JSON 回應
+var json = JSON.parse(response.getContentText());
+
+// 4. 取出天氣資料
+var locations = json.records.location;
+var weatherElements = locations[0].weatherElement;</code></pre>
+                <div class="box info">
+                    <strong>💡 muteHttpExceptions: true</strong> 的作用：<br>
+                    預設情況下，如果 API 回傳錯誤（例如 401、404），GAS 會直接報錯中斷。加上這個設定後，程式不會中斷，你可以自己用 <code>getResponseCode()</code> 來判斷和處理錯誤。
+                </div>
+                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="concept-card" style="text-align: center;">
+                        <h3>📡 fetch()</h3>
+                        <p>發送 HTTP 請求到指定 URL</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <h3>📊 getResponseCode()</h3>
+                        <p>取得回應狀態碼（200 = 成功）</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <h3>📝 getContentText()</h3>
+                        <p>取得回應的文字內容</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: 步驟 7 — 測試 API -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 7 — 測試 API 連線 testApiConnection()</h2>
+                <h3>執行方式</h3>
+                <ol>
+                    <li>在函式下拉選單中選擇 <code>testApiConnection</code></li>
+                    <li>點擊 <strong>▶ 執行</strong></li>
+                    <li>第一次執行需要授權（允許存取外部服務）</li>
+                    <li>查看 Line 是否收到測試訊息</li>
+                </ol>
+                <!-- 截圖 45：API 測試成功訊息 -->
+                <div style="margin: 20px auto; width: 280px; background: #7494c0; border-radius: 24px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: #fff; font-size: 11px; font-weight: 600;">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div style="background: #7494c0; padding: 6px 10px; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #fff; font-size: 13px;">◀</span>
+                        <span style="color: #fff; font-size: 14px; font-weight: 700;">Line Bot</span>
+                    </div>
+                    <div style="background: #7494c0; padding: 10px 8px; min-height: 100px;">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
+                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 220px; font-size: 13px; line-height: 1.8; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                ✅ <strong>氣象 API 連線測試成功！</strong><br>
+                                <br>
+                                已成功取得 <strong>臺北市</strong> 的天氣資料。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box success">
+                    <strong>✅ 成功的話：</strong>Line 會收到一則訊息，顯示 API 連線成功以及取得的縣市天氣資料。
+                </div>
+                <div class="box warning">
+                    <strong>⚠️ 如果失敗，請依序檢查：</strong><br>
+                    1. <strong>檢查 API 授權碼</strong> — 是否正確複製？有沒有多餘空格？<br>
+                    2. <strong>檢查「臺」字</strong> — 是「臺北市」不是「台北市」！<br>
+                    3. <strong>看執行記錄的錯誤訊息</strong> — 左側選單 → 執行項目，查看詳細錯誤<br>
+                    4. <strong>檢查 LINE_TOKEN 和 LINE_USER_ID</strong> — 是否正確填入？
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: 步驟 8 — 推播天氣 sendWeatherReport() -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 8 — 推播天氣 sendWeatherReport()</h2>
+                <h3>執行方式</h3>
+                <ol>
+                    <li>在函式下拉選單中選擇 <code>sendWeatherReport</code></li>
+                    <li>點擊 <strong>▶ 執行</strong></li>
+                    <li>查看 Line 收到的完整天氣預報</li>
+                </ol>
+                <!-- 截圖 46：完整天氣預報訊息 -->
+                <div style="margin: 20px auto; width: 280px; background: #7494c0; border-radius: 24px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: #fff; font-size: 11px; font-weight: 600;">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div style="background: #7494c0; padding: 6px 10px; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #fff; font-size: 13px;">◀</span>
+                        <span style="color: #fff; font-size: 14px; font-weight: 700;">Line Bot</span>
+                    </div>
+                    <div style="background: #7494c0; padding: 10px 8px;">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
+                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 230px; font-size: 12.5px; line-height: 1.9; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                🌤 <strong>天氣預報 — 臺北市</strong><br>
+                                <span style="color: #999;">━━━━━━━━━━━━━━</span><br>
+                                📅 2026/3/3 上午 8:00<br>
+                                <br>
+                                <span style="color: #1565c0; font-weight: 600;">🕐 03-03 06:00 ~ 18:00</span><br>
+                                &nbsp;&nbsp;&nbsp;☀️ 晴時多雲<br>
+                                &nbsp;&nbsp;&nbsp;🌡 18°C ~ 26°C<br>
+                                &nbsp;&nbsp;&nbsp;🌧 降雨機率：10%<br>
+                                &nbsp;&nbsp;&nbsp;😊 舒適<br>
+                                <br>
+                                <span style="color: #1565c0; font-weight: 600;">🕐 03-03 18:00 ~ 06:00</span><br>
+                                &nbsp;&nbsp;&nbsp;⛅ 多雲<br>
+                                &nbsp;&nbsp;&nbsp;🌡 16°C ~ 22°C<br>
+                                &nbsp;&nbsp;&nbsp;🌧 降雨機率：30%<br>
+                                &nbsp;&nbsp;&nbsp;😊 舒適
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h3>天氣預報格式範例</h3>
+<pre><code>🌤 天氣預報 — 臺北市
+━━━━━━━━━━━━━━
+📅 2026/3/3 下午2:30:00
+
+🕐 03-03 06:00 ~ 18:00
+   ⛅ 多雲時晴
+   🌡 18°C ~ 25°C
+   🌧 降雨機率：20%
+   😊 舒適
+
+🕐 03-03 18:00 ~ 06:00
+   ☁️ 多雲
+   🌡 16°C ~ 21°C
+   🌧 降雨機率：30%
+   😊 舒適
+
+🕐 03-04 06:00 ~ 18:00
+   🌧 短暫雨
+   🌡 15°C ~ 20°C
+   🌧 降雨機率：70%
+   😊 舒適偏涼
+
+☂️ 提醒：降雨機率較高，記得帶傘！</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 11: 天氣 Emoji 對照 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🎨 天氣 Emoji 對照表</h2>
+                <p>程式會根據天氣現象自動選擇對應的 Emoji：</p>
+                <h3>getWeatherEmoji() 函式邏輯</h3>
+                <table>
+                    <tr><th>天氣關鍵字</th><th>Emoji</th><th>說明</th></tr>
+                    <tr><td>晴天</td><td style="font-size: 28px;">☀️</td><td>天氣描述包含「晴天」</td></tr>
+                    <tr><td>晴時多雲</td><td style="font-size: 28px;">🌤</td><td>天氣描述包含「晴時多雲」或「晴」</td></tr>
+                    <tr><td>多雲</td><td style="font-size: 28px;">⛅</td><td>天氣描述包含「多雲」</td></tr>
+                    <tr><td>陰天</td><td style="font-size: 28px;">☁️</td><td>天氣描述包含「陰」</td></tr>
+                    <tr><td>雨天</td><td style="font-size: 28px;">🌧</td><td>天氣描述包含「雨」</td></tr>
+                    <tr><td>雷雨</td><td style="font-size: 28px;">⛈</td><td>天氣描述包含「雷」</td></tr>
+                    <tr><td>雪</td><td style="font-size: 28px;">🌨</td><td>天氣描述包含「雪」</td></tr>
+                    <tr><td>霧</td><td style="font-size: 28px;">🌫</td><td>天氣描述包含「霧」</td></tr>
+                </table>
+<pre><code>function getWeatherEmoji(description) {
+  if (description.indexOf('雷') !== -1) return '⛈';
+  if (description.indexOf('雪') !== -1) return '🌨';
+  if (description.indexOf('雨') !== -1) return '🌧';
+  if (description.indexOf('陰') !== -1) return '☁️';
+  if (description.indexOf('多雲') !== -1) return '⛅';
+  if (description.indexOf('晴') !== -1) return '🌤';
+  if (description.indexOf('霧') !== -1) return '🌫';
+  return '🌤';  // 預設
+}</code></pre>
+                <div class="box info">
+                    <strong>💡 判斷順序很重要：</strong>「雷雨」要先判斷「雷」，因為它也包含「雨」字；「晴時多雲」要先判斷「多雲」再判斷「晴」。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: 步驟 9 — 設定每天自動推播 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>⏰ 步驟 9 — 設定每天自動推播（重點！）</h2>
+                <p style="font-size: 22px; color: #d32f2f; font-weight: bold;">這是整個實作最關鍵的一步！讓程式每天自動執行。</p>
+                <h3>設定步驟</h3>
+                <ol>
+                    <li>左側邊欄 → 點擊 <strong>⏰ 鬧鐘圖示</strong>（觸發條件）</li>
+                    <li>點擊右下角 <strong>「+ 新增觸發條件」</strong></li>
+                    <li>依照下表設定各項目</li>
+                </ol>
+                <!-- 截圖 47：觸發條件設定對話框 -->
+                <div style="margin: 20px auto; max-width: 480px; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; border: 1px solid #d0d0d0;">
+                    <!-- 對話框標題 -->
+                    <div style="padding: 18px 24px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 18px; font-weight: 700; color: #202124;">新增觸發條件</span>
+                        <span style="font-size: 20px; color: #999; cursor: pointer;">✕</span>
+                    </div>
+                    <!-- 表單內容 -->
+                    <div style="padding: 20px 24px;">
+                        <!-- 選擇函式 -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選擇要執行的函式</label>
+                            <div style="background: #fff; border: 2px solid #1a73e8; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-family: 'Consolas', monospace; color: #1a73e8; font-weight: 600;">sendWeatherReport</span>
+                                <span style="color: #1a73e8;">▼</span>
+                            </div>
+                        </div>
+                        <!-- 部署 -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選擇要執行的部署作業</label>
+                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
+                                <span>主版本</span>
+                                <span style="color: #999;">▼</span>
+                            </div>
+                        </div>
+                        <!-- 事件來源 -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取活動來源</label>
+                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
+                                <span>⏰ 時間驅動</span>
+                                <span style="color: #999;">▼</span>
+                            </div>
+                        </div>
+                        <!-- 觸發類型 -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取時間型觸發條件類型</label>
+                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
+                                <span>每日計時器</span>
+                                <span style="color: #999;">▼</span>
+                            </div>
+                        </div>
+                        <!-- 時段 -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取每日時間</label>
+                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
+                                <span>上午 7 點到 8 點</span>
+                                <span style="color: #999;">▼</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 按鈕列 -->
+                    <div style="padding: 12px 24px 18px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e0e0e0;">
+                        <button disabled style="padding: 8px 24px; border: 1px solid #dadce0; border-radius: 6px; background: #fff; color: #5f6368; font-size: 14px; cursor: pointer;">取消</button>
+                        <button disabled style="padding: 8px 24px; border: none; border-radius: 6px; background: #1a73e8; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">儲存</button>
+                    </div>
+                </div>
+                <h3>觸發條件設定</h3>
+                <table>
+                    <tr><th>設定項目</th><th>選擇</th></tr>
+                    <tr><td>選擇要執行的函式</td><td><code>sendWeatherReport</code></td></tr>
+                    <tr><td>選擇要執行的部署作業</td><td><strong>主版本</strong></td></tr>
+                    <tr><td>選取活動來源</td><td><strong>時間驅動</strong></td></tr>
+                    <tr><td>選取時間型觸發條件類型</td><td><strong>每日計時器</strong></td></tr>
+                    <tr><td>選取每日時間</td><td><strong>上午 7 點到 8 點</strong></td></tr>
+                </table>
+                <div class="box info">
+                    <strong>💡 設定完成後點「儲存」</strong>，從明天開始每天早上 7~8 點之間，Line 就會自動收到天氣預報！
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: 觸發條件確認 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>✅ 觸發條件確認</h2>
+                <p>儲存後回到觸發條件頁面，確認已新增成功：</p>
+                <!-- 截圖 48：觸發條件列表 -->
+                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
+                    <!-- GAS 觸發器頁面標題 -->
+                    <div style="background: #3c4043; padding: 12px 20px; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 16px;">⏰</span>
+                        <span style="color: #e8eaed; font-size: 16px; font-weight: 600;">觸發條件</span>
+                        <span style="color: #9aa0a6; font-size: 13px; margin-left: auto;">天氣預報 專案</span>
+                    </div>
+                    <!-- 表格 -->
+                    <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">函式</th>
+                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">部署</th>
+                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">事件來源</th>
+                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">時間</th>
+                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">上次執行</th>
+                            <th style="padding: 10px 16px; text-align: center; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa; width: 40px;"></th>
+                        </tr>
+                        <tr style="background: #fff;">
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; font-family: 'Consolas', monospace; color: #1a73e8; font-weight: 600;">sendWeatherReport</td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">Head</td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">⏰ 時間驅動</td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">每天 07:00-08:00</td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">2026/3/3 07:15 <span style="color: #28a745; font-weight: 600;">✓</span></td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; text-align: center; font-size: 18px; color: #999; cursor: pointer;">⋮</td>
+                        </tr>
+                    </table>
+                    <div style="padding: 10px 20px; background: #f8f9fa; text-align: right; border-top: 1px solid #e0e0e0;">
+                        <span style="display: inline-block; padding: 8px 20px; background: #1a73e8; color: #fff; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">+ 新增觸發條件</span>
+                    </div>
+                </div>
+                <div class="box success">
+                    <strong>🎉 設定完成！</strong>從明天開始，每天早上 7~8 點之間，Line Bot 會自動推播天氣預報到你的 Line！
+                </div>
+                <div class="box warning">
+                    <strong>⚠️ 注意事項：</strong><br>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li><strong>時間是「7 到 8 點之間」，不是精確 7:00</strong> — Google 會在這個時間區間內隨機選一個時間點執行</li>
+                        <li><strong>刪除觸發條件：</strong>找到該項目 → 點右邊的 <strong>⋮</strong>（三個點）→ 刪除觸發條件</li>
+                        <li><strong>每個專案最多 20 個觸發條件</strong> — 足夠一般使用</li>
+                        <li><strong>修改程式碼後不需要重新設定觸發條件</strong> — 觸發條件是呼叫函式名稱，只要函式名稱不變就 OK</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Day 1 完整回顧 — 7 個核心技能 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🏆 Day 1 完整回顧 — 7 個核心技能</h2>
+                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">恭喜！經過今天的 6 個實作，你已經掌握了以下核心技能：</p>
+                <table>
+                    <tr><th>#</th><th>核心技能</th><th>使用實作</th></tr>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>GAS 環境操作與部署</td>
+                        <td>所有實作</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td>doGet / doPost Web App</td>
+                        <td>實作 1、4</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td>SpreadsheetApp 讀寫試算表</td>
+                        <td>實作 1、3、4、5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td>UrlFetchApp API 串接</td>
+                        <td>實作 1、2、6</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5</strong></td>
+                        <td>Line Bot Webhook（接收訊息）</td>
+                        <td>實作 1、2</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6</strong></td>
+                        <td>Line Bot Push Message（主動推播）</td>
+                        <td>實作 1-6</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7</strong></td>
+                        <td>時間驅動觸發條件（排程）</td>
+                        <td>實作 6</td>
+                    </tr>
+                </table>
+                <div class="box success">
+                    <strong>💪 這 7 個技能可以組合出無數自動化應用！</strong>你已經具備了用 GAS + Line Bot 打造自動化工具的基礎能力。
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: 你帶走的 7 個成品 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🎁 你帶走的 7 個成品</h2>
+                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">今天你親手打造了以下成品，全部都是可以直接使用的！</p>
+                <table>
+                    <tr><th>成品</th><th>說明</th></tr>
+                    <tr>
+                        <td><strong>🤖 1 個 Line Bot</strong></td>
+                        <td>全程使用的 Line Bot，串接多個功能</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📚 知識庫查詢機器人</strong></td>
+                        <td>Line 輸入關鍵字，自動從試算表查詢回覆</td>
+                    </tr>
+                    <tr>
+                        <td><strong>💬 訊息記錄系統</strong></td>
+                        <td>訊息自動存入試算表，圖片自動存入 Google Drive</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📊 銷售報表系統</strong></td>
+                        <td>自訂函式計算 + 報表自動推播到 Line</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📝 公開表單 + Line 通知</strong></td>
+                        <td>HTML 表單公開填寫，即時推播通知到 Line</td>
+                    </tr>
+                    <tr>
+                        <td><strong>✅ 簽到系統</strong></td>
+                        <td>格式化簽到表格 + 簽到結果推播到 Line</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌤 每日天氣推播</strong></td>
+                        <td>每天自動推播天氣預報到 Line</td>
+                    </tr>
+                </table>
+                <div class="box warning">
+                    <strong>⚠️ 重要提醒（Day 2 會用到）：</strong><br>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li><strong>保存好 Token 和 ID</strong> — Channel Access Token 和 User ID，Day 2 還會繼續使用</li>
+                        <li><strong>Webhook URL 同時只能設定一個</strong> — Day 2 切換功能時需要更新 Webhook URL</li>
+                        <li><strong>修改程式碼後要重新部署</strong> — 記得每次改 code 後都要「新增部署」</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Day 1 完成！ -->
+        <div class="slide">
+            <div class="content-card" style="text-align: center;">
+                <div style="font-size: 100px; margin-bottom: 20px;">🎉</div>
+                <h1 style="font-size: 60px; margin-bottom: 20px;">Day 1 完成！</h1>
+                <div class="box success" style="max-width: 700px; margin: 20px auto; font-size: 22px;">
+                    <strong>🏆 恭喜完成 Day 1 所有實作！</strong><br>
+                    你已經從零開始，學會了 GAS + Line Bot 的完整基礎！
+                </div>
+                <h3 style="margin-top: 40px; text-align: center;">📅 Day 2 預告 — 更多進階應用</h3>
+                <div class="concept-grid" style="margin-top: 20px;">
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">🖼️</div>
+                        <h3>圖片推播</h3>
+                        <p>推播圖片訊息到 Line</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">📰</div>
+                        <h3>RSS 新聞</h3>
+                        <p>自動抓取新聞推播</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">📋</div>
+                        <h3>出缺席通知</h3>
+                        <p>自動發送出缺席通知</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">📝</div>
+                        <h3>報名系統</h3>
+                        <p>完整報名流程系統</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">🔍</div>
+                        <h3>查詢系統</h3>
+                        <p>進階查詢功能</p>
+                    </div>
+                    <div class="concept-card" style="text-align: center;">
+                        <div style="font-size: 36px;">🤖</div>
+                        <h3>AI 自動發文</h3>
+                        <p>串接 AI API 自動產生內容</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 40px; flex-wrap: wrap;">
+                    <a href="../GAS程式碼/06_天氣預報_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+                    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+                </div>
+                <p style="font-size: 16px; color: #999; margin-top: 20px;">今天辛苦了，好好休息，明天見！</p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">❮</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">❯</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# 參考資料（PDF 檔案過大）
+參考/
+
+# 截圖說明（空目錄）
+截圖說明/
+
+# 教學規劃文件（內部使用）
+兩天GAS教學規劃.md
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

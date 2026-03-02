@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📗 實作 3 — 第一個 GAS × Line Bot 報表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
+        .screenshot-placeholder strong { color: #666; font-size: 16px; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">📗 實作 3 — 第一個 GAS × Line Bot 報表</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- ========== Slide 1: Cover ========== -->
+        <div class="slide active">
+            <div class="content-card" style="text-align: center;">
+                <div style="font-size: 80px; margin-bottom: 20px;">📗</div>
+                <h1 style="font-size: 58px; margin-bottom: 16px;">實作 3：產出第一個 GAS</h1>
+                <p style="font-size: 28px; color: #2e7d32; margin-bottom: 30px;">試算表讀寫 + 自訂函式 + Line Bot 報表推播</p>
+                <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+                    <span style="background: #e8f5e9; padding: 10px 24px; border-radius: 30px; font-size: 20px; color: #1b5e20; font-weight: 600; border: 2px solid #a5d6a7;">📊 <span class="highlight">getRange</span></span>
+                    <span style="background: #e8f5e9; padding: 10px 24px; border-radius: 30px; font-size: 20px; color: #1b5e20; font-weight: 600; border: 2px solid #a5d6a7;">📖 <span class="highlight">getValue</span></span>
+                    <span style="background: #e8f5e9; padding: 10px 24px; border-radius: 30px; font-size: 20px; color: #1b5e20; font-weight: 600; border: 2px solid #a5d6a7;">⚙️ <span class="highlight">Custom Function</span></span>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 40px; margin-top: 20px;">
+                    <div style="background: #f1f8e9; padding: 15px 30px; border-radius: 15px; border: 2px solid #c8e6c9;">
+                        <span style="font-size: 20px;">⏱️ 30 分鐘</span>
+                    </div>
+                    <div style="background: #f1f8e9; padding: 15px 30px; border-radius: 15px; border: 2px solid #c8e6c9;">
+                        <span style="font-size: 20px;">📝 讀寫基礎</span>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; font-size: 18px; color: #888;">Day 1 — Part 3 ／ 按 → 或點擊右側箭頭開始</p>
+            </div>
+        </div>
+
+        <!-- ========== Slide 2: 學習目標 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🎯 學習目標</h2>
+                <p style="font-size: 22px; color: #2e7d32; margin-bottom: 20px;">完成這個實作後，你將學會以下四大核心技能：</p>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>📋 1. 取得工作表</h3>
+                        <p>使用 <code>SpreadsheetApp.getActiveSheet()</code> 取得目前的工作表物件，這是所有試算表操作的起點。</p>
+                        <pre><code>var sheet = SpreadsheetApp
+  .getActiveSpreadsheet()
+  .getActiveSheet();</code></pre>
+                    </div>
+                    <div class="concept-card">
+                        <h3>📖 2. 讀寫儲存格</h3>
+                        <p>使用 <code>getRange()</code> 指定儲存格，搭配 <code>getValue()</code> 讀取、<code>setValue()</code> 寫入資料。</p>
+                        <pre><code>sheet.getRange('A1').getValue()
+sheet.getRange('A1').setValue('Hello')</code></pre>
+                    </div>
+                    <div class="concept-card">
+                        <h3>⚙️ 3. 自訂函式</h3>
+                        <p>使用 <code>@customfunction</code> 標記，讓 GAS 函式可以在試算表中像 <code>=SUM()</code> 一樣直接呼叫。</p>
+                        <pre><code>/** @customfunction */
+function calcSubtotal(qty, price) {
+  return qty * price;
+}</code></pre>
+                    </div>
+                    <div class="concept-card">
+                        <h3>📤 4. 推播報表到 Line</h3>
+                        <p>統計試算表中的銷售資料，組合成格式化的報表文字，透過 Line Bot 推播通知。</p>
+                        <pre><code>sendLineNotify(token, userId,
+  "📊 每日銷售報表\n💰 總金額：$2,575");</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide: Vibe Coding 提示詞教學 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🤖 Vibe Coding — 用 AI 生成這個實作</h2>
+                <p>這個實作很適合用 Vibe Coding 來體驗！把以下提示詞貼給 AI 試試看：</p>
+
+                <h3>📝 提示詞範例（直接貼給 AI）</h3>
+                <pre><code>請幫我用 Google Apps Script 寫一個試算表操作程式，搭配 Line Bot 推播，需求如下：
+
+1. 基本讀寫函式：
+   - readCell()：讀取 A1 儲存格的值，結果推播到 Line
+   - writeCell()：寫入值到指定儲存格
+   - readRange()：讀取 A1:D6 範圍的所有資料，格式化後推播到 Line
+2. 自訂函式（可在試算表中用 =函式名() 呼叫）：
+   - calcSubtotal(quantity, price)：計算小計（數量×單價）
+   - getLevel(amount)：根據金額判斷等級（>1000=A, >500=B, 其他=C）
+   記得加上 @customfunction JSDoc 標記
+3. 報表推播函式 sendDailyReport()：
+   - 讀取試算表中的品項、數量、單價資料
+   - 計算每個品項的小計和總金額
+   - 找出銷售最高的品項
+   - 格式化成漂亮的報表，用 emoji 裝飾
+   - 推播到 Line Bot
+4. createSampleData()：自動建立範例資料（5 個飲料品項）
+5. LINE_TOKEN 和 LINE_USER_ID 設定在最上方
+6. 加上中文註解</code></pre>
+
+                <h3>🎯 這個提示詞的關鍵技巧</h3>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>✅ 分類列出函式</h3>
+                        <p>把函式分成「基本讀寫」「自訂函式」「報表」三類，讓 AI 產出的程式碼結構清晰。</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>✅ 說明商業邏輯</h3>
+                        <p>像「>1000=A 等級」這種判斷規則，一定要明確寫出來，AI 不會猜你的業務需求。</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>✅ 要求美化輸出</h3>
+                        <p>「用 emoji 裝飾」「格式化成漂亮的報表」這些要求，能讓 AI 生成更友善的 Line 訊息格式。</p>
+                    </div>
+                </div>
+
+                <div class="box info">
+                    <strong>💡 進階玩法：</strong>試著修改提示詞，把「飲料品項」改成你自己的應用場景（例如：文具、書籍、餐點），看看 AI 能不能客製化一個屬於你的報表系統！
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 3: 成果預覽 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>👀 成果預覽</h2>
+                <p style="font-size: 22px; color: #2e7d32; margin-bottom: 20px;">完成後你會看到兩個成果：試算表自動填入資料 + Line Bot 收到銷售報表</p>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>📊 試算表成果</h3>
+                        <p>自動產生的銷售報表試算表，包含：</p>
+                        <ul>
+                            <li>A 欄：品項名稱（美式咖啡、拿鐵...）</li>
+                            <li>B 欄：數量</li>
+                            <li>C 欄：單價</li>
+                            <li>D 欄：小計 — 使用自訂函式 <code>=calcSubtotal(B2,C2)</code> 自動計算</li>
+                        </ul>
+                        <!-- 模擬試算表：銷售報表 -->
+                        <div style="background: #fff; border: 1px solid #c0c0c0; border-radius: 4px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif; font-size: 13px;">
+                            <!-- 試算表工具列 -->
+                            <div style="background: #f0f0f0; padding: 6px 12px; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 8px;">
+                                <span style="color: #0f9d58; font-weight: bold; font-size: 14px;">📊</span>
+                                <span style="font-weight: 600; color: #333; font-size: 13px;">銷售報表</span>
+                                <span style="color: #999; font-size: 11px; margin-left: auto;">Google 試算表</span>
+                            </div>
+                            <!-- 欄位標題（A B C D） -->
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #f8f8f8; border-bottom: 1px solid #e0e0e0;">
+                                <div style="padding: 3px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;"></div>
+                                <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">A</div>
+                                <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">B</div>
+                                <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">C</div>
+                                <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; font-weight: 600;">D</div>
+                            </div>
+                            <!-- 標題列 -->
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #e8f0fe; border-bottom: 1px solid #d0d0d0; font-weight: bold; color: #1a73e8;">
+                                <div style="padding: 6px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">1</div>
+                                <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">品項</div>
+                                <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">數量</div>
+                                <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">單價</div>
+                                <div style="padding: 6px 8px;">小計</div>
+                            </div>
+                            <!-- 資料列 -->
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8;">
+                                <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">2</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">咖啡</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">10</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">50</div>
+                                <div style="padding: 5px 8px; color: #1a73e8; font-size: 12px;">=calcSubtotal(B2,C2)</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8; background: #fafafa;">
+                                <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">3</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">蛋糕</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">5</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">80</div>
+                                <div style="padding: 5px 8px; color: #1a73e8; font-size: 12px;">=calcSubtotal(B3,C3)</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8;">
+                                <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">4</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">果汁</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">8</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">35</div>
+                                <div style="padding: 5px 8px; color: #1a73e8; font-size: 12px;">=calcSubtotal(B4,C4)</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #fafafa;">
+                                <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">5</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">餅乾</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">15</div>
+                                <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">25</div>
+                                <div style="padding: 5px 8px; color: #1a73e8; font-size: 12px;">=calcSubtotal(B5,C5)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="concept-card">
+                        <h3>📱 Line Bot 成果</h3>
+                        <p>Line Bot 收到格式化的銷售報表通知：</p>
+                        <ul>
+                            <li>包含日期時間</li>
+                            <li>各品項的數量與金額明細</li>
+                            <li>總金額、總數量統計</li>
+                            <li>最高銷售品項標示</li>
+                        </ul>
+                        <!-- 模擬手機 Line Bot 訊息 -->
+                        <div style="width: 280px; margin: 20px auto; background: #7494C0; border-radius: 24px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                            <!-- 手機狀態列 -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: white; font-size: 11px; font-weight: 600;">
+                                <span>14:30</span>
+                                <span style="display: flex; gap: 4px; align-items: center;">
+                                    <span style="display: inline-block; width: 16px; height: 10px; border: 1.5px solid white; border-radius: 2px; position: relative;"><span style="position: absolute; right: 1px; top: 1px; bottom: 1px; width: 8px; background: white; border-radius: 1px;"></span></span>
+                                </span>
+                            </div>
+                            <!-- LINE 聊天頭 -->
+                            <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+                                <div style="background: #06C755; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 14px; color: white;">&#10094;</span>
+                                    <div style="width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">🤖</div>
+                                    <span style="color: white; font-weight: bold; font-size: 14px;">銷售報表 Bot</span>
+                                </div>
+                                <!-- 聊天區域 -->
+                                <div style="background: #8CABD9; padding: 14px 10px; min-height: 200px;">
+                                    <!-- Bot 氣泡 -->
+                                    <div style="display: flex; gap: 6px; align-items: flex-start;">
+                                        <div style="width: 28px; height: 28px; background: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;">🤖</div>
+                                        <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 210px; font-size: 13px; line-height: 1.7; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                            <div style="font-weight: bold; margin-bottom: 4px;">📊 每日銷售報表</div>
+                                            <div style="color: #999; font-size: 11px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
+                                            <div>📅 2026/03/03</div>
+                                            <div>📦 銷售品項：4 項</div>
+                                            <div>💰 營業額：1,655 元</div>
+                                            <div>🏆 銷售冠軍：餅乾（15份）</div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px; padding-right: 4px;">已讀 14:30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 4: 步驟 1-4 — 建立試算表 + 貼程式碼 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🔧 步驟 1-4：建立試算表 + 貼程式碼</h2>
+
+                <h3>步驟 1：建立新試算表</h3>
+                <ol>
+                    <li>前往 <a href="https://sheets.google.com" target="_blank" style="color: #1b5e20; font-weight: bold;">Google Sheets</a></li>
+                    <li>點擊「+」建立新的空白試算表</li>
+                    <li>將試算表命名為「<strong>銷售報表</strong>」</li>
+                </ol>
+
+                <h3>步驟 2：開啟 Apps Script</h3>
+                <ol>
+                    <li>點擊選單「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」</li>
+                    <li>會開啟 Apps Script 編輯器</li>
+                </ol>
+
+                <h3>步驟 3：貼上程式碼</h3>
+                <ol>
+                    <li>刪除預設的 <code>function myFunction() {}</code></li>
+                    <li>將 <code>GAS程式碼/03_第一個GAS_LineBot.gs</code> 的完整程式碼貼上</li>
+                </ol>
+
+                <h3>步驟 4：修改權杖設定</h3>
+                <div class="box warning">
+                    ⚠️ <strong>重要！</strong>記得將程式碼中的以下兩個值替換為你自己的：<br>
+                    <code>LINE_TOKEN</code> = 你的 Line Bot Channel Access Token<br>
+                    <code>LINE_USER_ID</code> = 你的 Line User ID
+                </div>
+
+                <p>修改完成後，按 <kbd style="background:#e0e0e0; padding:3px 8px; border-radius:4px; font-weight:bold;">Ctrl + S</kbd> 儲存。</p>
+
+                <!-- 模擬 GAS 編輯器 -->
+                <div style="background: #1e1e1e; border-radius: 10px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3); font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;">
+                    <!-- 編輯器頂部列 -->
+                    <div style="background: #2d2d2d; padding: 8px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #404040;">
+                        <div style="display: flex; gap: 6px;">
+                            <span style="width: 10px; height: 10px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
+                            <span style="width: 10px; height: 10px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
+                            <span style="width: 10px; height: 10px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
+                        </div>
+                        <span style="color: #ccc; font-size: 12px; font-weight: 600; margin-left: 8px;">Apps Script — 銷售報表</span>
+                    </div>
+                    <div style="display: flex; min-height: 220px;">
+                        <!-- 左側檔案列表 -->
+                        <div style="width: 180px; background: #252526; border-right: 1px solid #404040; padding: 10px 0;">
+                            <div style="padding: 6px 14px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">檔案</div>
+                            <div style="padding: 7px 14px; background: #37373d; color: #fff; font-size: 12px; display: flex; align-items: center; gap: 6px; border-left: 2px solid #4FC3F7;">
+                                <span style="color: #4FC3F7;">{ }</span> 程式碼.gs
+                            </div>
+                            <div style="padding: 7px 14px; color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                                <span style="color: #4FC3F7;">{ }</span> LineBot.gs
+                            </div>
+                        </div>
+                        <!-- 右側程式碼區 -->
+                        <div style="flex: 1; padding: 14px 18px; color: #d4d4d4; line-height: 1.7; overflow-x: auto;">
+                            <div><span style="color: #6A9955;">// ===== LINE 設定 =====</span></div>
+                            <div><span style="color: #569cd6;">var</span> <span style="color: #9cdcfe;">LINE_TOKEN</span> = <span style="color: #ce9178;">'你的Token'</span>;</div>
+                            <div><span style="color: #569cd6;">var</span> <span style="color: #9cdcfe;">LINE_USER_ID</span> = <span style="color: #ce9178;">'你的UserID'</span>;</div>
+                            <div style="height: 8px;"></div>
+                            <div><span style="color: #569cd6;">function</span> <span style="color: #dcdcaa;">readCell</span>() {</div>
+                            <div style="padding-left: 20px;"><span style="color: #569cd6;">var</span> sheet = <span style="color: #4ec9b0;">SpreadsheetApp</span>...</div>
+                            <div>}</div>
+                            <div style="height: 4px;"></div>
+                            <div><span style="color: #569cd6;">function</span> <span style="color: #dcdcaa;">readRange</span>() {</div>
+                            <div style="padding-left: 20px;"><span style="color: #569cd6;">var</span> values = sheet.<span style="color: #dcdcaa;">getRange</span>(<span style="color: #ce9178;">'A1:C5'</span>)...</div>
+                            <div>}</div>
+                            <div style="height: 4px;"></div>
+                            <div><span style="color: #569cd6;">function</span> <span style="color: #dcdcaa;">createSampleData</span>() { ... }</div>
+                            <div><span style="color: #569cd6;">function</span> <span style="color: #dcdcaa;">sendDailyReport</span>() { ... }</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 5: 步驟 5 — 建立範例資料 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>▶️ 步驟 5：建立範例資料</h2>
+
+                <h3>執行 createSampleData 函式</h3>
+                <ol>
+                    <li>在 Apps Script 編輯器上方的函式下拉選單中，選擇「<strong>createSampleData</strong>」</li>
+                    <li>點擊「<strong>▶ 執行</strong>」按鈕</li>
+                    <li>首次執行需要授權 — 依照提示完成授權流程</li>
+                </ol>
+
+                <!-- 模擬 GAS 工具列 + 函式下拉選單 -->
+                <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif;">
+                    <!-- 工具列 -->
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fff; border-bottom: 1px solid #e0e0e0;">
+                        <!-- 執行按鈕 -->
+                        <div style="display: flex; align-items: center; gap: 6px; background: #f1f3f4; border: 1px solid #dadce0; border-radius: 4px; padding: 5px 12px; cursor: pointer;">
+                            <span style="color: #5f6368; font-size: 16px; font-weight: bold;">&#9654;</span>
+                            <span style="color: #5f6368; font-size: 13px; font-weight: 600;">執行</span>
+                        </div>
+                        <!-- Debug 按鈕 -->
+                        <div style="display: flex; align-items: center; gap: 4px; background: #f1f3f4; border: 1px solid #dadce0; border-radius: 4px; padding: 5px 12px;">
+                            <span style="color: #5f6368; font-size: 13px;">🐛 偵錯</span>
+                        </div>
+                        <!-- 函式下拉選單（展開狀態） -->
+                        <div style="position: relative; margin-left: 8px;">
+                            <div style="background: #fff; border: 1px solid #1a73e8; border-radius: 4px; padding: 5px 30px 5px 12px; font-size: 13px; color: #1a73e8; font-weight: 600; min-width: 200px;">
+                                createSampleData &#9662;
+                            </div>
+                            <!-- 下拉展開選項 -->
+                            <div style="position: relative; top: 2px; left: 0; background: #fff; border: 1px solid #dadce0; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; min-width: 200px;">
+                                <div style="padding: 8px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0;">readCell</div>
+                                <div style="padding: 8px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0;">readRange</div>
+                                <div style="padding: 8px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0;">writeCell</div>
+                                <div style="padding: 8px 14px; font-size: 13px; background: #e8f0fe; color: #1a73e8; font-weight: bold; border-bottom: 1px solid #f0f0f0;">createSampleData</div>
+                                <div style="padding: 8px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0;">sendDailyReport</div>
+                                <div style="padding: 8px 14px; font-size: 13px; color: #333;">calcSubtotal</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>執行後試算表會自動填入以下資料：</h3>
+                <table>
+                    <tr><th>品項名稱</th><th>數量</th><th>單價</th><th>小計</th></tr>
+                    <tr><td>美式咖啡</td><td>10</td><td>60</td><td>=calcSubtotal(B2,C2)</td></tr>
+                    <tr><td>拿鐵咖啡</td><td>8</td><td>80</td><td>=calcSubtotal(B3,C3)</td></tr>
+                    <tr><td>珍珠奶茶</td><td>15</td><td>55</td><td>=calcSubtotal(B4,C4)</td></tr>
+                    <tr><td>綠茶</td><td>12</td><td>30</td><td>=calcSubtotal(B5,C5)</td></tr>
+                    <tr><td>紅茶</td><td>6</td><td>25</td><td>=calcSubtotal(B6,C6)</td></tr>
+                </table>
+
+                <div class="box info">
+                    💡 <strong>注意 D 欄</strong>：小計使用自訂函式 <code>=calcSubtotal(B2,C2)</code> 計算，不是手動輸入的！這就是 GAS 自訂函式的威力。
+                </div>
+
+                <!-- 模擬試算表：含計算結果 -->
+                <div style="background: #fff; border: 1px solid #c0c0c0; border-radius: 4px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif; font-size: 13px;">
+                    <!-- 試算表工具列 -->
+                    <div style="background: #f0f0f0; padding: 6px 12px; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #0f9d58; font-weight: bold; font-size: 14px;">📊</span>
+                        <span style="font-weight: 600; color: #333; font-size: 13px;">銷售報表</span>
+                        <span style="color: #999; font-size: 11px; margin-left: auto;">Google 試算表</span>
+                    </div>
+                    <!-- 欄位標題 -->
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #f8f8f8; border-bottom: 1px solid #e0e0e0;">
+                        <div style="padding: 3px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;"></div>
+                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">A</div>
+                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">B</div>
+                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">C</div>
+                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; font-weight: 600;">D</div>
+                    </div>
+                    <!-- 標題列 -->
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #e8f0fe; border-bottom: 1px solid #d0d0d0; font-weight: bold; color: #1a73e8;">
+                        <div style="padding: 6px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">1</div>
+                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">品項</div>
+                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">數量</div>
+                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">單價</div>
+                        <div style="padding: 6px 8px;">小計</div>
+                    </div>
+                    <!-- 資料列（含計算結果） -->
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8;">
+                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">2</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">咖啡</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">10</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">50</div>
+                        <div style="padding: 5px 8px; text-align: right; font-weight: bold; color: #0f9d58;">500</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8; background: #fafafa;">
+                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">3</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">蛋糕</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">5</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">80</div>
+                        <div style="padding: 5px 8px; text-align: right; font-weight: bold; color: #0f9d58;">400</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; border-bottom: 1px solid #e8e8e8;">
+                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">4</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">果汁</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">8</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">35</div>
+                        <div style="padding: 5px 8px; text-align: right; font-weight: bold; color: #0f9d58;">280</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; background: #fafafa;">
+                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">5</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">餅乾</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">15</div>
+                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; text-align: right;">25</div>
+                        <div style="padding: 5px 8px; text-align: right; font-weight: bold; color: #0f9d58;">375</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 6: 自訂函式解說 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>⚙️ 自訂函式 @customfunction 解說</h2>
+
+                <h3>什麼是自訂函式？</h3>
+                <p>Google Apps Script 允許你建立<strong>自訂函式</strong>，讓它像內建的 <code>=SUM()</code>、<code>=AVERAGE()</code> 一樣，直接在試算表的儲存格中使用。</p>
+
+                <h3>關鍵：加上 @customfunction 標記</h3>
+                <pre><code>/**
+ * 計算小計（數量 × 單價）
+ * @customfunction
+ */
+function calcSubtotal(quantity, price) {
+  return quantity * price;
+}</code></pre>
+
+                <div class="box info">
+                    💡 <strong>重點！</strong>只要在 JSDoc 註解中加上 <code>@customfunction</code> 標記，這個函式就能在試算表中像 <code>=SUM()</code> 一樣使用 <code>=calcSubtotal()</code>。
+                </div>
+
+                <h3>另一個範例：等級判斷函式</h3>
+                <pre><code>/**
+ * 根據金額判斷消費等級
+ * @customfunction
+ */
+function getLevel(amount) {
+  if (amount >= 1000) return '🏆 VIP';
+  if (amount >= 500)  return '⭐ 高級';
+  if (amount >= 200)  return '👍 一般';
+  return '📌 入門';
+}</code></pre>
+
+                <p>在試算表中輸入 <code>=getLevel(D2)</code> 就能自動判斷等級！</p>
+
+                <div class="box warning">
+                    ⚠️ <strong>限制注意</strong>：自訂函式不能使用需要授權的服務（如 MailApp、UrlFetchApp），只能做純計算。如果需要呼叫外部 API，要用其他函式搭配觸發器。
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 7: 步驟 6 — 讀取儲存格 readCell() ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📖 步驟 6：讀取儲存格 readCell()</h2>
+
+                <h3>執行方式</h3>
+                <ol>
+                    <li>在函式下拉選單中選擇「<strong>readCell</strong>」</li>
+                    <li>點擊「<strong>▶ 執行</strong>」</li>
+                    <li>Line Bot 會收到讀取結果的訊息</li>
+                </ol>
+
+                <h3>Line Bot 收到的訊息</h3>
+                <div style="background: #e8f5e9; padding: 20px 30px; border-radius: 15px; margin: 20px 0; font-size: 20px; border: 2px solid #a5d6a7;">
+                    📖 讀取結果<br>
+                    ━━━━━━━━━━━━<br>
+                    A1 儲存格的值是：<strong>品項名稱</strong>
+                </div>
+
+                <h3>程式碼解說</h3>
+                <pre><code>function readCell() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  // 取得 A1 儲存格的值
+  var value = sheet.getRange('A1').getValue();
+
+  // 組合訊息
+  var message = '📖 讀取結果\n━━━━━━━━━━━━\n';
+  message += 'A1 儲存格的值是：' + value;
+
+  // 推播到 Line
+  sendLineNotify(LINE_TOKEN, LINE_USER_ID, message);
+}</code></pre>
+
+                <div class="box info">
+                    💡 <strong>核心觀念</strong>：<code>getRange('A1')</code> 指定儲存格位置，<code>.getValue()</code> 取得該儲存格的值。這是 GAS 讀取試算表最基礎的方法！
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 8: 步驟 7 — 讀取範圍 readRange() ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 步驟 7：讀取範圍 readRange()</h2>
+
+                <h3>執行方式</h3>
+                <ol>
+                    <li>在函式下拉選單中選擇「<strong>readRange</strong>」</li>
+                    <li>點擊「<strong>▶ 執行</strong>」</li>
+                    <li>Line Bot 會收到 A1:C5 範圍的所有資料</li>
+                </ol>
+
+                <h3>Line Bot 收到的訊息</h3>
+                <div style="background: #e8f5e9; padding: 20px 30px; border-radius: 15px; margin: 20px 0; font-size: 20px; border: 2px solid #a5d6a7;">
+                    📋 範圍讀取結果（A1:C5）<br>
+                    ━━━━━━━━━━━━<br>
+                    第1列：品項名稱, 數量, 單價<br>
+                    第2列：美式咖啡, 10, 60<br>
+                    第3列：拿鐵咖啡, 8, 80<br>
+                    第4列：珍珠奶茶, 15, 55<br>
+                    第5列：綠茶, 12, 30
+                </div>
+
+                <h3>程式碼解說</h3>
+                <pre><code>function readRange() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  // 取得 A1:C5 範圍的所有值（回傳二維陣列）
+  var values = sheet.getRange('A1:C5').getValues();
+
+  var message = '📋 範圍讀取結果（A1:C5）\n━━━━━━━━━━━━\n';
+
+  values.forEach(function(row, index) {
+    message += '第' + (index + 1) + '列：' + row.join(', ') + '\n';
+  });
+
+  sendLineNotify(LINE_TOKEN, LINE_USER_ID, message);
+}</code></pre>
+
+                <div class="box info">
+                    💡 <strong>核心觀念</strong>：<code>getRange('A1:C5')</code> 指定一個範圍，<code>.getValues()</code>（注意有 <strong>s</strong>）回傳一個<strong>二維陣列</strong>（Array of Arrays），每一列是一個子陣列。
+                </div>
+
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>getValue() vs getValues()</h3>
+                        <p><code>getValue()</code> — 取得<strong>單一</strong>儲存格的值</p>
+                        <p><code>getValues()</code> — 取得<strong>範圍</strong>內所有儲存格，回傳二維陣列</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>二維陣列結構</h3>
+                        <pre><code>[
+  ['品項名稱', '數量', '單價'],
+  ['美式咖啡', 10, 60],
+  ['拿鐵咖啡', 8, 80],
+  ...
+]</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 9: 步驟 8 — 推播報表 sendDailyReport() ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📊 步驟 8：推播報表 sendDailyReport()</h2>
+
+                <h3>執行方式</h3>
+                <ol>
+                    <li>在函式下拉選單中選擇「<strong>sendDailyReport</strong>」</li>
+                    <li>點擊「<strong>▶ 執行</strong>」</li>
+                    <li>Line Bot 會收到完整的銷售報表！</li>
+                </ol>
+
+                <!-- 模擬手機 Line Bot 銷售報表訊息 -->
+                <div style="width: 280px; margin: 20px auto; background: #7494C0; border-radius: 24px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                    <!-- 手機狀態列 -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: white; font-size: 11px; font-weight: 600;">
+                        <span>10:30</span>
+                        <span style="display: flex; gap: 4px; align-items: center;">
+                            <span style="display: inline-block; width: 16px; height: 10px; border: 1.5px solid white; border-radius: 2px; position: relative;"><span style="position: absolute; right: 1px; top: 1px; bottom: 1px; width: 8px; background: white; border-radius: 1px;"></span></span>
+                        </span>
+                    </div>
+                    <!-- LINE 聊天區 -->
+                    <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+                        <div style="background: #06C755; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 14px; color: white;">&#10094;</span>
+                            <div style="width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">🤖</div>
+                            <span style="color: white; font-weight: bold; font-size: 14px;">銷售報表 Bot</span>
+                        </div>
+                        <div style="background: #8CABD9; padding: 14px 10px; min-height: 240px;">
+                            <div style="display: flex; gap: 6px; align-items: flex-start;">
+                                <div style="width: 28px; height: 28px; background: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;">🤖</div>
+                                <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 210px; font-size: 12px; line-height: 1.8; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">📊 每日銷售報表</div>
+                                    <div style="color: #bbb; font-size: 10px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
+                                    <div>📅 2026/3/3 上午10:30</div>
+                                    <div style="height: 4px;"></div>
+                                    <div>&nbsp; • 咖啡 x10 = $500</div>
+                                    <div>&nbsp; • 蛋糕 x5 = $400</div>
+                                    <div>&nbsp; • 果汁 x8 = $280</div>
+                                    <div>&nbsp; • 餅乾 x15 = $375</div>
+                                    <div style="height: 4px;"></div>
+                                    <div style="color: #bbb; font-size: 10px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
+                                    <div style="font-weight: bold;">💰 總金額：$1,555</div>
+                                    <div>📦 總數量：38 個</div>
+                                    <div>🏆 最高品項：餅乾（$375）</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right; font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px; padding-right: 4px;">已讀 10:30</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Line Bot 收到的報表格式</h3>
+                <div style="background: #282c34; color: #abb2bf; padding: 25px 30px; border-radius: 15px; margin: 20px 0; font-size: 18px; line-height: 1.8; font-family: 'Consolas', monospace;">
+                    <span style="color: #e5c07b;">📊 每日銷售報表</span><br>
+                    ━━━━━━━━━━━━<br>
+                    <span style="color: #98c379;">📅 2026/3/3 上午10:30:00</span><br><br>
+                    &nbsp;&nbsp;• 美式咖啡 ×10 = $600<br>
+                    &nbsp;&nbsp;• 拿鐵咖啡 ×8 = $640<br>
+                    &nbsp;&nbsp;• 珍珠奶茶 ×15 = $825<br>
+                    &nbsp;&nbsp;• 綠茶 ×12 = $360<br>
+                    &nbsp;&nbsp;• 紅茶 ×6 = $150<br><br>
+                    ━━━━━━━━━━━━<br>
+                    <span style="color: #e5c07b;">💰 總金額：$2,575</span><br>
+                    <span style="color: #61afef;">📦 總數量：51 個</span><br>
+                    <span style="color: #c678dd;">🏆 最高品項：珍珠奶茶（$825）</span>
+                </div>
+
+                <div class="box success">
+                    ✅ <strong>太棒了！</strong>你已經成功用 GAS 讀取試算表資料，統計後推播到 Line Bot。這就是自動化報表的基礎！
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 10: 核心 API 整理 ========== -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📚 核心 API 整理</h2>
+                <p style="font-size: 22px; color: #2e7d32; margin-bottom: 20px;">以下是本次實作學到的所有關鍵 API，請記住這些基礎方法：</p>
+
+                <table>
+                    <tr>
+                        <th style="width: 22%;">API</th>
+                        <th style="width: 28%;">功能</th>
+                        <th style="width: 50%;">範例</th>
+                    </tr>
+                    <tr>
+                        <td><code>getActiveSpreadsheet()</code></td>
+                        <td>取得目前試算表</td>
+                        <td><code>var ss = SpreadsheetApp.getActiveSpreadsheet()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>getActiveSheet()</code></td>
+                        <td>取得工作表</td>
+                        <td><code>var sheet = ss.getActiveSheet()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>getRange()</code></td>
+                        <td>指定儲存格或範圍</td>
+                        <td><code>sheet.getRange('A1')</code> 或 <code>sheet.getRange('A1:C5')</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>getValue()</code></td>
+                        <td>讀取單一儲存格的值</td>
+                        <td><code>range.getValue()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>setValue()</code></td>
+                        <td>寫入值到儲存格</td>
+                        <td><code>range.setValue('Hello')</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>getValues()</code></td>
+                        <td>讀取範圍（回傳二維陣列）</td>
+                        <td><code>range.getValues()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>getLastRow()</code></td>
+                        <td>取得最後一列的列號</td>
+                        <td><code>sheet.getLastRow()</code></td>
+                    </tr>
+                </table>
+
+                <div class="box info">
+                    💡 <strong>記憶口訣</strong>：<br>
+                    <strong>取表 → 指格 → 讀寫</strong><br>
+                    getActiveSheet() → getRange() → getValue() / setValue()
+                </div>
+
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>📖 讀取流程</h3>
+                        <pre><code>var sheet = SpreadsheetApp
+  .getActiveSpreadsheet()
+  .getActiveSheet();
+
+// 單一值
+var val = sheet.getRange('A1')
+  .getValue();
+
+// 多個值（二維陣列）
+var data = sheet.getRange('A1:C5')
+  .getValues();</code></pre>
+                    </div>
+                    <div class="concept-card">
+                        <h3>✏️ 寫入流程</h3>
+                        <pre><code>var sheet = SpreadsheetApp
+  .getActiveSpreadsheet()
+  .getActiveSheet();
+
+// 寫入單一值
+sheet.getRange('A1')
+  .setValue('Hello');
+
+// 寫入公式
+sheet.getRange('D2')
+  .setFormula('=calcSubtotal(B2,C2)');</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Slide 11: 實作 3 總結 ========== -->
+        <div class="slide">
+            <div class="content-card" style="text-align: center;">
+                <h2 style="border: none; text-align: center;">🎉 實作 3 完成！</h2>
+
+                <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                    <h3>📝 今天學到了什麼？</h3>
+                    <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="concept-card">
+                            <h3>📋 試算表操作</h3>
+                            <ul>
+                                <li><code>getActiveSheet()</code> 取得工作表</li>
+                                <li><code>getRange()</code> 指定儲存格</li>
+                                <li><code>getValue()</code> / <code>setValue()</code> 讀寫</li>
+                                <li><code>getValues()</code> 讀取範圍資料</li>
+                                <li><code>getLastRow()</code> 取得最後一列</li>
+                            </ul>
+                        </div>
+                        <div class="concept-card">
+                            <h3>⚙️ 進階技巧</h3>
+                            <ul>
+                                <li><code>@customfunction</code> 自訂函式</li>
+                                <li>在試算表中使用 <code>=calcSubtotal()</code></li>
+                                <li>統計資料並組合報表</li>
+                                <li>推播格式化報表到 Line Bot</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box success" style="max-width: 800px; margin: 30px auto; text-align: center; font-size: 22px;">
+                    ✅ <strong>恭喜！實作 3 完成！</strong><br>
+                    你已經掌握了 GAS 讀寫試算表的核心技能，並成功推播銷售報表到 Line Bot！
+                </div>
+
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+                    <a href="../GAS程式碼/03_第一個GAS_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+                    <a href="Day1_Part4_HTML表單.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">➡️ 下一個實作</a>
+                    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: rgba(27,94,32,0.1); color: #1b5e20; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; border: 2px solid #1b5e20;">🏠 回到總覽</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">❮</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">❯</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

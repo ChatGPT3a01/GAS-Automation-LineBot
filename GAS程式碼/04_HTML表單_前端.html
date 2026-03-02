@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* ===== 全域樣式 ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* ===== 表單容器 ===== */
+    .form-container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .form-title {
+      text-align: center;
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .form-subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    /* ===== 表單欄位 ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .form-group label .required {
+      color: #e74c3c;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-group textarea {
+      height: 120px;
+      resize: vertical;
+    }
+
+    /* ===== 送出按鈕 ===== */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .submit-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ===== 結果訊息 ===== */
+    .result-message {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .result-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .result-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+
+    /* ===== 載入動畫 ===== */
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 15px;
+      color: #667eea;
+    }
+
+    .loading.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h1 class="form-title">聯絡我們</h1>
+    <p class="form-subtitle">填寫表單後，我們會收到 Line 即時通知</p>
+
+    <form id="contactForm" onsubmit="submitForm(event)">
+      <!-- 姓名 -->
+      <div class="form-group">
+        <label>姓名 <span class="required">*</span></label>
+        <input type="text" id="name" placeholder="請輸入你的姓名" required>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" id="email" placeholder="請輸入你的 Email" required>
+      </div>
+
+      <!-- 訊息 -->
+      <div class="form-group">
+        <label>訊息內容 <span class="required">*</span></label>
+        <textarea id="message" placeholder="請輸入你想說的話..." required></textarea>
+      </div>
+
+      <!-- 送出按鈕 -->
+      <button type="submit" class="submit-btn" id="submitBtn">送出表單</button>
+    </form>
+
+    <!-- 載入中 -->
+    <div class="loading" id="loading">正在提交，請稍候...</div>
+
+    <!-- 結果訊息 -->
+    <div class="result-message" id="resultMessage"></div>
+  </div>
+
+  <script>
+    /**
+     * 提交表單
+     * 使用 google.script.run 呼叫後端的 processForm 函式
+     */
+    function submitForm(event) {
+      // 防止頁面重新整理
+      event.preventDefault();
+
+      // 取得表單資料
+      var formData = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        message: document.getElementById('message').value.trim()
+      };
+
+      // 驗證
+      if (!formData.name || !formData.email || !formData.message) {
+        showResult('請填寫所有欄位！', false);
+        return;
+      }
+
+      // 顯示載入中
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').textContent = '提交中...';
+      document.getElementById('loading').classList.add('show');
+      document.getElementById('resultMessage').style.display = 'none';
+
+      // 呼叫後端函式
+      google.script.run
+        .withSuccessHandler(onSuccess)
+        .withFailureHandler(onFailure)
+        .processForm(formData);
+    }
+
+    /**
+     * 提交成功的回呼
+     */
+    function onSuccess(result) {
+      document.getElementById('loading').classList.remove('show');
+
+      if (result.success) {
+        showResult(result.message, true);
+        // 清空表單
+        document.getElementById('contactForm').reset();
+      } else {
+        showResult(result.message, false);
+      }
+
+      // 恢復按鈕
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtn').textContent = '送出表單';
+    }
+
+    /**
+     * 提交失敗的回呼
+     */
+    function onFailure(error) {
+      document.getElementById('loading').classList.remove('show');
+      showResult('提交失敗：' + error.message, false);
+
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtn').textContent = '送出表單';
+    }
+
+    /**
+     * 顯示結果訊息
+     */
+    function showResult(message, isSuccess) {
+      var el = document.getElementById('resultMessage');
+      el.textContent = message;
+      el.className = 'result-message ' + (isSuccess ? 'success' : 'error');
+    }
+  </script>
+
+</body>
+</html>
