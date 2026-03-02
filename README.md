@@ -164,6 +164,78 @@ GAS-Automation-LineBot/
 
 <div align="center">
 
+<br>
+
+## 🚀 立即開始學習
+
+<br>
+
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/index.html">
+<img src="https://img.shields.io/badge/%F0%9F%8E%93_%E9%BB%9E%E6%AD%A4%E9%80%B2%E5%85%A5%E8%AA%B2%E7%A8%8B%E7%B0%A1%E5%A0%B1-1b5e20?style=for-the-badge&labelColor=1b5e20&color=4caf50&logoColor=white" alt="進入課程簡報" height="60">
+</a>
+
+<br><br>
+
+<table>
+<tr>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part0_GAS環境與LineBot建立.html">
+<img src="https://img.shields.io/badge/Part_0-環境建置-2e7d32?style=flat-square" alt="Part 0"><br>
+<sub>GAS 環境 + Line Bot</sub>
+</a>
+</td>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part1_RAG知識庫.html">
+<img src="https://img.shields.io/badge/Part_1-RAG知識庫-2e7d32?style=flat-square" alt="Part 1"><br>
+<sub>知識庫 API</sub>
+</a>
+</td>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part2_LineBot訊息收集器.html">
+<img src="https://img.shields.io/badge/Part_2-訊息收集-2e7d32?style=flat-square" alt="Part 2"><br>
+<sub>訊息收集器</sub>
+</a>
+</td>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part3_第一個GAS.html">
+<img src="https://img.shields.io/badge/Part_3-第一個GAS-2e7d32?style=flat-square" alt="Part 3"><br>
+<sub>GAS 報表</sub>
+</a>
+</td>
+</tr>
+<tr>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part4_HTML表單.html">
+<img src="https://img.shields.io/badge/Part_4-HTML表單-2e7d32?style=flat-square" alt="Part 4"><br>
+<sub>表單應用</sub>
+</a>
+</td>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part5_寫入試算表.html">
+<img src="https://img.shields.io/badge/Part_5-寫入試算表-2e7d32?style=flat-square" alt="Part 5"><br>
+<sub>簽到系統</sub>
+</a>
+</td>
+<td align="center" width="140">
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part6_天氣預報.html">
+<img src="https://img.shields.io/badge/Part_6-天氣預報-2e7d32?style=flat-square" alt="Part 6"><br>
+<sub>每日推播</sub>
+</a>
+</td>
+<td align="center" width="140">
+<sub>🔒 需輸入課程密碼</sub>
+</td>
+</tr>
+</table>
+
+<br>
+
+</div>
+
+---
+
+<div align="center">
+
 ## 🌟 喜歡這個專案嗎？
 
 如果這個工具對您有幫助，請給我們一個 ⭐ Star！
