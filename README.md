@@ -10,7 +10,7 @@
 <img src="https://img.shields.io/badge/Vibe%20Coding-FF6B6B?style=for-the-badge&logo=sparkles&logoColor=white" alt="Vibe Coding">
 </p>
 
-<p><strong>7 個實作專案 | 106+ 張投影片 | 完整 GAS 程式碼</strong></p>
+<p><strong>8 個實作專案 | 122+ 張投影片 | 完整 GAS 程式碼</strong></p>
 
 </div>
 
@@ -31,6 +31,7 @@
 | Part 4 | HTML 表單應用 | [開啟簡報](簡報/Day1_Part4_HTML表單.html) | [主程式](GAS程式碼/04_HTML表單_主程式.gs) / [前端](GAS程式碼/04_HTML表單_前端.html) |
 | Part 5 | 寫入試算表 | [開啟簡報](簡報/Day1_Part5_寫入試算表.html) | [下載](GAS程式碼/05_寫入試算表_LineBot.gs) |
 | Part 6 | 天氣預報 Line Bot | [開啟簡報](簡報/Day1_Part6_天氣預報.html) | [下載](GAS程式碼/06_天氣預報_LineBot.gs) |
+| Part 7 | 自動化評量系統 | [開啟簡報](簡報/Day1_Part7_自動化評量.html) | [下載](GAS程式碼/07_自動化評量_LineBot.gs) |
 
 ## 專案架構
 
@@ -48,7 +49,8 @@ GAS-Automation-LineBot/
 │   ├── Day1_Part3_第一個GAS.html
 │   ├── Day1_Part4_HTML表單.html
 │   ├── Day1_Part5_寫入試算表.html
-│   └── Day1_Part6_天氣預報.html
+│   ├── Day1_Part6_天氣預報.html
+│   └── Day1_Part7_自動化評量.html
 │
 └── GAS程式碼/                    # Google Apps Script 原始碼
     ├── 00_LineBot_共用模組.gs     # Line Bot 共用函式庫
@@ -58,7 +60,8 @@ GAS-Automation-LineBot/
     ├── 04_HTML表單_主程式.gs      # HTML 表單後端
     ├── 04_HTML表單_前端.html      # HTML 表單前端
     ├── 05_寫入試算表_LineBot.gs   # 試算表寫入實作
-    └── 06_天氣預報_LineBot.gs     # 天氣預報實作
+    ├── 06_天氣預報_LineBot.gs     # 天氣預報實作
+    └── 07_自動化評量_LineBot.gs   # 自動化評量系統
 ```
 
 ## 使用方式
@@ -223,7 +226,10 @@ GAS-Automation-LineBot/
 </a>
 </td>
 <td align="center" width="140">
-<sub>🔒 需輸入課程密碼</sub>
+<a href="https://chatgpt3a01.github.io/GAS-Automation-LineBot/簡報/Day1_Part7_自動化評量.html">
+<img src="https://img.shields.io/badge/Part_7-自動化評量-2e7d32?style=flat-square" alt="Part 7"><br>
+<sub>AI 自動評語</sub>
+</a>
 </td>
 </tr>
 </table>
