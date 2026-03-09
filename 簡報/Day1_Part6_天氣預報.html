@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📗 實作 6 — 天氣預報 × Line Bot 每日推播</title>
+    <title>📘 Day 1 — 天氣預報 × Line Bot API 串接</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -40,17 +40,33 @@
         .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
         .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
         .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
-        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
-        .screenshot-placeholder strong { color: #666; font-size: 16px; }
         .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
         .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
         .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
     </style>
 </head>
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">📗 實作 6 — 天氣預報 × Line Bot 每日推播</div>
+        <div class="nav-title">📘 Day 1 — 天氣預報 × Line Bot API 串接</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -61,827 +77,1256 @@
 
     <div class="slide-container">
 
-        <!-- Slide 1: Cover -->
-        <div class="slide active">
-            <div class="content-card" style="text-align: center;">
-                <div style="font-size: 80px; margin-bottom: 20px;">🌤️</div>
-                <h1 style="font-size: 56px; margin-bottom: 16px;">實作 6：天氣預報 API</h1>
-                <p style="font-size: 28px; color: #2e7d32; margin-bottom: 30px;">串接氣象署 API → Line Bot 每天早上自動推播天氣</p>
-                <div style="display: flex; justify-content: center; gap: 20px; margin: 30px 0;">
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">UrlFetchApp</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">JSON.parse</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">時間驅動觸發</span>
-                </div>
-                <div style="margin-top: 40px; padding: 20px; background: #e8f5e9; border-radius: 16px; display: inline-block;">
-                    <p style="font-size: 22px; color: #1b5e20; margin: 0;">⏱ 40 分鐘 · API + 排程</p>
-                </div>
-                <p style="font-size: 18px; color: #888; margin-top: 30px;">Day 1 最後一個實作 — 完成後你就擁有 7 個成品！</p>
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🌤️</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">天氣預報 × Line Bot</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            串接中央氣象署 API → 自動推播天氣預報到 Line
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">UrlFetchApp</span>
+            <span class="badge badge-blue">JSON.parse</span>
+            <span class="badge badge-orange">氣象署 API</span>
+            <span class="badge badge-green">時間排程</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">🔑 申請 API 授權碼</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🌐 呼叫氣象 API</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 解析天氣資料</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📤 Line 推播</div>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 1 — Part 6 / 天氣預報 API 串接實作</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件，全部打勾才能順利完成本單元。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>✅ 必備條件（Day 1 已完成）</h3>
+                <ol>
+                    <li><strong>Line Bot 帳號</strong> — 你在 Day 1 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code>（一串很長的英數字）</li>
+                    <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」欄位（U 開頭的字串）</li>
+                    <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
+                </ol>
+            </div>
+            <div class="concept-card">
+                <h3>📦 本單元需要額外準備</h3>
+                <ol>
+                    <li><strong>中央氣象署帳號</strong> — 等一下會教你到 <a href="https://opendata.cwa.gov.tw/" target="_blank" style="color: #2e7d32; font-weight: bold;">opendata.cwa.gov.tw</a> 免費註冊並取得 API 授權碼</li>
+                    <li><strong>下載本單元程式碼</strong> — 點擊簡報最後一頁的「📥 下載程式碼」按鈕，取得 <code>06_天氣預報_LineBot.gs</code></li>
+                </ol>
             </div>
         </div>
 
-        <!-- Slide 2: 學習目標 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🎯 學習目標</h2>
-                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">完成這個實作後，你將學會以下四大技能：</p>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>🌐 UrlFetchApp.fetch()</h3>
-                        <p>從 GAS 呼叫外部 API，取得遠端伺服器的資料。這是串接任何第三方服務的基礎。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📦 JSON.parse()</h3>
-                        <p>解析 API 回傳的 JSON 資料，把字串轉換成 JavaScript 物件，方便取值使用。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🌦️ 串接中央氣象署開放資料 API</h3>
-                        <p>使用政府開放資料平台，取得天氣預報、溫度、降雨機率等即時天氣資訊。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>⏰ 設定時間驅動觸發條件</h3>
-                        <p>排程自動執行！設定每天早上固定時間自動推播天氣預報到 Line。</p>
-                    </div>
-                </div>
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <div style="background: #e3f2fd; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">⏱️</div>
+                <div style="font-size: 18px; font-weight: 600; color: #1565c0;">預估操作時間</div>
+                <div style="font-size: 28px; font-weight: 700; color: #0d47a1;">30 ~ 40 分鐘</div>
+            </div>
+            <div style="background: #fce4ec; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📊</div>
+                <div style="font-size: 18px; font-weight: 600; color: #c62828;">難度等級</div>
+                <div style="font-size: 28px; font-weight: 700; color: #b71c1c;">★★★☆☆ 中等</div>
+            </div>
+            <div style="background: #f3e5f5; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📄</div>
+                <div style="font-size: 18px; font-weight: 600; color: #6a1b9a;">操作步驟</div>
+                <div style="font-size: 28px; font-weight: 700; color: #4a148c;">共 7 大步驟</div>
             </div>
         </div>
 
-        <!-- Slide 3: Vibe Coding 提示詞 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🤖 Vibe Coding — 用 AI 生成這個程式</h2>
-                <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
-                    最後一個實作了！一樣先用 <strong>Vibe Coding</strong> 的方式，把需求描述清楚，讓 AI 幫你產出完整程式碼：
-                </p>
+        <div class="box warning">
+            <strong>⚠️ 如果你還沒完成 Day 1 Part 0：</strong><br>
+            請先回到 <a href="Day1_Part0_GAS環境與LineBot建立.html" style="color: #856404; font-weight: bold;">Day 1 Part 0 — GAS 環境與 Line Bot 建立</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
+        </div>
+    </div>
+</div>
 
-                <div style="background: #1a1a2e; border-radius: 16px; padding: 30px; margin: 20px 0; position: relative;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="color: #69f0ae; font-weight: bold; font-size: 16px;">📋 複製這段提示詞給 AI</span>
-                        <span style="color: #888; font-size: 13px;">Prompt Template</span>
-                    </div>
-                    <pre style="background: #16213e; margin: 0; font-size: 16px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word;"><code style="color: #e2e8f0;">請幫我用 Google Apps Script 製作一個「天氣預報 + Line Bot 每日自動推播」系統。
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下 4 個核心技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🌐</div>
+                <h3>UrlFetchApp.fetch()</h3>
+                <p>從 GAS 呼叫外部 API，取得遠端伺服器的資料。這是串接任何第三方服務的基礎。</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📦</div>
+                <h3>JSON.parse() 解析</h3>
+                <p>解析 API 回傳的 JSON 資料，把字串轉換成 JavaScript 物件，方便逐層取值。</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🌦️</div>
+                <h3>中央氣象署 API 串接</h3>
+                <p>使用政府開放資料平台，取得天氣預報、溫度、降雨機率等即時天氣資訊。</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏰</div>
+                <h3>時間驅動觸發條件</h3>
+                <p>排程自動執行！設定每天早上固定時間自動推播天氣預報到 Line。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Vibe Coding 提示詞 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding — AI 提示詞</h2>
+        <p>用以下提示詞，讓 AI 幫你生成天氣預報推播的完整程式碼：</p>
+        <pre><code>請幫我用 Google Apps Script 製作一個「天氣預報 + Line Bot 每日自動推播」系統。
 
 功能需求：
 1. 串接中央氣象署開放資料 API（資料集 F-C0032-001，36小時天氣預報）
 2. 使用 UrlFetchApp.fetch() 呼叫 API，中文縣市名稱要用 encodeURIComponent 編碼
 3. 取得指定縣市（預設臺北市）的天氣預報資料
-4. 解析 JSON 回傳結果，提取以下欄位：
-   - Wx（天氣現象：晴、多雲、陰天等）
-   - PoP（降雨機率 %）
-   - MinT（最低溫 °C）
-   - MaxT（最高溫 °C）
-   - CI（舒適度）
-5. 格式化成好看的天氣報告，包含 emoji 圖示：
-   - 依天氣狀況顯示不同 emoji（晴天 ☀️、多雲 ⛅、雨天 🌧 等）
-   - 顯示溫度範圍和降雨機率
-   - 降雨機率 >= 50% 時加上「記得帶傘」提醒
-   - 高溫 >= 35°C 提醒防曬，低溫 <= 15°C 提醒保暖
-6. 透過 Line Bot Push API 推播天氣預報
-7. 同時將天氣資料記錄到試算表的「天氣記錄」工作表
+4. 解析 JSON 回傳結果，提取欄位：Wx（天氣現象）、PoP（降雨機率）、MinT（最低溫）、MaxT（最高溫）、CI（舒適度）
+5. 格式化成好看的天氣報告，包含天氣 emoji 圖示
+6. 降雨機率 >= 50% 時加上「記得帶傘」提醒
+7. 透過 Line Bot Push API 推播天氣預報
+8. 同時將天氣資料記錄到試算表的「天氣記錄」工作表
 
-API 設定用變數放最上面：
-- LINE_TOKEN（Line Bot Channel Access Token）
-- LINE_USER_ID（Line User ID）
-- CWA_API_KEY（中央氣象署 API 授權碼）
-- TARGET_CITY（查詢的縣市名稱）
-
-另外提供一個 testApiConnection() 測試函式，
-確認 API 連線是否正常。</code></pre>
-                </div>
-
-                <h3 style="margin-top: 25px;">📝 寫好提示詞的三個關鍵</h3>
-                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
-                        <h3>列出 API 欄位</h3>
-                        <p>告訴 AI 具體要哪些資料欄位（Wx、PoP、MinT、MaxT、CI），而不是只說「天氣資料」。</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 40px; margin-bottom: 10px;">🎯</div>
-                        <h3>說明條件判斷</h3>
-                        <p>明確描述什麼情況要做什麼事（降雨 ≥ 50% 提醒帶傘），讓 AI 生成正確的邏輯。</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 40px; margin-bottom: 10px;">🔑</div>
-                        <h3>說明變數配置</h3>
-                        <p>告訴 AI 哪些是敏感的 API Key 和 Token，要用變數放在最上面方便修改。</p>
-                    </div>
-                </div>
-
-                <div class="box info" style="margin-top: 20px;">
-                    <strong>💡 進階提示：</strong>如果你想要 AI 額外生成「設定排程自動執行」的教學步驟，可以在提示詞最後加上：「請告訴我如何設定時間驅動觸發條件，讓它每天早上 7~8 點自動執行。」
-                </div>
-            </div>
+API 設定用變數放最上面：LINE_TOKEN、LINE_USER_ID、CWA_API_KEY、TARGET_CITY
+另外提供 testApiConnection() 測試函式，確認 API 連線是否正常。</code></pre>
+        <div class="box info">
+            <strong>💡 Vibe Coding 小提醒：</strong><br>
+            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 3 個設定值就能使用！
         </div>
-
-        <!-- Slide 4: 成果預覽 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>👀 成果預覽</h2>
-                <p style="font-size: 22px; color: #2e7d32; margin-bottom: 20px;">完成後，你的 Line 每天早上會自動收到天氣預報：</p>
-                <div class="concept-grid">
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 50px; margin-bottom: 10px;">🌅</div>
-                        <h3>每天早上自動推播</h3>
-                        <p>設定早上 7~8 點之間，Line Bot 自動傳送天氣預報，不需手動操作。</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 50px; margin-bottom: 10px;">🌡️</div>
-                        <h3>完整天氣資訊</h3>
-                        <p>包含天氣狀況、最高最低溫度、降雨機率、舒適度等完整資訊。</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 50px; margin-bottom: 10px;">☂️</div>
-                        <h3>下雨天自動提醒帶傘</h3>
-                        <p>當降雨機率超過 50% 時，自動加上「記得帶傘」的貼心提醒。</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 50px; margin-bottom: 10px;">📊</div>
-                        <h3>36 小時天氣預報</h3>
-                        <p>一次顯示三個時段的天氣預報，掌握未來一天半的天氣變化。</p>
-                    </div>
-                </div>
-                <div class="box info" style="margin-top: 25px;">
-                    <strong>💡 這就是自動化的威力：</strong>設定一次，天天享用！從此不必再手動查天氣。
-                </div>
-            </div>
+        <div class="box warning">
+            <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>
+            AI 生成的程式碼<strong>可能與課程版本不同</strong>（例如變數宣告方式、函式名稱、URL 格式等都會有差異）。<br>
+            本課程所有步驟都是依照 <code>06_天氣預報_LineBot.gs</code> 這個檔案來教學。<br>
+            <strong>建議：直接使用課程提供的 .gs 檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
         </div>
+    </div>
+</div>
 
-        <!-- Slide 4: 步驟 1 — 申請氣象署 API -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 1 — 申請氣象署 API 授權碼</h2>
-                <h3>前往中央氣象署開放資料平台</h3>
-                <p>網址：<a href="https://opendata.cwa.gov.tw/" target="_blank" style="color: #1b5e20; font-weight: bold;">https://opendata.cwa.gov.tw/</a></p>
-                <!-- 截圖 42：中央氣象署開放資料平台首頁 -->
-                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
-                    <!-- 瀏覽器標題列 -->
-                    <div style="background: #e8eaed; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #d0d0d0;">
-                        <span style="width: 12px; height: 12px; background: #ff5f57; border-radius: 50%; display: inline-block;"></span>
-                        <span style="width: 12px; height: 12px; background: #febc2e; border-radius: 50%; display: inline-block;"></span>
-                        <span style="width: 12px; height: 12px; background: #28c840; border-radius: 50%; display: inline-block;"></span>
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 5px 14px; margin-left: 10px; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #28a745; font-size: 12px;">🔒</span> opendata.cwa.gov.tw
-                        </div>
+<!-- ======================== Slide 5: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📱 成果預覽</h2>
+        <p>完成後，你的 Line Bot 會每天自動推播天氣預報，效果如下：</p>
+        <div class="two-col">
+            <div class="col" style="text-align: center;">
+                <h3>Line Bot 推播畫面</h3>
+                <div style="background: #7494a7; border-radius: 16px; padding: 20px; max-width: 360px; margin: 0 auto; min-height: 420px;">
+                    <div style="background: #5b7f8f; border-radius: 10px; padding: 10px 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">G</div>
+                        <span style="color: white; font-weight: 600; font-size: 15px;">GAS 天氣機器人</span>
                     </div>
-                    <!-- 深藍色頂部 -->
-                    <div style="background: linear-gradient(135deg, #0d1b3e 0%, #1a2f5a 100%); padding: 20px 30px; display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 42px; height: 42px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">🌤</div>
-                            <div>
-                                <div style="color: #fff; font-size: 18px; font-weight: 700;">中央氣象署</div>
-                                <div style="color: #90caf9; font-size: 13px;">開放資料平台 Open Data</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">加入會員</span>
-                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">|</span>
-                            <span style="color: #bbdefb; font-size: 13px; cursor: pointer;">登入</span>
-                        </div>
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <span style="background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 12px;">2026年3月9日 上午 7:15</span>
                     </div>
-                    <!-- 搜尋框 -->
-                    <div style="background: #f5f7fa; padding: 20px 30px; text-align: center;">
-                        <div style="max-width: 500px; margin: 0 auto; display: flex; gap: 0;">
-                            <input type="text" placeholder="搜尋資料集..." disabled style="flex: 1; padding: 10px 16px; border: 2px solid #1a2f5a; border-right: none; border-radius: 8px 0 0 8px; font-size: 14px; background: #fff; color: #333;">
-                            <div style="background: #1a2f5a; color: #fff; padding: 10px 20px; border-radius: 0 8px 8px 0; font-size: 14px; font-weight: 600; display: flex; align-items: center;">🔍 搜尋</div>
-                        </div>
-                    </div>
-                    <!-- 資料分類按鈕 -->
-                    <div style="background: #fff; padding: 16px 30px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; border-top: 1px solid #e0e0e0;">
-                        <span style="padding: 6px 16px; background: #e3f2fd; color: #1565c0; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #90caf9;">🌦 氣象</span>
-                        <span style="padding: 6px 16px; background: #fce4ec; color: #c62828; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ef9a9a;">🌍 地震</span>
-                        <span style="padding: 6px 16px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #a5d6a7;">🌊 海象</span>
-                        <span style="padding: 6px 16px; background: #fff3e0; color: #e65100; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ffcc80;">🌡 氣候</span>
-                        <span style="padding: 6px 16px; background: #f3e5f5; color: #6a1b9a; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #ce93d8;">🌏 天文</span>
-                    </div>
-                </div>
-                <h3>申請步驟</h3>
-                <ol>
-                    <li><strong>註冊帳號</strong> — 點右上角「加入會員」，填寫基本資料</li>
-                    <li><strong>登入</strong> — 使用剛註冊的帳號登入</li>
-                    <li><strong>會員中心</strong> — 點右上角帳號名稱 → 「會員中心」</li>
-                    <li><strong>取得 API 授權碼</strong> — 在會員中心頁面找到「API 授權碼」，複製起來</li>
-                </ol>
-                <!-- 截圖 43：會員中心 API 授權碼頁面 -->
-                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
-                    <!-- 瀏覽器標題列 -->
-                    <div style="background: #e8eaed; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #d0d0d0;">
-                        <span style="width: 12px; height: 12px; background: #ff5f57; border-radius: 50%; display: inline-block;"></span>
-                        <span style="width: 12px; height: 12px; background: #febc2e; border-radius: 50%; display: inline-block;"></span>
-                        <span style="width: 12px; height: 12px; background: #28c840; border-radius: 50%; display: inline-block;"></span>
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 5px 14px; margin-left: 10px; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #28a745; font-size: 12px;">🔒</span> opendata.cwa.gov.tw/userSetting
-                        </div>
-                    </div>
-                    <!-- 頁面內容 -->
-                    <div style="display: flex; min-height: 200px;">
-                        <!-- 左側選單 -->
-                        <div style="width: 180px; background: #f5f7fa; border-right: 1px solid #e0e0e0; padding: 15px 0;">
-                            <div style="padding: 10px 20px; font-size: 14px; color: #666; cursor: pointer; border-left: 3px solid transparent;">👤 會員資料</div>
-                            <div style="padding: 10px 20px; font-size: 14px; color: #1565c0; font-weight: 700; cursor: pointer; background: #e3f2fd; border-left: 3px solid #1565c0;">🔑 API 授權碼</div>
-                            <div style="padding: 10px 20px; font-size: 14px; color: #666; cursor: pointer; border-left: 3px solid transparent;">📋 使用紀錄</div>
-                        </div>
-                        <!-- 右側內容 -->
-                        <div style="flex: 1; padding: 25px 30px; background: #fff;">
-                            <h3 style="font-size: 20px; color: #333; margin: 0 0 8px 0; border: none; padding: 0;">🔑 API 授權碼</h3>
-                            <p style="font-size: 13px; color: #888; margin: 0 0 18px 0;">您的 API 授權碼用於呼叫氣象資料 API，請妥善保管。</p>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="flex: 1; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 16px; font-family: 'Consolas', monospace; font-size: 15px; color: #333; letter-spacing: 0.5px;">CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</div>
-                                <button disabled style="background: #1565c0; color: #fff; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;">📋 複製</button>
-                            </div>
-                            <div style="margin-top: 14px; padding: 10px 14px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #ff9800;">
-                                <span style="font-size: 13px; color: #e65100;">⚠️ 請勿將授權碼公開分享或上傳至公開的程式碼倉庫。</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="box info">
-                    <strong>💡 好消息：</strong>API 完全免費！每天有 10,000 次呼叫額度，個人使用綽綽有餘。
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 5: 步驟 2-4 — 建立試算表 + 貼程式碼 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 2-4 — 建立試算表 + 貼程式碼</h2>
-                <h3>步驟 2：建立新試算表</h3>
-                <p>Google 試算表 → 建立新的試算表 → 命名為「<strong>天氣預報</strong>」</p>
-                <h3>步驟 3：開啟 Apps Script</h3>
-                <p>上方選單 → <strong>擴充功能</strong> → <strong>Apps Script</strong></p>
-                <h3>步驟 4：貼上程式碼</h3>
-                <p>清除預設程式碼，貼上 <code>GAS程式碼/06_天氣預報_LineBot.gs</code> 的完整內容。</p>
-                <h3>⚠️ 修改三個設定（最重要！）</h3>
-<pre><code>var LINE_TOKEN = '你的 Channel Access Token';
-var LINE_USER_ID = '你的 User ID';
-var CWA_API_KEY = '你的中央氣象署 API 授權碼';</code></pre>
-                <!-- 截圖 44：程式碼設定位置 -->
-                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
-                    <!-- GAS 編輯器頂部 -->
-                    <div style="background: #3c4043; padding: 8px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #555;">
-                        <span style="font-size: 14px;">📝</span>
-                        <span style="color: #e8eaed; font-size: 14px; font-weight: 600;">Apps Script — 天氣預報</span>
-                        <span style="color: #9aa0a6; font-size: 12px; margin-left: auto;">程式碼.gs</span>
-                    </div>
-                    <!-- 程式碼區域 -->
-                    <div style="background: #282c34; padding: 16px 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; line-height: 2;">
-                        <div style="display: flex; padding: 0 16px; color: #636d83;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">1</span>
-                            <span style="color: #7f848e;">// ========== 設定區 ==========</span>
-                        </div>
-                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">2</span>
-                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_TOKEN</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的Token'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
-                        </div>
-                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">3</span>
-                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_USER_ID</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的UserID'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
-                        </div>
-                        <div style="display: flex; padding: 2px 16px; background: rgba(255, 235, 59, 0.12); border-left: 3px solid #fdd835;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">4</span>
-                            <span><span style="color: #c678dd;">var</span> <span style="color: #e06c75;">CWA_API_KEY</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的API授權碼'</span><span style="color: #abb2bf;">;</span> <span style="color: #7f848e;">// &lt;-- 改這裡</span></span>
-                        </div>
-                        <div style="display: flex; padding: 0 16px; color: #636d83;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">5</span>
-                            <span style="color: #c678dd;">var</span> <span style="color: #e06c75;"> CITY_NAME</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;"> '臺北市'</span><span style="color: #abb2bf;">;</span>
-                        </div>
-                        <div style="display: flex; padding: 0 16px; color: #636d83;">
-                            <span style="width: 40px; text-align: right; padding-right: 16px; user-select: none; color: #636d83; border-right: 1px solid #3e4452; margin-right: 16px;">6</span>
-                            <span>&nbsp;</span>
-                        </div>
-                    </div>
-                    <div style="text-align: center; padding: 6px; background: #1e2127; color: #fdd835; font-size: 12px; font-weight: 600;">⬆️ 黃色高亮的 3 行是你需要修改的設定值</div>
-                </div>
-                <div class="box warning">
-                    <strong>⚠️ 三個都要改：</strong><br>
-                    1. <code>LINE_TOKEN</code> — 從 Line Developers 取得<br>
-                    2. <code>LINE_USER_ID</code> — 從 Line Developers 取得<br>
-                    3. <code>CWA_API_KEY</code> — 從氣象署會員中心取得
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 6: 步驟 5 — 修改查詢縣市 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 5 — 修改查詢縣市</h2>
-                <p>程式碼預設查詢 <strong>臺北市</strong>，可以改成你所在的縣市：</p>
-<pre><code>var CITY_NAME = '臺北市';  // 改成你要查詢的縣市</code></pre>
-                <div class="box warning">
-                    <strong>⚠️ 超重要！氣象署用「臺」不是「台」！</strong><br>
-                    這是最常見的錯誤，打錯字 API 會查不到資料！
-                </div>
-                <h3>正確 vs 錯誤寫法對照</h3>
-                <table>
-                    <tr><th>✅ 正確寫法</th><th>❌ 錯誤寫法</th></tr>
-                    <tr><td>臺北市</td><td>台北市</td></tr>
-                    <tr><td>臺中市</td><td>台中市</td></tr>
-                    <tr><td>臺南市</td><td>台南市</td></tr>
-                    <tr><td>臺東縣</td><td>台東縣</td></tr>
-                </table>
-                <div class="box info">
-                    <strong>💡 其他縣市正常使用：</strong>高雄市、新北市、桃園市、新竹市、新竹縣、苗栗縣、彰化縣、南投縣、雲林縣、嘉義市、嘉義縣、屏東縣、宜蘭縣、花蓮縣、澎湖縣、金門縣、連江縣等，都是直接打就好。
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 7: API 資料結構解說 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🔍 API 資料結構解說</h2>
-                <h3>使用資料集：F-C0032-001（一般天氣預報 — 36 小時天氣預報）</h3>
-                <p>API 回傳的 JSON 資料包含以下天氣要素（weatherElement）：</p>
-                <table>
-                    <tr><th>代碼</th><th>名稱</th><th>說明</th><th>範例</th></tr>
-                    <tr><td><code>Wx</code></td><td>天氣現象</td><td>晴、多雲、陰天、雨天等</td><td>多雲時晴</td></tr>
-                    <tr><td><code>PoP</code></td><td>降雨機率</td><td>百分比（%）</td><td>30%</td></tr>
-                    <tr><td><code>MinT</code></td><td>最低溫度</td><td>攝氏溫度（°C）</td><td>18°C</td></tr>
-                    <tr><td><code>MaxT</code></td><td>最高溫度</td><td>攝氏溫度（°C）</td><td>25°C</td></tr>
-                    <tr><td><code>CI</code></td><td>舒適度</td><td>文字描述</td><td>舒適</td></tr>
-                </table>
-                <h3>API URL 組裝方式</h3>
-<pre><code>var DATASET_ID = 'F-C0032-001';
-var url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/' + DATASET_ID;
-url += '?Authorization=' + CWA_API_KEY;
-url += '&locationName=' + encodeURIComponent(cityName);</code></pre>
-                <div class="box info">
-                    <strong>💡 encodeURIComponent()</strong> 是把中文縣市名稱轉成 URL 安全的編碼格式，例如「臺北市」會被編碼成 <code>%E8%87%BA%E5%8C%97%E5%B8%82</code>。
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 8: UrlFetchApp 解說 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🌐 UrlFetchApp 解說</h2>
-                <p style="font-size: 22px; color: #2e7d32;">GAS 內建的 HTTP 請求工具，用來呼叫外部 API</p>
-                <h3>基本用法</h3>
-<pre><code>// 1. 呼叫 API
-var response = UrlFetchApp.fetch(url, {
-  muteHttpExceptions: true   // 錯誤時不中斷程式
-});
-
-// 2. 檢查回應狀態碼
-var code = response.getResponseCode();
-// 200 = 成功, 401 = 授權失敗, 404 = 找不到
-
-// 3. 解析 JSON 回應
-var json = JSON.parse(response.getContentText());
-
-// 4. 取出天氣資料
-var locations = json.records.location;
-var weatherElements = locations[0].weatherElement;</code></pre>
-                <div class="box info">
-                    <strong>💡 muteHttpExceptions: true</strong> 的作用：<br>
-                    預設情況下，如果 API 回傳錯誤（例如 401、404），GAS 會直接報錯中斷。加上這個設定後，程式不會中斷，你可以自己用 <code>getResponseCode()</code> 來判斷和處理錯誤。
-                </div>
-                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📡 fetch()</h3>
-                        <p>發送 HTTP 請求到指定 URL</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📊 getResponseCode()</h3>
-                        <p>取得回應狀態碼（200 = 成功）</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📝 getContentText()</h3>
-                        <p>取得回應的文字內容</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 9: 步驟 7 — 測試 API -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 7 — 測試 API 連線 testApiConnection()</h2>
-                <h3>執行方式</h3>
-                <ol>
-                    <li>在函式下拉選單中選擇 <code>testApiConnection</code></li>
-                    <li>點擊 <strong>▶ 執行</strong></li>
-                    <li>第一次執行需要授權（允許存取外部服務）</li>
-                    <li>查看 Line 是否收到測試訊息</li>
-                </ol>
-                <!-- 截圖 45：API 測試成功訊息 -->
-                <div style="margin: 20px auto; width: 280px; background: #7494c0; border-radius: 24px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: #fff; font-size: 11px; font-weight: 600;">
-                        <span>9:41</span>
-                        <span>📶 🔋</span>
-                    </div>
-                    <div style="background: #7494c0; padding: 6px 10px; display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #fff; font-size: 13px;">◀</span>
-                        <span style="color: #fff; font-size: 14px; font-weight: 700;">Line Bot</span>
-                    </div>
-                    <div style="background: #7494c0; padding: 10px 8px; min-height: 100px;">
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
-                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 220px; font-size: 13px; line-height: 1.8; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                ✅ <strong>氣象 API 連線測試成功！</strong><br>
-                                <br>
-                                已成功取得 <strong>臺北市</strong> 的天氣資料。
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="box success">
-                    <strong>✅ 成功的話：</strong>Line 會收到一則訊息，顯示 API 連線成功以及取得的縣市天氣資料。
-                </div>
-                <div class="box warning">
-                    <strong>⚠️ 如果失敗，請依序檢查：</strong><br>
-                    1. <strong>檢查 API 授權碼</strong> — 是否正確複製？有沒有多餘空格？<br>
-                    2. <strong>檢查「臺」字</strong> — 是「臺北市」不是「台北市」！<br>
-                    3. <strong>看執行記錄的錯誤訊息</strong> — 左側選單 → 執行項目，查看詳細錯誤<br>
-                    4. <strong>檢查 LINE_TOKEN 和 LINE_USER_ID</strong> — 是否正確填入？
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 10: 步驟 8 — 推播天氣 sendWeatherReport() -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 8 — 推播天氣 sendWeatherReport()</h2>
-                <h3>執行方式</h3>
-                <ol>
-                    <li>在函式下拉選單中選擇 <code>sendWeatherReport</code></li>
-                    <li>點擊 <strong>▶ 執行</strong></li>
-                    <li>查看 Line 收到的完整天氣預報</li>
-                </ol>
-                <!-- 截圖 46：完整天氣預報訊息 -->
-                <div style="margin: 20px auto; width: 280px; background: #7494c0; border-radius: 24px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: #fff; font-size: 11px; font-weight: 600;">
-                        <span>9:41</span>
-                        <span>📶 🔋</span>
-                    </div>
-                    <div style="background: #7494c0; padding: 6px 10px; display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #fff; font-size: 13px;">◀</span>
-                        <span style="color: #fff; font-size: 14px; font-weight: 700;">Line Bot</span>
-                    </div>
-                    <div style="background: #7494c0; padding: 10px 8px;">
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
-                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 230px; font-size: 12.5px; line-height: 1.9; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: flex-start; margin-bottom: 10px;">
+                        <div style="background: white; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 280px;">
+                            <div style="font-size: 13px; color: #333; line-height: 1.8;">
                                 🌤 <strong>天氣預報 — 臺北市</strong><br>
                                 <span style="color: #999;">━━━━━━━━━━━━━━</span><br>
-                                📅 2026/3/3 上午 8:00<br>
-                                <br>
-                                <span style="color: #1565c0; font-weight: 600;">🕐 03-03 06:00 ~ 18:00</span><br>
+                                📅 2026/3/9 上午7:15:00<br><br>
+                                <span style="color: #1565c0; font-weight: 600;">🕐 03-09 06:00 ~ 18:00</span><br>
                                 &nbsp;&nbsp;&nbsp;☀️ 晴時多雲<br>
-                                &nbsp;&nbsp;&nbsp;🌡 18°C ~ 26°C<br>
+                                &nbsp;&nbsp;&nbsp;🌡 19°C ~ 27°C<br>
                                 &nbsp;&nbsp;&nbsp;🌧 降雨機率：10%<br>
-                                &nbsp;&nbsp;&nbsp;😊 舒適<br>
-                                <br>
-                                <span style="color: #1565c0; font-weight: 600;">🕐 03-03 18:00 ~ 06:00</span><br>
+                                &nbsp;&nbsp;&nbsp;😊 舒適<br><br>
+                                <span style="color: #1565c0; font-weight: 600;">🕐 03-09 18:00 ~ 06:00</span><br>
                                 &nbsp;&nbsp;&nbsp;⛅ 多雲<br>
-                                &nbsp;&nbsp;&nbsp;🌡 16°C ~ 22°C<br>
-                                &nbsp;&nbsp;&nbsp;🌧 降雨機率：30%<br>
+                                &nbsp;&nbsp;&nbsp;🌡 17°C ~ 22°C<br>
+                                &nbsp;&nbsp;&nbsp;🌧 降雨機率：20%<br>
                                 &nbsp;&nbsp;&nbsp;😊 舒適
                             </div>
                         </div>
                     </div>
                 </div>
-                <h3>天氣預報格式範例</h3>
-<pre><code>🌤 天氣預報 — 臺北市
-━━━━━━━━━━━━━━
-📅 2026/3/3 下午2:30:00
+            </div>
+            <div class="col">
+                <h3>功能特色</h3>
+                <ul>
+                    <li><strong>36 小時天氣預報</strong> — 一次顯示 3 個時段的天氣預報</li>
+                    <li><strong>完整資訊</strong> — 天氣狀況、溫度、降雨機率、舒適度</li>
+                    <li><strong>智慧提醒</strong> — 降雨機率高提醒帶傘、高溫提醒防曬</li>
+                    <li><strong>自動排程</strong> — 每天早上自動推播，不需手動操作</li>
+                    <li><strong>天氣記錄</strong> — 自動將天氣資料寫入試算表保存</li>
+                </ul>
+                <div class="box success">
+                    <strong>🎁 實用場景：</strong><br>
+                    每天早上自動收到天氣預報，出門前知道要不要帶傘、穿什麼衣服，完全不用手動查天氣！
+                </div>
+                <h3>完成後你會有</h3>
+                <ul>
+                    <li>一個串接氣象署 API 的 GAS 專案</li>
+                    <li>一個每天自動推播天氣的 Line Bot</li>
+                    <li>一個「天氣記錄」試算表（自動產生）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
 
-🕐 03-03 06:00 ~ 18:00
-   ⛅ 多雲時晴
-   🌡 18°C ~ 25°C
-   🌧 降雨機率：20%
-   😊 舒適
+<!-- ======================== Slide 6: 步驟1 申請氣象署 API ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 申請氣象署 API 授權碼</h2>
+        <p>首先，我們需要到中央氣象署的開放資料平台申請一個免費的 API 授權碼。</p>
 
-🕐 03-03 18:00 ~ 06:00
-   ☁️ 多雲
-   🌡 16°C ~ 21°C
-   🌧 降雨機率：30%
-   😊 舒適
+        <h3>Step 1-1：開啟氣象署開放資料平台</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開瀏覽器，在網址列輸入 <code>opendata.cwa.gov.tw</code> 按 Enter<br>
+            <span class="result">👀 結果：</span>你會看到中央氣象署開放資料平台的首頁，上方有深藍色的導覽列
+        </div>
 
-🕐 03-04 06:00 ~ 18:00
-   🌧 短暫雨
-   🌡 15°C ~ 20°C
-   🌧 降雨機率：70%
-   😊 舒適偏涼
+        <h3>Step 1-2：註冊帳號</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>頁面<strong>右上角</strong><br>
+            <span class="action">👆 動作：</span>點擊「<code>加入會員</code>」，填寫基本資料（帳號、密碼、Email）<br>
+            <span class="result">👀 結果：</span>註冊完成後，到你的 Email 收取驗證信，點擊驗證連結完成啟用
+        </div>
 
-☂️ 提醒：降雨機率較高，記得帶傘！</code></pre>
+        <h3>Step 1-3：登入並取得 API 授權碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用剛才註冊的帳號<strong>登入</strong><br>
+            <span class="action">👆 動作：</span>登入後，點擊右上角帳號名稱 → 選擇「<code>會員中心</code>」<br>
+            <span class="action">👆 動作：</span>在左側選單中找到「<code>🔑 API 授權碼</code>」，點擊它<br>
+            <span class="result">👀 結果：</span>你會看到一串類似 <code>CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</code> 的授權碼
+        </div>
+
+        <h3>Step 1-4：複製授權碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊授權碼旁邊的「<code>📋 複製</code>」按鈕（或手動選取後 <code>Ctrl+C</code>）<br>
+            <span class="result">👀 結果：</span>授權碼已複製到剪貼簿，等一下會貼到程式碼中
+        </div>
+
+        <div class="box info">
+            <strong>💡 好消息：</strong>API 完全免費！每天有 10,000 次呼叫額度，個人使用綽綽有餘。
+        </div>
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>API 授權碼是你的專屬金鑰，請勿公開分享或上傳到公開的程式碼倉庫（如 GitHub）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟2 建立 GAS 專案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 建立 GAS 專案</h2>
+        <p>跟之前的實作一樣，我們從新的試算表開始建立 Apps Script 專案。</p>
+
+        <h3>Step 2-1：建立新的 Google 試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器網址列輸入 <code>sheets.new</code> 然後按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，瀏覽器會自動建立並開啟一個全新的 Google 試算表<br>
+            <span class="result">👀 結果：</span>你會看到一個空白的試算表，左上角顯示「未命名的試算表」
+        </div>
+
+        <h3>Step 2-2：替試算表命名</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>試算表畫面的<strong>左上角</strong>，有一行小字寫著「未命名的試算表」<br>
+            <span class="action">👆 動作：</span>點擊「未命名的試算表」那個文字，它會變成可編輯的輸入框<br>
+            <span class="action">👆 動作：</span>輸入 <code>天氣預報</code>，然後按 Enter 或點擊其他地方<br>
+            <span class="result">👀 結果：</span>左上角的名稱會變成「天氣預報」
+        </div>
+
+        <h3>Step 2-3：開啟 Apps Script 編輯器</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>在試算表上方的選單列（檔案、編輯、檢視... 那一排），找到<strong>最右邊的「擴充功能」</strong><br>
+            <span class="action">👆 動作：</span>點擊「擴充功能」<br>
+            <span class="result">👀 結果：</span>會展開一個下拉選單
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在下拉選單中找到 <code>Apps Script</code>，點擊它<br>
+            <span class="result">⏱️ 等待：</span>瀏覽器會<strong>開啟一個全新的分頁</strong>，等待 3~5 秒直到編輯器完全載入<br>
+            <span class="result">👀 結果：</span>你會看到 Apps Script 編輯器：左邊是檔案列表（有一個「程式碼.gs」）、右邊是程式碼編輯區、上方有一個 <strong>▶ 執行</strong> 按鈕
+        </div>
+
+        <div class="box info">
+            <strong>💡 確認你看到的畫面：</strong><br>
+            編輯區裡面應該有一段預設程式碼：<code>function myFunction() { }</code>。這段等一下會全部刪除，替換成我們的天氣預報程式碼。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟3 貼上程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 貼上程式碼</h2>
+        <p>現在要把課程提供的完整程式碼貼到 Apps Script 編輯器中。</p>
+
+        <h3>Step 3-1：選取並刪除預設程式碼</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>右半邊程式碼編輯區</strong><br>
+            <span class="action">👆 動作：</span>在編輯區裡面<strong>按一下</strong>（讓游標在編輯區裡），然後按 <code>Ctrl+A</code>（全選）<br>
+            <span class="result">👀 結果：</span>所有預設程式碼會被反白選取<br>
+            <span class="action">👆 動作：</span>按 <code>Delete</code> 鍵或 <code>Backspace</code> 鍵，刪除所有內容<br>
+            <span class="result">👀 結果：</span>編輯區變成完全空白
+        </div>
+
+        <h3>Step 3-2：開啟課程程式碼檔案</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到你下載的 <code>06_天氣預報_LineBot.gs</code> 檔案（在你的下載資料夾中）<br>
+            <span class="action">👆 動作：</span>用<strong>記事本</strong>或任何文字編輯器開啟這個檔案<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選檔案中的所有文字），再按 <code>Ctrl+C</code>（複製）
+        </div>
+
+        <h3>Step 3-3：貼上程式碼到 Apps Script</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切回 Apps Script 編輯器的分頁<br>
+            <span class="action">👆 動作：</span>在空白的編輯區按一下，然後按 <code>Ctrl+V</code>（貼上）<br>
+            <span class="result">⏱️ 等待：</span>約 1~2 秒，程式碼會完整出現在編輯區中<br>
+            <span class="result">👀 結果：</span>你應該會看到程式碼的最前面是一段註解（以 <code>/**</code> 開頭），往下捲動可以看到多個函式
+        </div>
+
+        <h3>Step 3-4：儲存程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>上方的檔案名稱旁邊如果有一個橘色圓點，它會消失，表示已儲存成功
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：不要只貼一部分！</strong><br>
+            這個檔案約 365 行，包含 5 大區塊：設定區、取得天氣資料、解析天氣資料、格式化報告、推播與記錄。請確認<strong>全部都有貼進去</strong>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟4 修改設定值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 修改設定值</h2>
+        <p>程式碼最上方有 3 個設定值需要替換為你自己的。這是<strong>唯一需要手動修改</strong>的地方。</p>
+
+        <h3>找到設定區（程式碼第 31~39 行）</h3>
+        <pre><code>// ========== Line Bot 設定 ==========
+var LINE_TOKEN = '在此貼上你的 Channel Access Token';
+var LINE_USER_ID = '在此貼上你的 User ID';
+
+// ========== 氣象 API 設定 ==========
+var CWA_API_KEY = '在此貼上你的中央氣象署 API 授權碼';
+
+// 要查詢的縣市（可以修改）
+var TARGET_CITY = '臺北市';</code></pre>
+
+        <h3>逐一替換 3 個設定值</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>設定項目</th>
+                    <th>要替換的中文提示</th>
+                    <th>替換成什麼</th>
+                    <th>去哪裡找</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>LINE_TOKEN</code></td>
+                    <td><code>在此貼上你的 Channel Access Token</code></td>
+                    <td>你的 Channel Access Token（很長一串）</td>
+                    <td>LINE Developers → 你的 Bot → Messaging API 頁籤 → 最下方 Channel access token</td>
+                </tr>
+                <tr>
+                    <td><code>LINE_USER_ID</code></td>
+                    <td><code>在此貼上你的 User ID</code></td>
+                    <td>你的 User ID（U 開頭的字串）</td>
+                    <td>LINE Developers → 你的 Bot → Basic settings 頁籤 → Your user ID</td>
+                </tr>
+                <tr>
+                    <td><code>CWA_API_KEY</code></td>
+                    <td><code>在此貼上你的中央氣象署 API 授權碼</code></td>
+                    <td>步驟 1 複製的 API 授權碼</td>
+                    <td>氣象署會員中心 → API 授權碼</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>替換方式（以 CWA_API_KEY 為例）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在程式碼中找到 <code>'在此貼上你的中央氣象署 API 授權碼'</code>，用滑鼠<strong>只選取單引號中間的中文字</strong>（不要選到單引號本身！）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+V</code> 貼上你的 API 授權碼<br>
+            <span class="result">👀 結果：</span>看起來會像 <code>var CWA_API_KEY = 'CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX';</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 三個常見錯誤，請務必檢查：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>多餘的空格</strong> — Token、ID、API Key 的前後<strong>不要有空格</strong></li>
+                <li><strong>單引號被刪掉</strong> — 三個值都要保持用<strong>單引號 <code>' '</code></strong> 包起來</li>
+                <li><strong>分號被刪掉</strong> — 每行結尾的 <code>;</code> 不要刪掉</li>
+            </ul>
+        </div>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>3 個值都替換完後，按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟5 修改查詢縣市 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 修改查詢縣市（選用）</h2>
+        <p>程式碼預設查詢 <strong>臺北市</strong>，你可以改成你所在的縣市。如果你就在臺北，可以跳過這步。</p>
+
+        <h3>Step 5-1：找到縣市設定</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>程式碼第 39 行<br>
+            <span class="action">👆 動作：</span>把 <code>'臺北市'</code> 改成你想查詢的縣市名稱<br>
+            <span class="result">👀 結果：</span>例如 <code>var TARGET_CITY = '高雄市';</code>
+        </div>
+        <pre><code>var TARGET_CITY = '臺北市';  // 改成你要查詢的縣市</code></pre>
+
+        <div class="box warning">
+            <strong>⚠️ 超重要！氣象署用「臺」不是「台」！</strong><br>
+            這是最常見的錯誤，打錯字 API 會查不到資料，直接回傳空結果！
+        </div>
+
+        <h3>正確 vs 錯誤寫法對照</h3>
+        <div class="two-col">
+            <div class="col">
+                <table>
+                    <thead><tr><th>✅ 正確寫法</th><th>❌ 錯誤寫法</th></tr></thead>
+                    <tbody>
+                        <tr><td>臺北市</td><td>台北市</td></tr>
+                        <tr><td>臺中市</td><td>台中市</td></tr>
+                        <tr><td>臺南市</td><td>台南市</td></tr>
+                        <tr><td>臺東縣</td><td>台東縣</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col">
+                <h3>其他縣市直接輸入</h3>
+                <p>以下縣市名稱直接打就好，不需要特別注意：</p>
+                <p style="font-size: 16px;">
+                    新北市、桃園市、高雄市、新竹市、新竹縣、苗栗縣、彰化縣、南投縣、雲林縣、嘉義市、嘉義縣、屏東縣、宜蘭縣、花蓮縣、澎湖縣、金門縣、連江縣、基隆市
+                </p>
             </div>
         </div>
 
-        <!-- Slide 11: 天氣 Emoji 對照 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🎨 天氣 Emoji 對照表</h2>
-                <p>程式會根據天氣現象自動選擇對應的 Emoji：</p>
-                <h3>getWeatherEmoji() 函式邏輯</h3>
-                <table>
-                    <tr><th>天氣關鍵字</th><th>Emoji</th><th>說明</th></tr>
-                    <tr><td>晴天</td><td style="font-size: 28px;">☀️</td><td>天氣描述包含「晴天」</td></tr>
-                    <tr><td>晴時多雲</td><td style="font-size: 28px;">🌤</td><td>天氣描述包含「晴時多雲」或「晴」</td></tr>
-                    <tr><td>多雲</td><td style="font-size: 28px;">⛅</td><td>天氣描述包含「多雲」</td></tr>
-                    <tr><td>陰天</td><td style="font-size: 28px;">☁️</td><td>天氣描述包含「陰」</td></tr>
-                    <tr><td>雨天</td><td style="font-size: 28px;">🌧</td><td>天氣描述包含「雨」</td></tr>
-                    <tr><td>雷雨</td><td style="font-size: 28px;">⛈</td><td>天氣描述包含「雷」</td></tr>
-                    <tr><td>雪</td><td style="font-size: 28px;">🌨</td><td>天氣描述包含「雪」</td></tr>
-                    <tr><td>霧</td><td style="font-size: 28px;">🌫</td><td>天氣描述包含「霧」</td></tr>
-                </table>
-<pre><code>function getWeatherEmoji(description) {
-  if (description.indexOf('雷') !== -1) return '⛈';
-  if (description.indexOf('雪') !== -1) return '🌨';
-  if (description.indexOf('雨') !== -1) return '🌧';
-  if (description.indexOf('陰') !== -1) return '☁️';
-  if (description.indexOf('多雲') !== -1) return '⛅';
-  if (description.indexOf('晴') !== -1) return '🌤';
-  if (description.indexOf('霧') !== -1) return '🌫';
-  return '🌤';  // 預設
+        <div class="box info">
+            <strong>💡 小技巧：</strong>如果你不確定自己打對了沒有，可以直接從程式碼最上方的註解中複製「臺」這個字來用。
+        </div>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>修改完後，按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 程式碼解析1 取得天氣資料 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 1 — 取得天氣資料</h2>
+        <p><strong>這段的目的：</strong>組合 API 網址，呼叫中央氣象署的 API，取回指定縣市的天氣預報原始資料。</p>
+
+        <h3>📁 getWeatherData(cityName)</h3>
+        <pre><code>function getWeatherData(cityName) {
+  // 組合 API 網址
+  var url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/' + DATASET_ID;
+  url += '?Authorization=' + CWA_API_KEY;
+  url += '&locationName=' + encodeURIComponent(cityName);
+
+  try {
+    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    var code = response.getResponseCode();
+
+    if (code !== 200) {
+      Logger.log('API 呼叫失敗，狀態碼：' + code);
+      return null;
+    }
+
+    var json = JSON.parse(response.getContentText());
+
+    if (json.success !== 'true') {
+      Logger.log('API 回應失敗：' + JSON.stringify(json));
+      return null;
+    }
+
+    var locations = json.records.location;
+    if (!locations || locations.length === 0) {
+      Logger.log('找不到 ' + cityName + ' 的資料');
+      return null;
+    }
+
+    return locations[0];
+  } catch (error) {
+    Logger.log('getWeatherData 錯誤：' + error.toString());
+    return null;
+  }
 }</code></pre>
-                <div class="box info">
-                    <strong>💡 判斷順序很重要：</strong>「雷雨」要先判斷「雷」，因為它也包含「雨」字；「晴時多雲」要先判斷「多雲」再判斷「晴」。
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>DATASET_ID = 'F-C0032-001'</code> — 氣象署的資料集代碼，代表「36小時天氣預報」</li>
+            <li><code>encodeURIComponent(cityName)</code> — 把中文縣市名稱轉成 URL 安全的編碼格式（例如「臺北市」→ <code>%E8%87%BA%E5%8C%97%E5%B8%82</code>）</li>
+            <li><code>UrlFetchApp.fetch(url, options)</code> — GAS 內建的 HTTP 請求工具，用來呼叫外部 API</li>
+            <li><code>muteHttpExceptions: true</code> — 即使 API 回傳錯誤（如 401、404），程式也不會中斷</li>
+            <li><code>getResponseCode()</code> — 取得回應狀態碼，<code>200</code> 表示成功</li>
+            <li><code>JSON.parse()</code> — 把 API 回傳的 JSON 字串轉成 JavaScript 物件</li>
+            <li><code>json.records.location[0]</code> — 層層取值，取出指定縣市的天氣資料</li>
+            <li><code>try...catch</code> — 錯誤處理，如果過程中發生任何錯誤，會記錄到 Logger 而不會讓程式崩潰</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解析2 解析天氣資料 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 2 — 解析天氣資料</h2>
+        <p><strong>這段的目的：</strong>從 API 回傳的原始資料中，提取出我們需要的天氣元素（天氣狀況、溫度、降雨機率等）。</p>
+
+        <h3>📁 parseWeatherData(locationData)</h3>
+        <pre><code>function parseWeatherData(locationData) {
+  var elements = locationData.weatherElement;
+  var forecasts = [];
+
+  // 找出各個天氣元素
+  var wxData = findElement(elements, 'Wx');      // 天氣現象
+  var popData = findElement(elements, 'PoP');     // 降雨機率
+  var minTData = findElement(elements, 'MinT');   // 最低溫
+  var maxTData = findElement(elements, 'MaxT');   // 最高溫
+  var ciData = findElement(elements, 'CI');       // 舒適度
+
+  var timeCount = wxData ? wxData.time.length : 0;
+
+  for (var i = 0; i &lt; timeCount; i++) {
+    var forecast = {
+      startTime: wxData.time[i].startTime,
+      endTime: wxData.time[i].endTime,
+      weather: wxData ? wxData.time[i].parameter.parameterName : '未知',
+      rainProb: popData ? popData.time[i].parameter.parameterName : '未知',
+      minTemp: minTData ? minTData.time[i].parameter.parameterName : '未知',
+      maxTemp: maxTData ? maxTData.time[i].parameter.parameterName : '未知',
+      comfort: ciData ? ciData.time[i].parameter.parameterName : '未知'
+    };
+    forecasts.push(forecast);
+  }
+
+  return forecasts;
+}</code></pre>
+
+        <h3>API 回傳的 5 個天氣元素</h3>
+        <table>
+            <thead><tr><th>代碼</th><th>名稱</th><th>說明</th><th>範例值</th></tr></thead>
+            <tbody>
+                <tr><td><code>Wx</code></td><td>天氣現象</td><td>天氣狀況的文字描述</td><td>多雲時晴</td></tr>
+                <tr><td><code>PoP</code></td><td>降雨機率</td><td>百分比數值</td><td>30</td></tr>
+                <tr><td><code>MinT</code></td><td>最低溫度</td><td>攝氏溫度</td><td>18</td></tr>
+                <tr><td><code>MaxT</code></td><td>最高溫度</td><td>攝氏溫度</td><td>25</td></tr>
+                <tr><td><code>CI</code></td><td>舒適度</td><td>體感描述</td><td>舒適</td></tr>
+            </tbody>
+        </table>
+
+        <h3>📁 findElement() 輔助函式</h3>
+        <pre><code>function findElement(elements, elementName) {
+  for (var i = 0; i &lt; elements.length; i++) {
+    if (elements[i].elementName === elementName) {
+      return elements[i];
+    }
+  }
+  return null;
+}</code></pre>
+        <div class="box info">
+            <strong>💡 為什麼需要 findElement()？</strong><br>
+            API 回傳的 <code>weatherElement</code> 是一個陣列，裡面有 5 個元素，但順序不一定固定。所以我們用 <code>findElement()</code> 透過名稱來找到正確的元素，而不是靠索引位置。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 程式碼解析3 格式化天氣報告 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 3 — 格式化天氣報告</h2>
+        <p><strong>這段的目的：</strong>把天氣資料組合成一段好看、好讀的文字訊息，準備推送到 Line。</p>
+
+        <h3>📁 formatWeatherReport(cityName, forecasts)</h3>
+        <pre><code>function formatWeatherReport(cityName, forecasts) {
+  var now = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+
+  var report = '🌤 天氣預報 — ' + cityName + '\n';
+  report += '━━━━━━━━━━━━━━\n';
+  report += '📅 ' + now + '\n\n';
+
+  for (var i = 0; i &lt; forecasts.length; i++) {
+    var f = forecasts[i];
+    var startTime = f.startTime.split(' ')[1].substring(0, 5);
+    var endTime = f.endTime.split(' ')[1].substring(0, 5);
+    var startDate = f.startTime.split(' ')[0].substring(5);
+    var weatherEmoji = getWeatherEmoji(f.weather);
+
+    report += '🕐 ' + startDate + ' ' + startTime + ' ~ ' + endTime + '\n';
+    report += '   ' + weatherEmoji + ' ' + f.weather + '\n';
+    report += '   🌡 ' + f.minTemp + '°C ~ ' + f.maxTemp + '°C\n';
+    report += '   🌧 降雨機率：' + f.rainProb + '%\n';
+    report += '   😊 ' + f.comfort + '\n\n';
+  }
+
+  // 智慧提醒
+  var firstForecast = forecasts[0];
+  var rainProb = parseInt(firstForecast.rainProb);
+  if (rainProb >= 50) {
+    report += '☂️ 提醒：降雨機率較高，記得帶傘！\n';
+  }
+  var maxTemp = parseInt(firstForecast.maxTemp);
+  if (maxTemp >= 35) {
+    report += '🥵 提醒：高溫警報，注意防曬補水！\n';
+  } else if (parseInt(firstForecast.minTemp) &lt;= 15) {
+    report += '🧥 提醒：天氣較涼，注意保暖！\n';
+  }
+
+  return report;
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })</code> — 取得台灣時區的當前時間字串</li>
+            <li><code>f.startTime.split(' ')[1].substring(0, 5)</code> — 從「2026-03-09 06:00:00」中取出「06:00」</li>
+            <li><code>parseInt()</code> — 把字串轉成數字，才能用 <code>>=</code> 做比較判斷</li>
+            <li><strong>智慧提醒邏輯：</strong>降雨 >= 50% 提醒帶傘、高溫 >= 35°C 提醒防曬、低溫 <= 15°C 提醒保暖</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析4 天氣 Emoji ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎨 程式碼解析 4 — 天氣 Emoji 對照</h2>
+        <p><strong>這段的目的：</strong>根據天氣描述的關鍵字，自動配對對應的 Emoji 圖示，讓訊息更生動。</p>
+
+        <h3>📁 getWeatherEmoji(weather)</h3>
+        <pre><code>function getWeatherEmoji(weather) {
+  if (weather.indexOf('晴') !== -1 && weather.indexOf('雲') === -1) return '☀️';
+  if (weather.indexOf('晴') !== -1 && weather.indexOf('雲') !== -1) return '🌤';
+  if (weather.indexOf('多雲') !== -1) return '⛅';
+  if (weather.indexOf('陰') !== -1) return '☁️';
+  if (weather.indexOf('雨') !== -1) return '🌧';
+  if (weather.indexOf('雷') !== -1) return '⛈';
+  if (weather.indexOf('雪') !== -1) return '🌨';
+  if (weather.indexOf('霧') !== -1) return '🌫';
+  return '🌈';
+}</code></pre>
+
+        <h3>天氣 Emoji 對照表</h3>
+        <table>
+            <thead><tr><th>條件</th><th>Emoji</th><th>說明</th></tr></thead>
+            <tbody>
+                <tr><td>包含「晴」但不包含「雲」</td><td style="font-size: 28px;">☀️</td><td>純晴天</td></tr>
+                <tr><td>同時包含「晴」和「雲」</td><td style="font-size: 28px;">🌤</td><td>晴時多雲</td></tr>
+                <tr><td>包含「多雲」</td><td style="font-size: 28px;">⛅</td><td>多雲</td></tr>
+                <tr><td>包含「陰」</td><td style="font-size: 28px;">☁️</td><td>陰天</td></tr>
+                <tr><td>包含「雨」</td><td style="font-size: 28px;">🌧</td><td>雨天</td></tr>
+                <tr><td>包含「雷」</td><td style="font-size: 28px;">⛈</td><td>雷雨</td></tr>
+                <tr><td>包含「雪」</td><td style="font-size: 28px;">🌨</td><td>雪天</td></tr>
+                <tr><td>包含「霧」</td><td style="font-size: 28px;">🌫</td><td>霧</td></tr>
+                <tr><td>以上都不符合</td><td style="font-size: 28px;">🌈</td><td>預設（彩虹）</td></tr>
+            </tbody>
+        </table>
+
+        <div class="box info">
+            <strong>💡 indexOf() 怎麼用？</strong><br>
+            <code>weather.indexOf('晴')</code> 會在字串中搜尋「晴」這個字。找到的話回傳位置（0 以上的數字），找不到回傳 <code>-1</code>。所以 <code>!== -1</code> 表示「有找到」，<code>=== -1</code> 表示「沒找到」。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 程式碼解析5 主函式與記錄 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 程式碼解析 5 — 主函式 sendWeatherReport()</h2>
+        <p><strong>這段的目的：</strong>這是排程會自動執行的主函式，把前面所有函式串起來，完成「取得 → 解析 → 格式化 → 推播 → 記錄」的完整流程。</p>
+
+        <pre><code>function sendWeatherReport() {
+  // 步驟 1：取得天氣資料
+  var locationData = getWeatherData(TARGET_CITY);
+
+  if (!locationData) {
+    pushText(LINE_USER_ID, '❌ 天氣預報取得失敗\n\n可能原因：\n' +
+      '1. API 授權碼不正確\n2. 縣市名稱不正確\n3. API 服務暫時無法使用');
+    return;
+  }
+
+  // 步驟 2：解析天氣資料
+  var forecasts = parseWeatherData(locationData);
+
+  if (forecasts.length === 0) {
+    pushText(LINE_USER_ID, '❌ 天氣預報解析失敗：沒有預報資料');
+    return;
+  }
+
+  // 步驟 3：格式化報告
+  var report = formatWeatherReport(TARGET_CITY, forecasts);
+
+  // 步驟 4：推播到 Line
+  pushText(LINE_USER_ID, report);
+
+  // 步驟 5：記錄到試算表
+  logWeatherToSheet(TARGET_CITY, forecasts);
+
+  Logger.log('天氣預報已推播');
+}</code></pre>
+
+        <h3>5 步驟流程圖</h3>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 20px 0;">
+            <div class="flow-step">1️⃣ 取得天氣資料</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">2️⃣ 解析 5 個元素</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">3️⃣ 格式化報告</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">4️⃣ 推播到 Line</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">5️⃣ 記錄到試算表</div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 雙重防呆設計：</strong><br>
+            <code>if (!locationData)</code> — API 呼叫失敗時，推播錯誤原因提示，不會讓程式崩潰。<br>
+            <code>if (forecasts.length === 0)</code> — 即使 API 回傳成功但沒有預報資料，也會友善提醒。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 程式碼解析6 記錄到試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 6 — 記錄到試算表</h2>
+        <p><strong>這段的目的：</strong>每次推播天氣預報時，同步將天氣資料寫入試算表，方便日後回顧和分析。</p>
+
+        <h3>📁 logWeatherToSheet(cityName, forecasts)</h3>
+        <pre><code>function logWeatherToSheet(cityName, forecasts) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('天氣記錄');
+
+    // 如果工作表不存在，自動建立新的
+    if (!sheet) {
+      sheet = ss.insertSheet('天氣記錄');
+      var headers = ['記錄時間', '縣市', '時段', '天氣',
+                     '最低溫', '最高溫', '降雨機率', '舒適度'];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.getRange(1, 1, 1, headers.length)
+        .setFontWeight('bold')
+        .setBackground('#0D47A1')
+        .setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+
+    var now = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+
+    for (var i = 0; i &lt; forecasts.length; i++) {
+      var f = forecasts[i];
+      sheet.appendRow([
+        now, cityName, f.startTime + ' ~ ' + f.endTime,
+        f.weather, f.minTemp, f.maxTemp, f.rainProb + '%', f.comfort
+      ]);
+    }
+  } catch (error) {
+    Logger.log('記錄天氣資料失敗：' + error);
+  }
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>SpreadsheetApp.getActiveSpreadsheet()</code> — 取得目前綁定的試算表</li>
+            <li><code>getSheetByName('天氣記錄')</code> — 找名為「天氣記錄」的工作表</li>
+            <li><code>if (!sheet)</code> — 如果工作表不存在，自動建立一個新的，並設定好表頭樣式</li>
+            <li><code>setFrozenRows(1)</code> — 凍結第一列（表頭），捲動時表頭不會消失</li>
+            <li><code>appendRow()</code> — 在工作表最後一行插入一列新資料</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 自動建立工作表：</strong><br>
+            你不需要事先手動建立「天氣記錄」工作表！第一次執行時，程式碼會自動幫你建立，並設定好深藍色表頭和白色文字。之後每次推播，天氣資料就會自動追加到這個表的最後一行。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 程式碼解析7 Line Bot 推播函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 7 — Line Bot 推播函式</h2>
+        <p><strong>這段的目的：</strong>提供推播工具函式，讓程式碼可以送出文字訊息到 Line。</p>
+
+        <h3>📁 pushText(to, text) — 推播文字訊息</h3>
+        <pre><code>function pushText(to, text) {
+  pushLine(to, [{ type: 'text', text: text }]);
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>to</code> — 要推播給誰（就是 <code>LINE_USER_ID</code>）</li>
+            <li><code>text</code> — 要傳送的文字內容（這裡會是格式化好的天氣報告）</li>
+            <li>它其實是呼叫下面的 <code>pushLine()</code>，把文字包成 Line 要求的格式</li>
+        </ul>
+
+        <h3>📁 pushLine(to, messages) — 推播底層函式</h3>
+        <pre><code>function pushLine(to, messages) {
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({ to: to, messages: messages }),
+    muteHttpExceptions: true
+  });
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>UrlFetchApp.fetch()</code> — 發送 HTTP POST 請求到 Line 的推播 API</li>
+            <li><code>'Authorization': 'Bearer ' + LINE_TOKEN</code> — 告訴 Line「我是哪一個 Bot」的身份驗證</li>
+            <li><code>JSON.stringify()</code> — 把 JavaScript 物件轉成 JSON 字串，作為 HTTP 請求的 payload</li>
+            <li><code>muteHttpExceptions: true</code> — 即使發生錯誤也不要中斷程式</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 pushText 和 pushLine 的關係：</strong><br>
+            <code>pushText()</code> 是方便使用的「包裝函式」，它自動把純文字包成 Line 規定的 <code>[{ type: 'text', text: '...' }]</code> 格式，然後呼叫 <code>pushLine()</code> 發送出去。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 步驟6 第一次測試 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 第一次測試</h2>
+        <p>設定值修改好了，現在來測試看看程式碼是否正常運作！建議先測 API 連線，再測完整推播。</p>
+
+        <h3>Step 6-1：先測試 API 連線</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，在 <strong>▶ 執行</strong> 按鈕的左邊，有一個<strong>下拉選單</strong><br>
+            <span class="action">👆 動作：</span>點擊那個下拉選單，會展開一個函式清單<br>
+            <span class="action">👆 動作：</span>找到並選擇 <code>testApiConnection</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong> 按鈕
+        </div>
+
+        <h3>Step 6-2：完成授權流程（只有第一次需要）</h3>
+        <div class="micro-step">
+            <strong>授權第 1 步：</strong>彈出「需要授權」的對話框 → 點擊 <code>審查權限</code> 按鈕
+        </div>
+        <div class="micro-step">
+            <strong>授權第 2 步：</strong>選擇你的 Google 帳號（點擊你的帳號名稱）
+        </div>
+        <div class="micro-step">
+            <strong>授權第 3 步：</strong>會出現「Google 尚未驗證這個應用程式」的警告畫面 → 點擊<strong>左下角</strong>的 <code>進階</code> 小字
+        </div>
+        <div class="micro-step">
+            <strong>授權第 4 步：</strong>畫面會展開更多文字 → 點擊 <code>前往「天氣預報」（不安全）</code>
+        </div>
+        <div class="micro-step">
+            <strong>授權第 5 步：</strong>會列出程式需要的權限清單 → 點擊 <code>允許</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>授權完成後，程式會<strong>自動開始執行</strong>，等待 5~10 秒
+        </div>
+
+        <h3>Step 6-3：確認 API 測試結果</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>你的 Line 收到：「✅ 氣象 API 連線測試成功！已成功取得 臺北市 的天氣資料。」</li>
+                    <li>Apps Script 下方執行記錄顯示「API 狀態碼：200」</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的樣子</h3>
+                <ul>
+                    <li>Line 收到：「❌ 氣象 API 連線失敗」</li>
+                    <li>或完全沒收到任何訊息</li>
+                    <li>→ 請看後面的「常見問題排解」頁</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Step 6-4：測試完整天氣推播</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>API 測試成功後，把下拉選單改選 <code>sendWeatherReport</code>，再次點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 5~15 秒<br>
+            <span class="result">👀 結果：</span>你的 Line 會收到一則完整的天氣預報訊息，包含 3 個時段的天氣資訊
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅ 成功 / ❌ 失敗 對照</h2>
+        <p>測試後，對照以下畫面確認你的結果：</p>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32; text-align: center;">✅ testApiConnection 成功</h3>
+                <div style="background: #7494c0; border-radius: 16px; padding: 12px; max-width: 280px; margin: 10px auto;">
+                    <div style="background: #7494c0; padding: 8px;">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
+                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 220px; font-size: 13px; line-height: 1.8; color: #333;">
+                                ✅ <strong>氣象 API 連線測試成功！</strong><br><br>
+                                已成功取得 <strong>臺北市</strong> 的天氣資料。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 10px;">
+                    <strong>表示：</strong>API 授權碼正確、縣市名稱正確、LINE_TOKEN 和 LINE_USER_ID 正確。
+                </div>
+            </div>
+            <div class="col">
+                <h3 style="color: #2e7d32; text-align: center;">✅ sendWeatherReport 成功</h3>
+                <div style="background: #7494c0; border-radius: 16px; padding: 12px; max-width: 280px; margin: 10px auto;">
+                    <div style="background: #7494c0; padding: 8px;">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            <div style="width: 28px; height: 28px; background: #06c755; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: bold;">B</div>
+                            <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 220px; font-size: 12px; line-height: 1.8; color: #333;">
+                                🌤 <strong>天氣預報 — 臺北市</strong><br>
+                                <span style="color: #999; font-size: 11px;">━━━━━━━━━━━━━━</span><br>
+                                📅 2026/3/9 上午7:15:00<br><br>
+                                🕐 03-09 06:00 ~ 18:00<br>
+                                &nbsp;&nbsp;☀️ 晴時多雲<br>
+                                &nbsp;&nbsp;🌡 19°C ~ 27°C<br>
+                                &nbsp;&nbsp;🌧 降雨機率：10%<br>
+                                &nbsp;&nbsp;😊 舒適
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 10px;">
+                    <strong>表示：</strong>完整流程正常運作，包含天氣取得、解析、格式化、推播。
                 </div>
             </div>
         </div>
 
-        <!-- Slide 12: 步驟 9 — 設定每天自動推播 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>⏰ 步驟 9 — 設定每天自動推播（重點！）</h2>
-                <p style="font-size: 22px; color: #d32f2f; font-weight: bold;">這是整個實作最關鍵的一步！讓程式每天自動執行。</p>
-                <h3>設定步驟</h3>
-                <ol>
-                    <li>左側邊欄 → 點擊 <strong>⏰ 鬧鐘圖示</strong>（觸發條件）</li>
-                    <li>點擊右下角 <strong>「+ 新增觸發條件」</strong></li>
-                    <li>依照下表設定各項目</li>
-                </ol>
-                <!-- 截圖 47：觸發條件設定對話框 -->
-                <div style="margin: 20px auto; max-width: 480px; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; border: 1px solid #d0d0d0;">
-                    <!-- 對話框標題 -->
-                    <div style="padding: 18px 24px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 18px; font-weight: 700; color: #202124;">新增觸發條件</span>
-                        <span style="font-size: 20px; color: #999; cursor: pointer;">✕</span>
-                    </div>
-                    <!-- 表單內容 -->
-                    <div style="padding: 20px 24px;">
-                        <!-- 選擇函式 -->
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選擇要執行的函式</label>
-                            <div style="background: #fff; border: 2px solid #1a73e8; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-family: 'Consolas', monospace; color: #1a73e8; font-weight: 600;">sendWeatherReport</span>
-                                <span style="color: #1a73e8;">▼</span>
-                            </div>
-                        </div>
-                        <!-- 部署 -->
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選擇要執行的部署作業</label>
-                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
-                                <span>主版本</span>
-                                <span style="color: #999;">▼</span>
-                            </div>
-                        </div>
-                        <!-- 事件來源 -->
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取活動來源</label>
-                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
-                                <span>⏰ 時間驅動</span>
-                                <span style="color: #999;">▼</span>
-                            </div>
-                        </div>
-                        <!-- 觸發類型 -->
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取時間型觸發條件類型</label>
-                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
-                                <span>每日計時器</span>
-                                <span style="color: #999;">▼</span>
-                            </div>
-                        </div>
-                        <!-- 時段 -->
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px; font-weight: 600;">選取每日時間</label>
-                            <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 14px; font-size: 14px; color: #202124; display: flex; justify-content: space-between; align-items: center;">
-                                <span>上午 7 點到 8 點</span>
-                                <span style="color: #999;">▼</span>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 按鈕列 -->
-                    <div style="padding: 12px 24px 18px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e0e0e0;">
-                        <button disabled style="padding: 8px 24px; border: 1px solid #dadce0; border-radius: 6px; background: #fff; color: #5f6368; font-size: 14px; cursor: pointer;">取消</button>
-                        <button disabled style="padding: 8px 24px; border: none; border-radius: 6px; background: #1a73e8; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">儲存</button>
-                    </div>
-                </div>
-                <h3>觸發條件設定</h3>
-                <table>
-                    <tr><th>設定項目</th><th>選擇</th></tr>
-                    <tr><td>選擇要執行的函式</td><td><code>sendWeatherReport</code></td></tr>
-                    <tr><td>選擇要執行的部署作業</td><td><strong>主版本</strong></td></tr>
-                    <tr><td>選取活動來源</td><td><strong>時間驅動</strong></td></tr>
-                    <tr><td>選取時間型觸發條件類型</td><td><strong>每日計時器</strong></td></tr>
-                    <tr><td>選取每日時間</td><td><strong>上午 7 點到 8 點</strong></td></tr>
-                </table>
-                <div class="box info">
-                    <strong>💡 設定完成後點「儲存」</strong>，從明天開始每天早上 7~8 點之間，Line 就會自動收到天氣預報！
-                </div>
+        <div class="box warning">
+            <strong>⚠️ 常見失敗狀況與快速解法：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>Line 完全沒收到訊息</strong> → 檢查 LINE_TOKEN 和 LINE_USER_ID 是否正確</li>
+                <li><strong>收到「❌ 天氣預報取得失敗」</strong> → 檢查 CWA_API_KEY 和縣市名稱</li>
+                <li><strong>執行記錄顯示紅色錯誤</strong> → 看錯誤訊息，對照下一頁的問題排解</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: 步驟7 設定排程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 設定每日自動排程</h2>
+        <p>最後一步：讓天氣預報每天早上自動推播，不需要手動執行！</p>
+
+        <h3>Step 7-1：進入觸發條件頁面</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>左側選單</strong>（有一列圖示）<br>
+            <span class="action">👆 動作：</span>找到<strong>鬧鐘圖示</strong>（從上面數下來第 4 個圖示），把滑鼠移上去會顯示「觸發條件」，點擊它<br>
+            <span class="result">👀 結果：</span>畫面會切換到「觸發條件」頁面，如果之前沒設定過，頁面會是空白的
+        </div>
+
+        <h3>Step 7-2：新增觸發條件</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>觸發條件頁面的<strong>右下角</strong><br>
+            <span class="action">👆 動作：</span>點擊 <code>+ 新增觸發條件</code> 藍色按鈕<br>
+            <span class="result">👀 結果：</span>會彈出一個設定面板，裡面有好幾個下拉選單
+        </div>
+
+        <h3>Step 7-3：依照下表設定每個下拉選單</h3>
+        <table>
+            <thead>
+                <tr><th>下拉選單名稱</th><th>要選擇的值</th><th>說明</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>選擇要執行的函式</strong></td><td><code>sendWeatherReport</code></td><td>就是我們的主函式</td></tr>
+                <tr><td><strong>選擇要部署的版本</strong></td><td><code>Head</code></td><td>使用最新版程式碼（預設值，不用改）</td></tr>
+                <tr><td><strong>選取事件來源</strong></td><td><code>時間驅動</code></td><td>依照時間自動執行</td></tr>
+                <tr><td><strong>選取時間型觸發條件類型</strong></td><td><code>每日計時器</code></td><td>每天執行一次</td></tr>
+                <tr><td><strong>選取每日時段</strong></td><td><code>上午 7 點到 8 點</code></td><td>每天在這個時段內自動執行</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Step 7-4：儲存觸發條件</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>5 個下拉選單都確認好後，點擊面板右下角的 <code>儲存</code> 按鈕<br>
+            <span class="result">👀 結果：</span>觸發條件列表中會出現一筆新的記錄，顯示函式名稱和執行時間<br>
+            <span class="result">⏱️ 效果：</span>從明天開始，每天早上 7:00~8:00 之間，GAS 會自動執行 <code>sendWeatherReport()</code>，你的 Line 就會收到天氣預報！
+        </div>
+
+        <div class="box info">
+            <strong>💡 排程說明：</strong>選擇「上午 7 點到 8 點」表示 GAS 會在每天 7:00~8:00 之間的某個時間點自動執行。確切時間由 Google 伺服器決定，通常會在時段的前半段執行。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: 觸發條件確認 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅ 觸發條件確認</h2>
+        <p>儲存後回到觸發條件頁面，確認已新增成功：</p>
+
+        <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
+            <div style="background: #3c4043; padding: 12px 20px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 16px;">⏰</span>
+                <span style="color: #e8eaed; font-size: 16px; font-weight: 600;">觸發條件</span>
+                <span style="color: #9aa0a6; font-size: 13px; margin-left: auto;">天氣預報 專案</span>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">函式</th>
+                    <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">部署</th>
+                    <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">事件來源</th>
+                    <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">時間</th>
+                    <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">上次執行</th>
+                </tr>
+                <tr style="background: #fff;">
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; font-family: 'Consolas', monospace; color: #1a73e8; font-weight: 600;">sendWeatherReport</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">Head</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">⏰ 時間驅動</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">每天 07:00-08:00</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">尚未執行</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="box success">
+            <strong>🎉 設定完成！</strong>從明天開始，每天早上 7~8 點之間，Line Bot 會自動推播天氣預報到你的 Line！
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意事項：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>時間是「7 到 8 點之間」，不是精確 7:00</strong> — Google 會在這個時間區間內隨機選一個時間點執行</li>
+                <li><strong>刪除觸發條件：</strong>找到該項目 → 點右邊的 ⋮（三個點）→ 刪除觸發條件</li>
+                <li><strong>每個專案最多 20 個觸發條件</strong> — 足夠一般使用</li>
+                <li><strong>修改程式碼後不需要重新設定觸發條件</strong> — 觸發條件是呼叫函式名稱，只要函式名稱不變就 OK</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 22: 進階功能 多縣市查詢 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🚀 進階功能 — 多縣市天氣查詢</h2>
+        <p>程式碼中還提供了一個進階函式，可以同時查詢多個縣市的天氣。（進階選讀，可跳過）</p>
+
+        <h3>📁 sendMultiCityWeather()</h3>
+        <pre><code>function sendMultiCityWeather() {
+  var cities = ['臺北市', '臺中市', '高雄市'];
+
+  for (var i = 0; i &lt; cities.length; i++) {
+    var locationData = getWeatherData(cities[i]);
+    if (locationData) {
+      var forecasts = parseWeatherData(locationData);
+      var report = formatWeatherReport(cities[i], forecasts);
+      pushText(LINE_USER_ID, report);
+
+      // 避免短時間內送太多訊息
+      Utilities.sleep(1000);
+    }
+  }
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>var cities = ['臺北市', '臺中市', '高雄市']</code> — 把要查詢的縣市放在陣列中，可以自行增減</li>
+            <li><code>for 迴圈</code> — 逐一查詢每個縣市的天氣並推播</li>
+            <li><code>Utilities.sleep(1000)</code> — 每次推播後暫停 1 秒（1000 毫秒），避免太快連續發送造成 Line API 限流</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 使用方式：</strong><br>
+            在函式下拉選單中選擇 <code>sendMultiCityWeather</code>，點擊執行，就會依序收到 3 個縣市的天氣預報。你也可以修改 <code>cities</code> 陣列，加入更多縣市。
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意免費帳號限制：</strong><br>
+            Line 免費帳號每月推播上限為 500 則訊息。如果設定 3 個縣市每天推播，一個月就會用掉 90 則（3 × 30 天）。請注意用量！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 23: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+
+        <h3>🔍 怎麼找到錯誤訊息？（第一步！）</h3>
+        <ol>
+            <li>在 Apps Script 編輯器<strong>左側選單</strong>，找到「⏱ 執行項目」圖示（時鐘圖示，從上面數第 3 個），點擊它</li>
+            <li>會出現<strong>執行歷史記錄列表</strong>，每次執行都會留下一筆記錄</li>
+            <li>找到最近一筆（最上面的），如果狀態是<strong>紅色「失敗」</strong>，點擊那一行的<strong>「▶」展開箭頭</strong></li>
+            <li>展開後看詳細資訊中的<strong>紅色文字</strong> — 那就是錯誤原因</li>
+        </ol>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">「API 呼叫失敗，狀態碼：401」</h3>
+                <p><strong>原因：</strong>API 授權碼不正確</p>
+                <ul>
+                    <li>回到氣象署會員中心，重新複製 API 授權碼</li>
+                    <li>確認沒有多餘的空格或缺漏的字元</li>
+                    <li>確認授權碼格式為 <code>CWA-XXXXXXXX-...</code></li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">「找不到 XX市 的資料」</h3>
+                <p><strong>原因：</strong>縣市名稱不正確</p>
+                <ul>
+                    <li>最常見：用了「台」而不是「臺」</li>
+                    <li>確認縣市名稱包含「市」或「縣」</li>
+                    <li>例如：「臺北市」而不是「臺北」或「台北」</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Line 完全沒收到訊息</h3>
+                <p><strong>原因：</strong>LINE_TOKEN 或 LINE_USER_ID 不正確</p>
+                <ul>
+                    <li>回到 LINE Developers 後台重新複製 Token 和 User ID</li>
+                    <li>確認 Line Bot 已加為好友（手機掃 QR Code）</li>
+                    <li>檢查執行記錄中是否有「推播失敗，狀態碼：401」</li>
+                    <li>免費帳號每月推播上限 500 則</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">排程沒有觸發</h3>
+                <p><strong>原因：</strong>觸發條件設定有誤</p>
+                <ul>
+                    <li>回到「觸發條件」頁面（左側鬧鐘圖示），確認列表中有一筆記錄</li>
+                    <li>如果記錄旁有<strong>紅色驚嘆號</strong>，表示上次排程執行失敗</li>
+                    <li>先手動跑 <code>sendWeatherReport</code> 確認程式碼沒問題</li>
+                    <li>排程時區以你的 Google 帳號設定為準（通常是 GMT+8）</li>
+                </ul>
             </div>
         </div>
 
-        <!-- Slide 13: 觸發條件確認 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>✅ 觸發條件確認</h2>
-                <p>儲存後回到觸發條件頁面，確認已新增成功：</p>
-                <!-- 截圖 48：觸發條件列表 -->
-                <div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #c0c0c0; box-shadow: 0 2px 10px rgba(0,0,0,0.12);">
-                    <!-- GAS 觸發器頁面標題 -->
-                    <div style="background: #3c4043; padding: 12px 20px; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 16px;">⏰</span>
-                        <span style="color: #e8eaed; font-size: 16px; font-weight: 600;">觸發條件</span>
-                        <span style="color: #9aa0a6; font-size: 13px; margin-left: auto;">天氣預報 專案</span>
-                    </div>
-                    <!-- 表格 -->
-                    <table style="width: 100%; border-collapse: collapse; margin: 0;">
-                        <tr style="background: #f8f9fa;">
-                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">函式</th>
-                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">部署</th>
-                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">事件來源</th>
-                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">時間</th>
-                            <th style="padding: 10px 16px; text-align: left; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa;">上次執行</th>
-                            <th style="padding: 10px 16px; text-align: center; font-size: 13px; color: #5f6368; font-weight: 600; border-bottom: 2px solid #dadce0; background: #f8f9fa; width: 40px;"></th>
-                        </tr>
-                        <tr style="background: #fff;">
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; font-family: 'Consolas', monospace; color: #1a73e8; font-weight: 600;">sendWeatherReport</td>
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">Head</td>
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">⏰ 時間驅動</td>
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">每天 07:00-08:00</td>
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #333;">2026/3/3 07:15 <span style="color: #28a745; font-weight: 600;">✓</span></td>
-                            <td style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; text-align: center; font-size: 18px; color: #999; cursor: pointer;">⋮</td>
-                        </tr>
-                    </table>
-                    <div style="padding: 10px 20px; background: #f8f9fa; text-align: right; border-top: 1px solid #e0e0e0;">
-                        <span style="display: inline-block; padding: 8px 20px; background: #1a73e8; color: #fff; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">+ 新增觸發條件</span>
-                    </div>
-                </div>
-                <div class="box success">
-                    <strong>🎉 設定完成！</strong>從明天開始，每天早上 7~8 點之間，Line Bot 會自動推播天氣預報到你的 Line！
-                </div>
-                <div class="box warning">
-                    <strong>⚠️ 注意事項：</strong><br>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li><strong>時間是「7 到 8 點之間」，不是精確 7:00</strong> — Google 會在這個時間區間內隨機選一個時間點執行</li>
-                        <li><strong>刪除觸發條件：</strong>找到該項目 → 點右邊的 <strong>⋮</strong>（三個點）→ 刪除觸發條件</li>
-                        <li><strong>每個專案最多 20 個觸發條件</strong> — 足夠一般使用</li>
-                        <li><strong>修改程式碼後不需要重新設定觸發條件</strong> — 觸發條件是呼叫函式名稱，只要函式名稱不變就 OK</li>
-                    </ul>
-                </div>
+        <div class="box info">
+            <strong>💡 除錯技巧：</strong>如果不確定是哪裡出問題，先單獨執行 <code>testApiConnection</code> 來確認 API 連線。如果 API 沒問題，再檢查 LINE_TOKEN 和 LINE_USER_ID。分段測試是最有效的除錯方式！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 24: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">今天在 Part 6 學到的新技能：</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>技能</th>
+                    <th>之前實作學過</th>
+                    <th>Part 6 新增 / 加深</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>API 呼叫</strong></td>
+                    <td><code>UrlFetchApp</code> 呼叫 Line API</td>
+                    <td>呼叫<strong>第三方 API</strong>（中央氣象署）</td>
+                </tr>
+                <tr>
+                    <td><strong>JSON 解析</strong></td>
+                    <td>解析 Line Webhook 事件</td>
+                    <td>解析<strong>多層巢狀</strong>的 JSON 資料結構</td>
+                </tr>
+                <tr>
+                    <td><strong>URL 編碼</strong></td>
+                    <td>（未涉及）</td>
+                    <td><code>encodeURIComponent()</code> 處理中文參數</td>
+                </tr>
+                <tr>
+                    <td><strong>條件判斷</strong></td>
+                    <td>基本 if/else</td>
+                    <td><code>indexOf()</code> 字串搜尋 + 多重條件判斷</td>
+                </tr>
+                <tr>
+                    <td><strong>排程自動化</strong></td>
+                    <td>（未涉及）</td>
+                    <td>觸發條件、每日計時器、時間驅動</td>
+                </tr>
+                <tr>
+                    <td><strong>試算表操作</strong></td>
+                    <td><code>appendRow()</code> 寫入</td>
+                    <td><code>insertSheet()</code> 自動建立工作表 + 設定表頭樣式</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin-top: 30px;">本單元使用的函式一覽</h3>
+        <table>
+            <thead>
+                <tr><th>函式名稱</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>getWeatherData(cityName)</code></td><td>呼叫氣象署 API 取得天氣原始資料</td></tr>
+                <tr><td><code>parseWeatherData(locationData)</code></td><td>解析天氣資料，提取 5 個天氣元素</td></tr>
+                <tr><td><code>findElement(elements, name)</code></td><td>從陣列中找到指定名稱的天氣元素</td></tr>
+                <tr><td><code>formatWeatherReport(city, forecasts)</code></td><td>格式化天氣報告文字 + 智慧提醒</td></tr>
+                <tr><td><code>getWeatherEmoji(weather)</code></td><td>天氣描述 → 對應 Emoji</td></tr>
+                <tr><td><code>sendWeatherReport()</code></td><td>主函式 — 完整的天氣推播流程</td></tr>
+                <tr><td><code>sendMultiCityWeather()</code></td><td>進階 — 同時查詢多個縣市</td></tr>
+                <tr><td><code>logWeatherToSheet(city, forecasts)</code></td><td>將天氣資料記錄到試算表</td></tr>
+                <tr><td><code>testApiConnection()</code></td><td>測試 API 連線是否正常</td></tr>
+                <tr><td><code>pushText(to, text)</code></td><td>推播文字訊息到 Line</td></tr>
+                <tr><td><code>pushLine(to, messages)</code></td><td>推播底層函式</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 25: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🌤️</div>
+        <h1 style="font-size: 42px;">Part 6 完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會串接氣象署 API，讓 Line Bot 每天自動推播天氣預報了！</p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌐</div>
+                <h3>API 串接</h3>
+                <p>呼叫外部 API</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📦</div>
+                <h3>JSON 解析</h3>
+                <p>提取天氣資料</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📤</div>
+                <h3>Line 推播</h3>
+                <p>自動發送天氣</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⏰</div>
+                <h3>每日排程</h3>
+                <p>完全自動化</p>
             </div>
         </div>
 
-        <!-- Slide 14: Day 1 完整回顧 — 7 個核心技能 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🏆 Day 1 完整回顧 — 7 個核心技能</h2>
-                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">恭喜！經過今天的 6 個實作，你已經掌握了以下核心技能：</p>
-                <table>
-                    <tr><th>#</th><th>核心技能</th><th>使用實作</th></tr>
-                    <tr>
-                        <td><strong>1</strong></td>
-                        <td>GAS 環境操作與部署</td>
-                        <td>所有實作</td>
-                    </tr>
-                    <tr>
-                        <td><strong>2</strong></td>
-                        <td>doGet / doPost Web App</td>
-                        <td>實作 1、4</td>
-                    </tr>
-                    <tr>
-                        <td><strong>3</strong></td>
-                        <td>SpreadsheetApp 讀寫試算表</td>
-                        <td>實作 1、3、4、5</td>
-                    </tr>
-                    <tr>
-                        <td><strong>4</strong></td>
-                        <td>UrlFetchApp API 串接</td>
-                        <td>實作 1、2、6</td>
-                    </tr>
-                    <tr>
-                        <td><strong>5</strong></td>
-                        <td>Line Bot Webhook（接收訊息）</td>
-                        <td>實作 1、2</td>
-                    </tr>
-                    <tr>
-                        <td><strong>6</strong></td>
-                        <td>Line Bot Push Message（主動推播）</td>
-                        <td>實作 1-6</td>
-                    </tr>
-                    <tr>
-                        <td><strong>7</strong></td>
-                        <td>時間驅動觸發條件（排程）</td>
-                        <td>實作 6</td>
-                    </tr>
-                </table>
-                <div class="box success">
-                    <strong>💪 這 7 個技能可以組合出無數自動化應用！</strong>你已經具備了用 GAS + Line Bot 打造自動化工具的基礎能力。
-                </div>
-            </div>
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🎯 下一站預告 — Part 7：自動化評量系統</strong>
+            <ul>
+                <li>AI 自動評語產生</li>
+                <li>PDF 解析與資料處理</li>
+                <li>評量結果自動推播到 Line</li>
+            </ul>
         </div>
 
-        <!-- Slide 15: 你帶走的 7 個成品 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🎁 你帶走的 7 個成品</h2>
-                <p style="font-size: 22px; color: #1b5e20; margin-bottom: 20px;">今天你親手打造了以下成品，全部都是可以直接使用的！</p>
-                <table>
-                    <tr><th>成品</th><th>說明</th></tr>
-                    <tr>
-                        <td><strong>🤖 1 個 Line Bot</strong></td>
-                        <td>全程使用的 Line Bot，串接多個功能</td>
-                    </tr>
-                    <tr>
-                        <td><strong>📚 知識庫查詢機器人</strong></td>
-                        <td>Line 輸入關鍵字，自動從試算表查詢回覆</td>
-                    </tr>
-                    <tr>
-                        <td><strong>💬 訊息記錄系統</strong></td>
-                        <td>訊息自動存入試算表，圖片自動存入 Google Drive</td>
-                    </tr>
-                    <tr>
-                        <td><strong>📊 銷售報表系統</strong></td>
-                        <td>自訂函式計算 + 報表自動推播到 Line</td>
-                    </tr>
-                    <tr>
-                        <td><strong>📝 公開表單 + Line 通知</strong></td>
-                        <td>HTML 表單公開填寫，即時推播通知到 Line</td>
-                    </tr>
-                    <tr>
-                        <td><strong>✅ 簽到系統</strong></td>
-                        <td>格式化簽到表格 + 簽到結果推播到 Line</td>
-                    </tr>
-                    <tr>
-                        <td><strong>🌤 每日天氣推播</strong></td>
-                        <td>每天自動推播天氣預報到 Line</td>
-                    </tr>
-                </table>
-                <div class="box warning">
-                    <strong>⚠️ 重要提醒（Day 2 會用到）：</strong><br>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li><strong>保存好 Token 和 ID</strong> — Channel Access Token 和 User ID，Day 2 還會繼續使用</li>
-                        <li><strong>Webhook URL 同時只能設定一個</strong> — Day 2 切換功能時需要更新 Webhook URL</li>
-                        <li><strong>修改程式碼後要重新部署</strong> — 記得每次改 code 後都要「新增部署」</li>
-                    </ul>
-                </div>
-            </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/06_天氣預報_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="Day1_Part7_自動化評量.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
-
-        <!-- Slide 16: Day 1 完成！ -->
-        <div class="slide">
-            <div class="content-card" style="text-align: center;">
-                <div style="font-size: 100px; margin-bottom: 20px;">🎉</div>
-                <h1 style="font-size: 60px; margin-bottom: 20px;">Day 1 完成！</h1>
-                <div class="box success" style="max-width: 700px; margin: 20px auto; font-size: 22px;">
-                    <strong>🏆 恭喜完成 Day 1 所有實作！</strong><br>
-                    你已經從零開始，學會了 GAS + Line Bot 的完整基礎！
-                </div>
-                <h3 style="margin-top: 40px; text-align: center;">📅 Day 2 預告 — 更多進階應用</h3>
-                <div class="concept-grid" style="margin-top: 20px;">
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">🖼️</div>
-                        <h3>圖片推播</h3>
-                        <p>推播圖片訊息到 Line</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">📰</div>
-                        <h3>RSS 新聞</h3>
-                        <p>自動抓取新聞推播</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">📋</div>
-                        <h3>出缺席通知</h3>
-                        <p>自動發送出缺席通知</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">📝</div>
-                        <h3>報名系統</h3>
-                        <p>完整報名流程系統</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">🔍</div>
-                        <h3>查詢系統</h3>
-                        <p>進階查詢功能</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <div style="font-size: 36px;">🤖</div>
-                        <h3>AI 自動發文</h3>
-                        <p>串接 AI API 自動產生內容</p>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 40px; flex-wrap: wrap;">
-                    <a href="../GAS程式碼/06_天氣預報_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
-                    <a href="Day1_Part7_自動化評量.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">➡️ 下一個實作</a>
-                    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: rgba(27,94,32,0.1); color: #1b5e20; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; border: 2px solid #1b5e20;">🏠 回到總覽</a>
-                </div>
-            </div>
-        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進！</p>
+    </div>
+</div>
 
     </div>
 
-    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">❮</button>
-    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">❯</button>
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
     <div class="indicators" id="indicatorContainer"></div>
     <script>
         let currentSlide = 0;
