@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>資料查詢系統</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #1b5e20;
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    /* 搜尋區 */
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 14px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .search-box input:focus {
+      border-color: #1b5e20;
+    }
+    .search-box button {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #1b5e20, #004d40);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .search-box button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(27,94,32,0.4);
+    }
+
+    /* 結果區 */
+    .results {
+      margin-top: 20px;
+    }
+    .result-count {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+    .result-card {
+      background: #f8faf8;
+      border: 1px solid #e8f5e9;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .result-card .field {
+      display: flex;
+      padding: 4px 0;
+      font-size: 15px;
+    }
+    .result-card .field-name {
+      color: #1b5e20;
+      font-weight: 600;
+      min-width: 80px;
+    }
+    .result-card .field-value {
+      color: #333;
+    }
+
+    /* 提示 */
+    .tip {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 15px 20px;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 25px;
+      font-size: 14px;
+      color: #2e7d32;
+      line-height: 1.6;
+    }
+
+    /* 載入動畫 */
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: #999;
+    }
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #1b5e20;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 無結果 */
+    .no-result {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 25px; }
+      .search-box { flex-direction: column; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 資料查詢系統</h1>
+    <p class="subtitle">GAS Web App + Line Bot 雙入口查詢</p>
+
+    <div class="tip">
+      💡 <strong>使用方式：</strong>輸入任意關鍵字（姓名、部門、Email 等），系統會自動搜尋所有欄位。<br>
+      也可以在 Line 中傳「查 關鍵字」使用 Bot 查詢。
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="keyword" placeholder="輸入搜尋關鍵字..." onkeypress="if(event.keyCode===13) doSearch()">
+      <button onclick="doSearch()">🔍 搜尋</button>
+    </div>
+
+    <div id="results" class="results"></div>
+  </div>
+
+  <script>
+    /**
+     * 執行搜尋
+     */
+    function doSearch() {
+      var keyword = document.getElementById('keyword').value.trim();
+      var resultsDiv = document.getElementById('results');
+
+      if (!keyword) {
+        resultsDiv.innerHTML = '<div class="no-result">請輸入搜尋關鍵字</div>';
+        return;
+      }
+
+      // 顯示載入中
+      resultsDiv.innerHTML = '<div class="loading">搜尋中</div>';
+
+      // 呼叫 GAS 後端的 searchData 函式
+      google.script.run
+        .withSuccessHandler(showResults)
+        .withFailureHandler(showError)
+        .searchData(keyword);
+    }
+
+    /**
+     * 顯示搜尋結果
+     */
+    function showResults(data) {
+      var resultsDiv = document.getElementById('results');
+      var keyword = document.getElementById('keyword').value.trim();
+
+      if (!data || data.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-result">🔍 找不到「' + keyword + '」的相關資料</div>';
+        return;
+      }
+
+      var html = '<div class="result-count">🔍 搜尋「' + keyword + '」找到 <strong>' + data.length + '</strong> 筆資料</div>';
+
+      for (var i = 0; i < data.length; i++) {
+        html += '<div class="result-card">';
+        var keys = Object.keys(data[i]);
+        for (var j = 0; j < keys.length; j++) {
+          html += '<div class="field">';
+          html += '<span class="field-name">' + keys[j] + '</span>';
+          html += '<span class="field-value">' + data[i][keys[j]] + '</span>';
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      resultsDiv.innerHTML = html;
+    }
+
+    /**
+     * 顯示錯誤
+     */
+    function showError(error) {
+      var resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<div class="no-result">⚠️ 搜尋發生錯誤：' + error.message + '</div>';
+    }
+
+    // 頁面載入後自動聚焦搜尋框
+    window.onload = function() {
+      document.getElementById('keyword').focus();
+    };
+  </script>
+</body>
+</html>

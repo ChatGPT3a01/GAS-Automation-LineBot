@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 實作 12 — 查詢系統 × Line Bot 互動查詢</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
+        .arch-diagram { display: flex; align-items: stretch; gap: 20px; margin: 30px 0; flex-wrap: wrap; justify-content: center; }
+        .arch-box { background: #f1f8e9; border: 2px solid #4caf50; border-radius: 16px; padding: 20px; text-align: center; min-width: 200px; flex: 1; }
+        .arch-box h4 { color: #1b5e20; font-size: 18px; margin-bottom: 8px; }
+        .arch-box p { font-size: 15px; color: #555; margin-bottom: 0; }
+        .arch-center { background: linear-gradient(135deg, #1b5e20, #004d40); color: white; border: none; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .arch-center h4, .arch-center p { color: white; }
+        .arch-connector { display: flex; align-items: center; font-size: 32px; color: #1b5e20; font-weight: bold; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">📘 實作 12 — 查詢系統 × Line Bot 互動查詢</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🔍</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">GAS 查詢系統</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            Web App 查詢介面 + Line Bot 對話式查詢 = <span class="highlight">雙入口系統</span>
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">HtmlService</span>
+            <span class="badge badge-blue">google.script.run</span>
+            <span class="badge badge-orange">doPost Webhook</span>
+            <span class="badge badge-green">模糊搜尋</span>
+            <span class="badge badge-blue">Web App</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📊 試算表資料</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🔎 模糊搜尋</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🌐 Web App + 💬 Line Bot</div>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 2 — Part 12 / 使用鍵盤 ← → 或點擊兩側箭頭切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件，全部打勾才能順利完成本單元。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>✅ 必備條件（Day 1 已完成）</h3>
+                <ol>
+                    <li><strong>Line Bot 帳號</strong> — 你在 Day 1 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code>（一串很長的英數字）</li>
+                    <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」欄位（U 開頭的字串）</li>
+                    <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
+                </ol>
+            </div>
+            <div class="concept-card">
+                <h3>📦 本單元需要準備</h3>
+                <ol>
+                    <li><strong>下載後端程式碼</strong> — 點擊簡報最後一頁的「📥 下載 GS 程式碼」，取得 <code>12_查詢系統_LineBot.gs</code></li>
+                    <li><strong>下載前端 HTML</strong> — 點擊「📥 下載 HTML 前端」，取得 <code>12_查詢系統_前端.html</code></li>
+                    <li><strong>本單元需建立兩個檔案</strong> — 後端 .gs + 前端 .html，缺一不可</li>
+                </ol>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <div style="background: #e3f2fd; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">⏱️</div>
+                <div style="font-size: 18px; font-weight: 600; color: #1565c0;">預估操作時間</div>
+                <div style="font-size: 28px; font-weight: 700; color: #0d47a1;">30 ~ 40 分鐘</div>
+            </div>
+            <div style="background: #fce4ec; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📊</div>
+                <div style="font-size: 18px; font-weight: 600; color: #c62828;">難度等級</div>
+                <div style="font-size: 28px; font-weight: 700; color: #b71c1c;">★★★☆☆ 中等</div>
+            </div>
+            <div style="background: #f3e5f5; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📄</div>
+                <div style="font-size: 18px; font-weight: 600; color: #6a1b9a;">操作步驟</div>
+                <div style="font-size: 28px; font-weight: 700; color: #4a148c;">共 8 大步驟</div>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 如果你還沒完成 Day 1 Part 0：</strong><br>
+            請先回到 <a href="Day1_Part0_GAS環境與LineBot建立.html" style="color: #856404; font-weight: bold;">Day 1 Part 0 — GAS 環境與 Line Bot 建立</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將掌握以下 <span class="highlight">4 大核心技能</span>：</p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🌐</div>
+                <h3>HtmlService 進階</h3>
+                <p>使用 <code>createHtmlOutputFromFile()</code> 在 GAS 專案中建立獨立的 HTML 檔案，作為 Web App 的前端介面</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔗</div>
+                <h3>google.script.run</h3>
+                <p>前後端溝通的核心機制：前端 HTML 中的 JavaScript 呼叫後端 GAS 函式，搭配 <code>withSuccessHandler</code> 非同步回傳結果</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔎</div>
+                <h3>模糊搜尋邏輯</h3>
+                <p>實作 <code>searchData()</code> 函式，遍歷試算表所有欄位，使用 <code>toLowerCase()</code> + <code>indexOf()</code> 做不分大小寫的模糊比對</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🚪</div>
+                <h3>雙入口系統</h3>
+                <p>同一個 GAS 專案同時作為 Web App（doGet）和 Line Bot Webhook（doPost），共用同一個 <code>searchData()</code> 查詢函式</p>
+            </div>
+        </div>
+        <div class="box info" style="margin-top: 25px;">
+            <strong>💡 為什麼要做雙入口？</strong><br>
+            有些人喜歡在電腦上開網頁查詢，有些人習慣用 Line 傳訊息查。雙入口讓不同習慣的使用者都能用自己最順手的方式查資料！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Vibe Coding 提示詞 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding — AI 提示詞</h2>
+        <p>用以下提示詞，讓 AI 幫你生成查詢系統的完整程式碼：</p>
+        <pre><code>請幫我寫一個 Google Apps Script 查詢系統（含前端 HTML），功能如下：
+1. doGet() 顯示 HTML 查詢介面（搜尋框 + 結果區）
+2. doPost() 接收 Line Bot Webhook，處理查詢指令
+3. 後端 searchData() 實作模糊搜尋，搜尋試算表所有欄位
+4. 前端用 google.script.run 非同步呼叫後端
+5. Line Bot 接收「查 XXX」或「找 XXX」指令，回覆查詢結果
+6. initSampleData() 建立範例員工資料（姓名、部門、職稱、Email、分機）
+7. 部署為 Web App，同時作為 Line Bot Webhook URL
+前端要有漂亮的搜尋介面，配色使用深綠色主題。</code></pre>
+        <div class="box info">
+            <strong>💡 Vibe Coding 小提醒：</strong><br>
+            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換設定值就能使用！
+        </div>
+        <div class="box warning">
+            <strong>⚠️ 重要：以課程 .gs 和 .html 檔案為準！</strong><br>
+            AI 生成的程式碼<strong>可能與課程版本不同</strong>（例如變數宣告方式、函式名稱、HTML 結構等都會有差異）。<br>
+            本課程所有步驟都是依照 <code>12_查詢系統_LineBot.gs</code> 和 <code>12_查詢系統_前端.html</code> 這兩個檔案來教學。<br>
+            <strong>建議：直接使用課程提供的檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📱 成果預覽</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">完成後，你會擁有<span class="highlight">兩個查詢入口</span>，效果如下：</p>
+        <div class="two-col">
+            <div class="col" style="text-align: center;">
+                <h3>🌐 Web App 查詢介面</h3>
+                <!-- 模擬 Web App 查詢介面 -->
+                <div style="background: linear-gradient(135deg, #1b5e20, #004d40); border-radius: 16px; padding: 20px; max-width: 380px; margin: 0 auto;">
+                    <div style="background: white; border-radius: 12px; padding: 20px;">
+                        <div style="font-size: 20px; font-weight: bold; color: #1b5e20; text-align: center; margin-bottom: 6px;">📋 資料查詢系統</div>
+                        <div style="font-size: 12px; color: #999; text-align: center; margin-bottom: 12px;">GAS Web App + Line Bot 雙入口查詢</div>
+                        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                            <input type="text" value="業務" disabled style="flex: 1; padding: 8px 12px; border: 2px solid #1b5e20; border-radius: 8px; font-size: 14px;">
+                            <div style="background: linear-gradient(135deg, #1b5e20, #004d40); color: white; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 600;">🔍 搜尋</div>
+                        </div>
+                        <div style="background: #f5f5f5; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #666; margin-bottom: 10px;">🔍 搜尋「業務」找到 <strong>2</strong> 筆資料</div>
+                        <div style="background: #f8faf8; border: 1px solid #e8f5e9; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">姓名</span> 王小明</div>
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">部門</span> 業務部</div>
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">職稱</span> 業務經理</div>
+                        </div>
+                        <div style="background: #f8faf8; border: 1px solid #e8f5e9; border-radius: 8px; padding: 10px;">
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">姓名</span> 陳志明</div>
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">部門</span> 業務部</div>
+                            <div style="font-size: 13px;"><span style="color: #1b5e20; font-weight: 600;">職稱</span> 業務專員</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col" style="text-align: center;">
+                <h3>💬 Line Bot 查詢回覆</h3>
+                <!-- 模擬 Line 聊天 UI -->
+                <div style="background: #7494a7; border-radius: 16px; padding: 20px; max-width: 380px; margin: 0 auto; min-height: 340px;">
+                    <div style="background: #5b7f8f; border-radius: 10px; padding: 10px 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">G</div>
+                        <span style="color: white; font-weight: 600; font-size: 15px;">查詢系統 Bot</span>
+                    </div>
+                    <!-- 使用者訊息 -->
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <div style="background: #b2f0a0; border-radius: 16px; padding: 10px 14px; max-width: 200px;">
+                            <div style="font-size: 14px; color: #333;">查 業務</div>
+                        </div>
+                    </div>
+                    <!-- Bot 回覆 -->
+                    <div style="display: flex; justify-content: flex-start; margin-bottom: 10px;">
+                        <div style="background: white; border-radius: 16px; padding: 12px 14px; max-width: 280px;">
+                            <div style="font-size: 13px; color: #333; line-height: 1.6;">
+                                🔍 查詢「業務」<br>
+                                📊 找到 2 筆資料<br>
+                                ━━━━━━━━━━━<br><br>
+                                📋 第 1 筆：<br>
+                                &nbsp;&nbsp;&#8226; 姓名：王小明<br>
+                                &nbsp;&nbsp;&#8226; 部門：業務部<br>
+                                &nbsp;&nbsp;&#8226; 職稱：業務經理<br><br>
+                                📋 第 2 筆：<br>
+                                &nbsp;&nbsp;&#8226; 姓名：陳志明<br>
+                                &nbsp;&nbsp;&#8226; 部門：業務部<br>
+                                &nbsp;&nbsp;&#8226; 職稱：業務專員
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 系統架構圖 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🏗️ 系統架構圖 — 雙入口設計</h2>
+        <p style="font-size: 22px; margin-bottom: 25px;">
+            一個 GAS 專案，<span class="highlight">兩個入口</span>，<span class="highlight">共用一套查詢邏輯</span>：
+        </p>
+        <div class="arch-diagram">
+            <div class="arch-box" style="border-color: #1565c0; background: #e3f2fd;">
+                <div style="font-size: 36px; margin-bottom: 8px;">🌐</div>
+                <h4 style="color: #1565c0;">入口 1：瀏覽器</h4>
+                <p>使用者開啟 Web App URL</p>
+                <div style="margin-top: 10px; font-size: 14px; color: #1565c0;">
+                    <strong>doGet()</strong> → 回傳 HTML 介面<br>
+                    → 使用者輸入關鍵字<br>
+                    → <code>google.script.run</code><br>
+                    → 呼叫 searchData()
+                </div>
+            </div>
+            <div class="arch-connector">→</div>
+            <div class="arch-box arch-center">
+                <div style="font-size: 36px; margin-bottom: 8px;">⚙️</div>
+                <h4>GAS 後端</h4>
+                <p style="font-size: 16px;"><strong>searchData(keyword)</strong></p>
+                <p style="font-size: 14px; margin-top: 8px;">模糊搜尋試算表<br>所有欄位</p>
+                <div style="margin-top: 10px; font-size: 30px;">📊</div>
+                <p style="font-size: 13px;">Google Sheets<br>「人員資料」工作表</p>
+            </div>
+            <div class="arch-connector">←</div>
+            <div class="arch-box" style="border-color: #2e7d32; background: #e8f5e9;">
+                <div style="font-size: 36px; margin-bottom: 8px;">💬</div>
+                <h4 style="color: #2e7d32;">入口 2：Line Bot</h4>
+                <p>使用者傳「查 OOO」</p>
+                <div style="margin-top: 10px; font-size: 14px; color: #2e7d32;">
+                    <strong>doPost()</strong> → 解析 Webhook<br>
+                    → 判斷「查/找」指令<br>
+                    → 呼叫 searchData()<br>
+                    → replyText() 回覆結果
+                </div>
+            </div>
+        </div>
+
+        <h3>📁 專案檔案結構（2 個檔案）</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="margin-top: 0;">程式碼.gs（後端）</h3>
+                <ul>
+                    <li><code>doGet(e)</code> — Web App 入口</li>
+                    <li><code>doPost(e)</code> — Line Bot Webhook 入口</li>
+                    <li><code>searchData(keyword)</code> — 模糊搜尋</li>
+                    <li><code>handleLineSearch()</code> — Line 查詢回覆</li>
+                    <li><code>initSampleData()</code> — 建立範例資料</li>
+                    <li><code>pushText() / replyText()</code> — 推播/回覆</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="margin-top: 0;">查詢介面.html（前端）</h3>
+                <ul>
+                    <li>搜尋輸入框 + 搜尋按鈕</li>
+                    <li>結果卡片區域</li>
+                    <li>載入動畫 (spinner)</li>
+                    <li><code>google.script.run.searchData()</code></li>
+                    <li><code>showResults()</code> 渲染結果</li>
+                    <li>深綠色主題 CSS 樣式</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 關鍵觀念</strong><br>
+            瀏覽器開啟 Web App URL → HTTP GET 請求 → 觸發 <code>doGet()</code><br>
+            Line Bot 推送 Webhook → HTTP POST 請求 → 觸發 <code>doPost()</code><br>
+            <strong>HTTP 方法不同，GAS 自動分流！同一個 URL，兩個入口。</strong>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟1 建立試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 步驟 1：建立資料試算表</h2>
+        <p>先建立一個 Google 試算表，等一下程式碼會在裡面自動建立「人員資料」工作表。</p>
+
+        <h3>Step 1-1：建立新的 Google 試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器網址列輸入 <code>sheets.new</code> 然後按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，瀏覽器會自動建立並開啟一個全新的 Google 試算表<br>
+            <span class="result">👀 結果：</span>你會看到一個空白的試算表，左上角顯示「未命名的試算表」
+        </div>
+
+        <h3>Step 1-2：替試算表命名</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>試算表畫面的<strong>左上角</strong>，有一行小字寫著「未命名的試算表」<br>
+            <span class="action">👆 動作：</span>點擊「未命名的試算表」那個文字 → 輸入 <code>查詢系統 資料庫</code> → 按 Enter<br>
+            <span class="result">👀 結果：</span>左上角的名稱變成「查詢系統 資料庫」
+        </div>
+
+        <h3>Step 1-3：取得試算表 ID（最關鍵的一步！）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器<strong>最上方的網址列</strong>，你會看到類似這樣的網址：
+        </div>
+        <pre><code>https://docs.google.com/spreadsheets/d/<strong style="color:#69f0ae;">1aBcDeFgHiJkLmNoPqRsTuVwXyZ</strong>/edit#gid=0</code></pre>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用滑鼠選取 <code>/d/</code> 和 <code>/edit</code> 之間的那串英數字，按 <code>Ctrl+C</code> 複製<br>
+            <span class="result">👀 結果：</span>你已經複製了試算表 ID，先暫時貼到記事本備用
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 常見錯誤：</strong>
+            <ul style="margin-top: 8px;">
+                <li>不要複製到 <code>/d/</code> 的斜線，也不要複製到 <code>/edit</code> 後面的部分</li>
+                <li>不要複製到 <code>#gid=0</code>（那是工作表編號，不是試算表 ID）</li>
+                <li>試算表 ID 看起來像：<code>1aBcDeFgHiJkLmNoPqRsTuVwXyZ</code>（一串英文字母、數字、底線和破折號）</li>
+            </ul>
+        </div>
+
+        <div class="box info">
+            <strong>💡 不用手動輸入資料！</strong><br>
+            等一下程式碼裡有 <code>initSampleData()</code> 函式，執行後會自動建立「人員資料」工作表，並填入 8 筆範例員工資料（姓名、部門、職稱、Email、分機）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟2 建立 GAS 專案 + 貼後端程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 步驟 2：建立 GAS 專案 + 貼上後端程式碼</h2>
+        <p>從剛才的試算表開啟 Apps Script 編輯器，貼上後端 .gs 程式碼。</p>
+
+        <h3>Step 2-1：開啟 Apps Script 編輯器</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>在試算表上方的選單列，找到<strong>最右邊的「擴充功能」</strong><br>
+            <span class="action">👆 動作：</span>點擊「擴充功能」→ 在下拉選單中點擊 <code>Apps Script</code><br>
+            <span class="result">⏱️ 等待：</span>瀏覽器會<strong>開啟一個全新的分頁</strong>，等待 3~5 秒直到編輯器完全載入<br>
+            <span class="result">👀 結果：</span>你會看到 Apps Script 編輯器：左邊是檔案列表（有一個「程式碼.gs」）、右邊是程式碼編輯區、上方有一個 <strong>▶ 執行</strong> 按鈕
+        </div>
+
+        <h3>Step 2-2：刪除預設程式碼</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>右半邊程式碼編輯區</strong>（預設會有 <code>function myFunction() { }</code>）<br>
+            <span class="action">👆 動作：</span>在編輯區按一下，然後按 <code>Ctrl+A</code>（全選）再按 <code>Delete</code> 鍵<br>
+            <span class="result">👀 結果：</span>編輯區變成完全空白
+        </div>
+
+        <h3>Step 2-3：開啟後端程式碼檔案並複製</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到你下載的 <code>12_查詢系統_LineBot.gs</code>，用<strong>記事本</strong>開啟<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選）→ <code>Ctrl+C</code>（複製）
+        </div>
+
+        <h3>Step 2-4：貼上並儲存</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切回 Apps Script 編輯器的分頁，在空白編輯區按一下，按 <code>Ctrl+V</code>（貼上）<br>
+            <span class="result">⏱️ 等待：</span>約 1~2 秒，程式碼會完整出現<br>
+            <span class="result">👀 結果：</span>你應該會看到最前面是 <code>/**</code> 開頭的大段註解，往下捲動可以看到 <code>doGet</code>、<code>doPost</code>、<code>searchData</code> 等多個函式<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存（上方檔名旁的橘色圓點會消失表示已儲存）
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：確認程式碼完整！</strong><br>
+            這個檔案有 335 行左右，包含 6 個區塊：設定區、Web App 入口(doGet)、搜尋邏輯(searchData)、Line Bot Webhook(doPost)、推播/回覆函式、初始化與測試函式。請確認<strong>全部都有貼進去</strong>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟3 建立 HTML 前端檔案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 步驟 3：建立 HTML 前端檔案</h2>
+        <p>這是本單元的<span class="highlight">關鍵步驟</span>！你需要在 GAS 專案中新增一個 HTML 檔案，而且<strong>檔名必須精確</strong>。</p>
+
+        <h3>Step 3-1：新增 HTML 檔案</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>左側「檔案」區</strong>（你會看到目前只有一個「程式碼.gs」）<br>
+            <span class="action">👆 動作：</span>在「檔案」文字的旁邊，找到 <code>+</code> 按鈕（加號圖示），點擊它<br>
+            <span class="result">👀 結果：</span>會出現一個小選單，有兩個選項：「指令碼」和「HTML」
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <code>HTML</code><br>
+            <span class="result">👀 結果：</span>會跳出一個輸入框，讓你輸入檔案名稱（預設可能顯示「無標題」）
+        </div>
+
+        <h3>Step 3-2：輸入檔名（超級重要！）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在輸入框中輸入 <code>查詢介面</code>（就這四個字，<strong>不需要輸入 .html 副檔名</strong>），然後按 Enter<br>
+            <span class="result">👀 結果：</span>左側檔案列表現在有兩個檔案：<code>程式碼.gs</code> 和 <code>查詢介面.html</code>
+        </div>
+
+        <div class="box warning" style="background: #ffebee; border-color: #e53935; color: #b71c1c;">
+            <strong>🚨 檔名必須是「查詢介面」！不能打錯！</strong><br>
+            因為後端程式碼中 <code>doGet()</code> 有這一行：<br>
+            <code style="background: #fff; color: #d63384;">HtmlService.createHtmlOutputFromFile('查詢介面')</code><br>
+            如果你的 HTML 檔名不是「查詢介面」，Web App 開啟時會報錯「<span style="color: #e53935;">找不到檔案</span>」！<br><br>
+            常見錯誤：打成「查詢界面」（界 vs 介）、「查詢頁面」、「index」等都不行。
+        </div>
+
+        <h3>Step 3-3：清空預設內容並貼上前端程式碼</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>點擊左側的 <code>查詢介面.html</code> 檔案，右邊編輯區會顯示一些 HTML 預設模板<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選）→ <code>Delete</code>（刪除全部）<br>
+            <span class="action">👆 動作：</span>開啟你下載的 <code>12_查詢系統_前端.html</code>，用記事本開啟，<code>Ctrl+A</code> → <code>Ctrl+C</code> 複製全部<br>
+            <span class="action">👆 動作：</span>切回 Apps Script，在空白的 查詢介面.html 編輯區按一下，<code>Ctrl+V</code> 貼上<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存
+        </div>
+
+        <h3>Step 3-4：確認兩個檔案都在</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>左側檔案列表</strong><br>
+            <span class="result">👀 結果：</span>你應該看到兩個檔案：<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;📄 <code>程式碼.gs</code>（後端程式碼，約 335 行）<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;📄 <code>查詢介面.html</code>（前端介面，約 244 行）
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟4 修改設定值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 步驟 4：修改設定值</h2>
+        <p>程式碼最上方有 3 個設定值需要替換為你自己的。這是<strong>唯一需要手動修改</strong>的地方。</p>
+
+        <h3>Step 4-1：切回後端程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在左側檔案列表中，點擊 <code>程式碼.gs</code>，讓右邊編輯區顯示後端程式碼
+        </div>
+
+        <h3>Step 4-2：找到設定區（程式碼第 30~36 行附近）</h3>
+        <pre><code>// ========== Line Bot 設定 ==========
+var LINE_TOKEN = '在此貼上你的 Channel Access Token';
+var LINE_USER_ID = '在此貼上你的 User ID';
+
+// ========== 試算表設定 ==========
+var SPREADSHEET_ID = '在此貼上你的試算表 ID';
+var SHEET_NAME = '人員資料';</code></pre>
+
+        <h3>Step 4-3：逐一替換設定值</h3>
+        <table>
+            <thead>
+                <tr><th>設定項</th><th>要替換的中文提示</th><th>替換成什麼</th><th>去哪裡找</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>LINE_TOKEN</code></td>
+                    <td><code>在此貼上你的 Channel Access Token</code></td>
+                    <td>你的 Channel Access Token（很長一串）</td>
+                    <td>LINE Developers → 你的 Bot → Messaging API → Channel access token</td>
+                </tr>
+                <tr>
+                    <td><code>LINE_USER_ID</code></td>
+                    <td><code>在此貼上你的 User ID</code></td>
+                    <td>你的 User ID（U 開頭的字串）</td>
+                    <td>LINE Developers → 你的 Bot → Basic settings → Your user ID</td>
+                </tr>
+                <tr>
+                    <td><code>SPREADSHEET_ID</code></td>
+                    <td><code>在此貼上你的試算表 ID</code></td>
+                    <td>步驟 1 複製的試算表 ID</td>
+                    <td>試算表網址 <code>/d/</code> 和 <code>/edit</code> 之間那段</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>替換方式（以 LINE_TOKEN 為例）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在程式碼中找到 <code>'在此貼上你的 Channel Access Token'</code><br>
+            <span class="action">👆 動作：</span>用滑鼠<strong>只選取單引號中間的中文字</strong>（不要選到單引號本身！）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+V</code> 貼上你的 Token<br>
+            <span class="result">👀 結果：</span>看起來會像 <code>var LINE_TOKEN = 'eyJhbGciOiJ...(略)...';</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 三個常見錯誤，請務必檢查：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>多餘的空格</strong> — Token 和 ID 的前後<strong>不要有空格</strong></li>
+                <li><strong>單引號被刪掉</strong> — 三個值都要保持用<strong>單引號 <code>' '</code></strong> 包起來</li>
+                <li><strong>SHEET_NAME 不要改！</strong> — 保持 <code>'人員資料'</code> 不動，<code>initSampleData()</code> 會自動建立這個工作表</li>
+            </ul>
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>3 個值都替換完後，按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 步驟5 執行 initSampleData ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 步驟 5：執行 initSampleData 建立範例資料</h2>
+        <p>程式碼裡內建了 <code>initSampleData()</code> 函式，一鍵建立 8 筆範例員工資料。</p>
+
+        <h3>Step 5-1：選擇要執行的函式</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，在 <strong>▶ 執行</strong> 按鈕的左邊，有一個<strong>下拉選單</strong>（可能顯示「doGet」或其他函式名稱）<br>
+            <span class="action">👆 動作：</span>點擊那個下拉選單 → 找到並選擇 <code>initSampleData</code><br>
+            <span class="result">👀 結果：</span>下拉選單現在顯示「initSampleData」
+        </div>
+
+        <h3>Step 5-2：點擊執行</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong> 按鈕<br>
+            <span class="result">👀 結果：</span>如果是<strong>第一次執行</strong>，會跳出「需要授權」的對話框
+        </div>
+
+        <h3>Step 5-3：完成授權流程（只有第一次需要）</h3>
+        <div class="micro-step">
+            <strong>授權第 1 步：</strong>彈出「需要授權」的對話框 → 點擊 <code>審查權限</code> 按鈕
+        </div>
+        <div class="micro-step">
+            <strong>授權第 2 步：</strong>選擇你的 Google 帳號（點擊你的帳號名稱）
+        </div>
+        <div class="micro-step">
+            <strong>授權第 3 步：</strong>出現「Google 尚未驗證這個應用程式」警告 → 點擊<strong>左下角</strong>的 <code>進階</code> 小字
+        </div>
+        <div class="micro-step">
+            <strong>授權第 4 步：</strong>畫面展開更多文字 → 點擊 <code>前往「查詢系統 資料庫」（不安全）</code>
+        </div>
+        <div class="micro-step">
+            <strong>授權第 5 步：</strong>列出權限清單 → 點擊 <code>允許</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>授權完成後，程式會<strong>自動開始執行</strong>，等待 5~10 秒
+        </div>
+
+        <h3>Step 5-4：確認結果</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32; margin-top: 0;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>編輯器下方「執行記錄」顯示「已建立 8 筆範例資料」</li>
+                    <li>你的 Line 收到推播：「✅ 查詢系統範例資料已建立（8 筆）」</li>
+                    <li>切回試算表分頁 → 會看到一個名為「人員資料」的工作表，裡面有 8 筆員工資料</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935; margin-top: 0;">❌ 失敗的樣子</h3>
+                <ul>
+                    <li>執行記錄顯示<strong>紅色錯誤</strong></li>
+                    <li>「Spreadsheet not found」→ 試算表 ID 貼錯</li>
+                    <li>Line 沒收到推播 → LINE_TOKEN 或 USER_ID 貼錯</li>
+                    <li>→ 回到步驟 4 重新檢查設定值</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>自動建立的範例資料</h3>
+        <table>
+            <thead><tr><th>姓名</th><th>部門</th><th>職稱</th><th>Email</th><th>分機</th></tr></thead>
+            <tbody>
+                <tr><td>王小明</td><td>業務部</td><td>業務經理</td><td>wang@example.com</td><td>101</td></tr>
+                <tr><td>李大華</td><td>技術部</td><td>工程師</td><td>lee@example.com</td><td>201</td></tr>
+                <tr><td>張美美</td><td>人資部</td><td>人資專員</td><td>chang@example.com</td><td>301</td></tr>
+                <tr><td colspan="5" style="text-align: center; color: #999;">...共 8 筆（王小明、李大華、張美美、陳志明、林小芬、黃大偉、趙小燕、周美玲）</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解析1 doGet ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 1：doGet() — Web App 入口</h2>
+        <p><strong>這段的目的：</strong>當使用者用瀏覽器開啟 Web App 網址時，顯示 HTML 查詢介面；若帶有查詢參數，則直接回傳 JSON。</p>
+
+        <pre><code>function doGet(e) {
+  // 如果有查詢參數，回傳 JSON（API 模式）
+  if (e && e.parameter && e.parameter.action === 'search') {
+    var keyword = e.parameter.q || '';
+    var results = searchData(keyword);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      count: results.length,
+      data: results
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 否則顯示 HTML 查詢頁面
+  return HtmlService.createHtmlOutputFromFile('查詢介面')
+    .setTitle('資料查詢系統')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>doGet(e)</code> — GAS 的特殊函式，當有人用瀏覽器（GET 請求）開啟 Web App URL 時自動執行，<code>e</code> 包含網址的查詢參數</li>
+            <li><code>e.parameter.action === 'search'</code> — 檢查網址是否帶有 <code>?action=search&q=關鍵字</code> 參數（API 模式用）</li>
+            <li><code>ContentService.createTextOutput()</code> — 回傳純文字（這裡是 JSON 格式），讓其他程式可以串接</li>
+            <li><code>HtmlService.createHtmlOutputFromFile('查詢介面')</code> — 讀取專案中名為「查詢介面」的 HTML 檔案，作為 Web App 頁面回傳給瀏覽器</li>
+            <li><code>.setTitle('資料查詢系統')</code> — 設定瀏覽器分頁標題</li>
+            <li><code>.setXFrameOptionsMode(ALLOWALL)</code> — 允許 HTML 頁面被嵌入 iframe 中（預設會被禁止）</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 雙模式設計的好處</strong><br>
+            <ul>
+                <li><strong>網頁模式</strong>（無參數）：直接開啟 URL → 看到漂亮的查詢介面，適合人類使用者</li>
+                <li><strong>API 模式</strong>（帶 <code>?action=search&q=業務</code>）：直接回傳 JSON，適合其他系統串接</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 程式碼解析2 searchData ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 2：searchData() — 模糊搜尋邏輯</h2>
+        <p><strong>這段的目的：</strong>這是整個系統的<span class="highlight">核心</span>，從試算表中搜尋所有包含關鍵字的資料列。</p>
+
+        <pre><code>function searchData(keyword) {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    Logger.log('找不到工作表：' + SHEET_NAME);
+    return [];
+  }
+
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];  // 只有標題列或空的
+
+  var headers = data[0];  // 第一列為標題
+  var results = [];
+  var searchKey = keyword.toLowerCase();
+
+  // 從第二列開始搜尋
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var match = false;
+
+    // 檢查每一欄是否包含關鍵字
+    for (var j = 0; j < row.length; j++) {
+      var cellValue = String(row[j]).toLowerCase();
+      if (cellValue.indexOf(searchKey) !== -1) {
+        match = true;
+        break;
+      }
+    }
+
+    if (match) {
+      var record = {};
+      for (var k = 0; k < headers.length; k++) {
+        record[headers[k]] = row[k];
+      }
+      results.push(record);
+    }
+  }
+  return results;
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>SpreadsheetApp.openById(SPREADSHEET_ID)</code> — 用 ID 開啟試算表</li>
+            <li><code>ss.getSheetByName(SHEET_NAME)</code> — 找到名為「人員資料」的工作表</li>
+            <li><code>sheet.getDataRange().getValues()</code> — 一次讀取整張工作表的所有資料，回傳二維陣列</li>
+            <li><code>data[0]</code> — 第一列是標題（姓名、部門、職稱...）</li>
+            <li><code>keyword.toLowerCase()</code> — 把關鍵字轉小寫，實現不分大小寫搜尋</li>
+            <li><code>String(row[j]).toLowerCase()</code> — 把每個欄位值也轉小寫後比對</li>
+            <li><code>cellValue.indexOf(searchKey) !== -1</code> — 如果欄位值包含關鍵字，<code>indexOf</code> 會回傳位置（>= 0），不包含則回傳 -1</li>
+            <li><code>record[headers[k]] = row[k]</code> — 把命中的資料列組成物件（例如 <code>{姓名: "王小明", 部門: "業務部", ...}</code>）</li>
+        </ul>
+
+        <div class="box warning">
+            <strong>⚠️ 效能提醒</strong><br>
+            此搜尋方式適合<strong>小型資料庫</strong>（幾百到幾千筆）。<code>getDataRange().getValues()</code> 會一次把所有資料讀入記憶體，資料量太大會變慢。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析3 doPost ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 3：doPost() — Line Bot Webhook</h2>
+        <p><strong>這段的目的：</strong>接收 Line Bot 的 Webhook 事件，判斷使用者是否輸入查詢指令（以「查」或「找」開頭），呼叫 <code>searchData()</code> 後回覆結果。</p>
+
+        <pre><code>function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var events = data.events;
+
+    for (var i = 0; i < events.length; i++) {
+      var event = events[i];
+
+      if (event.type === 'message' && event.message.type === 'text') {
+        var userMessage = event.message.text.trim();
+        var replyToken = event.replyToken;
+
+        // 判斷是否為查詢指令
+        if (userMessage.indexOf('查') === 0 || userMessage.indexOf('找') === 0) {
+          var keyword = userMessage.substring(1).trim();
+          handleLineSearch(replyToken, keyword);
+        } else if (userMessage === '使用說明' || userMessage === '幫助') {
+          replyText(replyToken, '📖 查詢系統使用說明\n\n' +
+            '傳送以下格式即可查詢：\n• 查 王小明\n• 找 業務部\n• 查 test@email\n\n' +
+            '支援模糊搜尋，輸入部分關鍵字即可！');
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    Logger.log('doPost 錯誤：' + error.message);
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>JSON.parse(e.postData.contents)</code> — 解析 Line 傳來的 JSON 資料</li>
+            <li><code>event.type === 'message'</code> — 確認是訊息事件（不是加好友、退出群組等）</li>
+            <li><code>event.message.type === 'text'</code> — 確認是文字訊息（不是圖片、貼圖等）</li>
+            <li><code>userMessage.indexOf('查') === 0</code> — 判斷訊息是否以「查」字開頭（位置 0 = 最前面）</li>
+            <li><code>userMessage.substring(1).trim()</code> — 去掉第一個字（「查」或「找」），再去掉前後空白，取得純關鍵字</li>
+            <li><code>handleLineSearch(replyToken, keyword)</code> — 呼叫搜尋處理函式，內部會呼叫 <code>searchData()</code> 並格式化回覆</li>
+            <li><code>try...catch</code> — 防呆機制，即使程式出錯也不會讓 Webhook 中斷</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 指令設計邏輯</strong><br>
+            <ul>
+                <li>以「查」或「找」開頭 → 進入搜尋模式（例如「查 業務」→ 關鍵字 = 「業務」）</li>
+                <li>傳「使用說明」或「幫助」→ 顯示操作指引</li>
+                <li>其他訊息 → 目前不回覆（你可以自行加上回覆邏輯）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 程式碼解析4 前端 HTML ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 4：前端 HTML（google.script.run）</h2>
+        <p><strong>這段的目的：</strong>前端「查詢介面.html」中的 JavaScript，透過 <code>google.script.run</code> 呼叫後端的 <code>searchData()</code> 函式，並把結果渲染成卡片。</p>
+
+        <pre><code>// 📄 前端 查詢介面.html 中的 JavaScript
+
+function doSearch() {
+  var keyword = document.getElementById('keyword').value.trim();
+  var resultsDiv = document.getElementById('results');
+
+  if (!keyword) {
+    resultsDiv.innerHTML = '&lt;div class="no-result"&gt;請輸入搜尋關鍵字&lt;/div&gt;';
+    return;
+  }
+
+  // 顯示載入中
+  resultsDiv.innerHTML = '&lt;div class="loading"&gt;搜尋中&lt;/div&gt;';
+
+  // 🔥 核心：呼叫後端的 searchData 函式
+  google.script.run
+    .withSuccessHandler(showResults)   // 成功 → 呼叫 showResults()
+    .withFailureHandler(showError)     // 失敗 → 呼叫 showError()
+    .searchData(keyword);              // 呼叫後端的 searchData(keyword)
+}</code></pre>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="margin-top: 0;">✅ withSuccessHandler</h3>
+                <p>後端函式<strong>成功回傳</strong>時執行</p>
+                <ul>
+                    <li>參數 = 後端函式的 return 值</li>
+                    <li>這裡就是 <code>searchData()</code> 回傳的陣列</li>
+                    <li><code>showResults(data)</code> 把陣列渲染成卡片</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="margin-top: 0;">❌ withFailureHandler</h3>
+                <p>後端函式<strong>發生錯誤</strong>時執行</p>
+                <ul>
+                    <li>參數 = Error 物件</li>
+                    <li>用來顯示友善的錯誤訊息</li>
+                    <li><code>showError(error)</code> 顯示錯誤提示</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>結果渲染邏輯 showResults()</h3>
+        <pre><code>function showResults(data) {
+  var resultsDiv = document.getElementById('results');
+  var keyword = document.getElementById('keyword').value.trim();
+
+  if (!data || data.length === 0) {
+    resultsDiv.innerHTML = '🔍 找不到「' + keyword + '」的相關資料';
+    return;
+  }
+
+  var html = '搜尋「' + keyword + '」找到 ' + data.length + ' 筆資料';
+  for (var i = 0; i &lt; data.length; i++) {
+    var keys = Object.keys(data[i]);
+    html += '&lt;div class="result-card"&gt;';
+    for (var j = 0; j &lt; keys.length; j++) {
+      html += keys[j] + '：' + data[i][keys[j]];  // 欄位名：欄位值
+    }
+    html += '&lt;/div&gt;';
+  }
+  resultsDiv.innerHTML = html;
+}</code></pre>
+
+        <div class="box info">
+            <strong>💡 關鍵觀念</strong><br>
+            <code>google.script.run</code> 是<strong>非同步</strong>的！呼叫後不會等結果，而是繼續往下跑。結果出來後才呼叫 Handler。這就是為什麼要搭配「載入動畫」— 讓使用者知道系統正在處理中。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 步驟6 部署為 Web App ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 步驟 6：部署為 Web App</h2>
+        <p>將程式碼部署為 Web App，讓外部可以存取查詢介面和 Line Bot Webhook。</p>
+
+        <h3>Step 6-1：開始部署</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>右上角</strong><br>
+            <span class="action">👆 動作：</span>點擊藍色的「部署」按鈕 → 在下拉選單中選擇 <code>新增部署作業</code><br>
+            <span class="result">👀 結果：</span>會彈出一個「新增部署作業」的設定面板
+        </div>
+
+        <h3>Step 6-2：選擇部署類型</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>設定面板左上角有一個齒輪圖示「選取類型」<br>
+            <span class="action">👆 動作：</span>點擊齒輪圖示 → 選擇 <code>網頁應用程式</code><br>
+            <span class="result">👀 結果：</span>面板會展開更多設定選項
+        </div>
+
+        <h3>Step 6-3：填寫部署設定</h3>
+        <table>
+            <thead><tr><th>設定項</th><th>要填/選的值</th><th>說明</th></tr></thead>
+            <tbody>
+                <tr><td><strong>說明</strong></td><td>輸入 <code>查詢系統 v1</code></td><td>版本備註（自己看的）</td></tr>
+                <tr><td><strong>執行身分</strong></td><td>選 <code>我</code></td><td>用你的帳號權限存取試算表</td></tr>
+                <tr><td><strong>誰可以存取</strong></td><td>選 <code>所有人</code></td><td>讓 Line Bot 和外部使用者都能存取</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Step 6-4：確認部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>確認以上設定後，點擊 <code>部署</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒<br>
+            <span class="result">👀 結果：</span>會出現「部署作業已更新」畫面，顯示一個<strong>網頁應用程式 URL</strong>
+        </div>
+
+        <h3>Step 6-5：複製 Web App URL</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在「網頁應用程式」區塊，找到 URL（<code>https://script.google.com/macros/s/AKfycb.../exec</code>），點擊旁邊的<strong>複製按鈕</strong><br>
+            <span class="result">👀 結果：</span>URL 已複製到剪貼簿！<strong>先貼到記事本備用</strong>（等一下設定 Webhook 要用）
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 重要提醒</strong><br>
+            <ul>
+                <li><strong>「執行身分」必須選「我」</strong>— 不然程式沒有權限讀取你的試算表</li>
+                <li><strong>「誰可以存取」必須選「所有人」</strong>— 不然 Line Bot 的 Webhook 會被拒絕存取</li>
+                <li>每次修改程式碼後要<strong>重新部署新版本</strong>才會生效（選「管理部署作業」→ 編輯 → 版本選「新版本」→ 部署）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 步驟7 設定 Webhook ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 步驟 7：設定 Line Bot Webhook URL</h2>
+        <p>把剛才複製的 Web App URL 設定為 Line Bot 的 Webhook，讓 Line Bot 能接收訊息。</p>
+
+        <h3>Step 7-1：開啟 LINE Developers Console</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器開新分頁，前往 <code>developers.line.biz</code><br>
+            <span class="action">👆 動作：</span>登入你的 LINE 帳號<br>
+            <span class="action">👆 動作：</span>點擊你的 Messaging API Channel（你 Day 1 建立的那個 Bot）
+        </div>
+
+        <h3>Step 7-2：進入 Messaging API 頁籤</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Channel 頁面上方有幾個分頁標籤<br>
+            <span class="action">👆 動作：</span>點擊 <code>Messaging API</code> 分頁<br>
+            <span class="result">👀 結果：</span>頁面會往下捲動或切換，顯示 Messaging API 的各項設定
+        </div>
+
+        <h3>Step 7-3：設定 Webhook URL</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>往下捲動找到「Webhook URL」區塊<br>
+            <span class="action">👆 動作：</span>點擊 <code>Edit</code> 按鈕<br>
+            <span class="action">👆 動作：</span>在輸入框中貼上剛才複製的 Web App URL（<code>https://script.google.com/macros/s/AKfycb.../exec</code>）<br>
+            <span class="action">👆 動作：</span>按下 <code>Update</code> 按鈕
+        </div>
+
+        <h3>Step 7-4：開啟 Webhook 開關</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Webhook URL 下方有一個 <code>Use webhook</code> 開關<br>
+            <span class="action">👆 動作：</span>確認開關是<strong>開啟狀態</strong>（綠色）。如果是灰色，點一下打開它<br>
+            <span class="result">👀 結果：</span>開關變成綠色
+        </div>
+
+        <h3>Step 7-5：驗證連線</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <code>Verify</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒<br>
+            <span class="result">👀 結果：</span>出現「<span style="color: #2e7d32; font-weight: bold;">Success</span>」表示連線成功！
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 如果 Verify 顯示失敗</strong><br>
+            <ol>
+                <li>確認 URL 結尾是 <code>/exec</code>（不是 <code>/dev</code>）</li>
+                <li>確認程式碼中有 <code>doPost()</code> 函式且已儲存</li>
+                <li>確認已經執行過「部署」（不是只存檔）</li>
+                <li>重新部署一次試試</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 步驟8 測試 + 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">8</span> 步驟 8：完整測試 + 成功/失敗對照</h2>
+        <p>部署和 Webhook 都設定好了，現在來做完整測試！</p>
+
+        <h3>🌐 測試 A：Web App 查詢介面</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器開新分頁，貼上你的 Web App URL 並按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 5~10 秒（首次載入較慢）<br>
+            <span class="result">👀 結果：</span>看到查詢介面：搜尋框 + 搜尋按鈕<br>
+            <span class="action">👆 動作：</span>在搜尋框輸入「業務」，按下搜尋按鈕或按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 2~5 秒（顯示「搜尋中」旋轉動畫）<br>
+            <span class="result">👀 結果：</span>顯示 2 筆結果：王小明（業務經理）和 陳志明（業務專員）
+        </div>
+
+        <h3>💬 測試 B：Line Bot 查詢</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開手機 Line App，找到你的 Bot（確認已加好友）<br>
+            <span class="action">👆 動作：</span>傳送文字 <code>查 業務</code><br>
+            <span class="result">⏱️ 等待：</span>約 3~8 秒<br>
+            <span class="result">👀 結果：</span>Bot 回覆搜尋結果，包含「王小明」和「陳志明」的完整資料
+        </div>
+
+        <h3>📋 測試指令一覽表</h3>
+        <table>
+            <thead><tr><th>你傳的訊息</th><th>預期 Bot 回覆</th><th>驗證重點</th></tr></thead>
+            <tbody>
+                <tr><td><code>查 業務</code></td><td>找到 2 筆：王小明、陳志明</td><td>模糊搜尋正常</td></tr>
+                <tr><td><code>找 王小明</code></td><td>找到 1 筆：王小明的完整資料</td><td>「找」指令也能用</td></tr>
+                <tr><td><code>查 工程師</code></td><td>找到 3 筆：李大華、林小芬、趙小燕</td><td>搜尋職稱欄位</td></tr>
+                <tr><td><code>查 example.com</code></td><td>找到 8 筆（全部）</td><td>搜尋 Email 欄位</td></tr>
+                <tr><td><code>查 不存在的人</code></td><td>找不到符合的資料</td><td>查無結果的處理</td></tr>
+                <tr><td><code>使用說明</code></td><td>查詢系統使用說明</td><td>說明指令</td></tr>
+            </tbody>
+        </table>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32; margin-top: 0;">✅ 全部通過 = 大成功！</h3>
+                <ul>
+                    <li>Web App 能搜尋且顯示結果卡片</li>
+                    <li>Line Bot 能回覆查詢結果</li>
+                    <li>查無結果時顯示友善提示</li>
+                    <li>「使用說明」能正常回覆</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935; margin-top: 0;">❌ 有問題？常見原因</h3>
+                <ul>
+                    <li>Web App 白畫面 → HTML 檔名不是「查詢介面」</li>
+                    <li>Web App 搜尋無反應 → 重新部署新版本</li>
+                    <li>Line Bot 不回覆 → Webhook URL 錯誤或未開啟</li>
+                    <li>→ 詳見下一頁「常見問題排解」</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 常見問題排解（強化版） ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解（強化版）</h2>
+
+        <h3>🔍 第一步：怎麼找到錯誤訊息？</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>左側選單</strong>，找到「⏱ 執行項目」圖示（時鐘圖示，從上面數第 3 個）<br>
+            <span class="action">👆 動作：</span>點擊它 → 找到最近一筆執行記錄 → 如果狀態是<strong>紅色「失敗」</strong>，點擊展開看<strong>紅色錯誤文字</strong>
+        </div>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Web App 打開是空白或報錯</h3>
+                <table style="font-size: 14px;">
+                    <tr><td><strong>錯誤訊息</strong></td><td><strong>原因與解法</strong></td></tr>
+                    <tr><td>「找不到檔案 查詢介面」</td><td>HTML 檔名打錯了！點左側檔案列表確認檔名是「查詢介面」（不是「查詢界面」「index」等）</td></tr>
+                    <tr><td>「Script function not found: doGet」</td><td>程式碼.gs 沒有貼完整，缺少 doGet 函式</td></tr>
+                    <tr><td>頁面顯示但搜尋無反應</td><td>修改程式碼後沒有<strong>重新部署</strong>。進入「管理部署作業」→ 編輯 → 版本選「新版本」→ 部署</td></tr>
+                </table>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Line Bot 不回覆訊息</h3>
+                <table style="font-size: 14px;">
+                    <tr><td><strong>檢查項目</strong></td><td><strong>解法</strong></td></tr>
+                    <tr><td>Webhook URL 是否正確</td><td>確認 URL 結尾是 <code>/exec</code>，且「Use webhook」開關已開啟</td></tr>
+                    <tr><td>是否已重新部署</td><td>修改程式碼後必須<strong>部署新版本</strong>，只存檔不會生效</td></tr>
+                    <tr><td>LINE_TOKEN 是否正確</td><td>先執行 <code>testPush</code> 函式測試推播是否正常</td></tr>
+                    <tr><td>Bot 是否已加好友</td><td>用手機掃描 LINE Developers Console 的 QR Code 加好友</td></tr>
+                </table>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">搜尋找不到資料 / 結果為空</h3>
+                <table style="font-size: 14px;">
+                    <tr><td><strong>可能原因</strong></td><td><strong>解法</strong></td></tr>
+                    <tr><td>還沒執行 initSampleData</td><td>回到步驟 5 執行一次 <code>initSampleData</code></td></tr>
+                    <tr><td>SPREADSHEET_ID 貼錯</td><td>切回試算表確認網址中的 ID，重新貼上</td></tr>
+                    <tr><td>工作表名稱不對</td><td>確認試算表中的工作表名稱是「人員資料」（與 <code>SHEET_NAME</code> 一致）</td></tr>
+                </table>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">更新程式碼後沒生效</h3>
+                <table style="font-size: 14px;">
+                    <tr><td colspan="2"><strong>最常見的坑！修改程式碼後的正確流程：</strong></td></tr>
+                    <tr><td>1.</td><td><code>Ctrl+S</code> 儲存程式碼</td></tr>
+                    <tr><td>2.</td><td>點擊「部署」→「管理部署作業」</td></tr>
+                    <tr><td>3.</td><td>點擊右上角的「✏️ 編輯」鉛筆圖示</td></tr>
+                    <tr><td>4.</td><td>「版本」下拉選單選「新版本」</td></tr>
+                    <tr><td>5.</td><td>點擊「部署」按鈕</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 除錯的最佳策略：分段測試</strong><br>
+            <ul>
+                <li><strong>先測 testPush</strong> — 確認 LINE_TOKEN 和 USER_ID 正確（Line 有收到文字推播）</li>
+                <li><strong>再測 testSearch</strong> — 確認 SPREADSHEET_ID 正確且有資料（執行記錄顯示找到 N 筆）</li>
+                <li><strong>最後測 Web App 和 Line Bot</strong> — 確認部署和 Webhook 設定正確</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: VibeCoding 延伸 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🚀 VibeCoding 延伸挑戰</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">學會基本查詢系統後，可以試著用 AI 幫你加上更多功能！</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>🎨 延伸 1：美化前端介面</h3>
+                <pre style="font-size: 14px;"><code>請幫我改進查詢介面 HTML：
+1. 新增深色模式切換按鈕
+2. 搜尋結果加上頭像圓圈（用姓名第一個字）
+3. 加入搜尋歷史記錄（localStorage）
+4. 手機版也要好看（響應式設計）</code></pre>
+            </div>
+            <div class="concept-card">
+                <h3>📊 延伸 2：進階搜尋功能</h3>
+                <pre style="font-size: 14px;"><code>請幫我在 searchData() 加上進階功能：
+1. 支援多關鍵字搜尋（空格分隔）
+2. 支援指定欄位搜尋（如「部門:技術」）
+3. 搜尋結果按照相關度排序
+4. 分頁顯示（每頁 10 筆）</code></pre>
+            </div>
+            <div class="concept-card">
+                <h3>💬 延伸 3：Line Bot 增強</h3>
+                <pre style="font-size: 14px;"><code>請幫我改進 Line Bot 的查詢功能：
+1. 加入 Flex Message 卡片式回覆
+2. 支援「新增」指令（直接在 Line 新增資料）
+3. 支援「刪除」指令（刪除指定資料）
+4. 查詢結果超過 5 筆時提供「下一頁」按鈕</code></pre>
+            </div>
+            <div class="concept-card">
+                <h3>🔄 延伸 4：實際應用場景</h3>
+                <ul>
+                    <li><strong>員工通訊錄</strong> — 查分機、Email</li>
+                    <li><strong>庫存查詢</strong> — 查商品數量、價格</li>
+                    <li><strong>FAQ 知識庫</strong> — 查常見問題答案</li>
+                    <li><strong>活動報名</strong> — 查報名狀態</li>
+                    <li><strong>設備借用</strong> — 查設備是否可借</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="box success">
+            <strong>✅ VibeCoding 心法</strong><br>
+            把上面的提示詞複製到 AI，生成程式碼後<strong>先看懂邏輯</strong>，再貼到你的 GAS 專案中。遇到錯誤時，把錯誤訊息貼回給 AI 請它修正。這就是 Vibe Coding 的迭代流程！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">今天在 Part 12 學到的核心技術：</p>
+
+        <div class="concept-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌐</div>
+                <h3>HtmlService</h3>
+                <p>用 <code>createHtmlOutputFromFile</code> 載入獨立 HTML 檔，建立 Web App 前端介面</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔗</div>
+                <h3>google.script.run</h3>
+                <p>前端呼叫後端的非同步橋樑，搭配 Success/Failure Handler</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔎</div>
+                <h3>模糊搜尋</h3>
+                <p>遍歷所有欄位、toLowerCase + indexOf，簡單卻實用</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🚪</div>
+                <h3>雙入口設計</h3>
+                <p>doGet + doPost 共用 searchData，一個專案兩種入口</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">本單元操作步驟總整理</h3>
+        <table>
+            <thead><tr><th>步驟</th><th>做了什麼</th><th>關鍵要點</th></tr></thead>
+            <tbody>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">1</span></td><td>建立資料試算表</td><td>複製試算表 ID 備用</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">2</span></td><td>建立 GAS 專案 + 貼後端程式碼</td><td>從試算表「擴充功能」開啟</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">3</span></td><td>建立 HTML 前端檔案</td><td>檔名必須是「查詢介面」（不能打錯！）</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">4</span></td><td>修改設定值</td><td>LINE_TOKEN、LINE_USER_ID、SPREADSHEET_ID</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">5</span></td><td>執行 initSampleData</td><td>自動建立「人員資料」工作表 + 8 筆範例資料</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">6</span></td><td>部署為 Web App</td><td>執行身分：我 / 存取權：所有人</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">7</span></td><td>設定 Line Bot Webhook URL</td><td>貼 Web App URL + 開啟 Use webhook + Verify</td></tr>
+                <tr><td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">8</span></td><td>完整測試</td><td>Web App 搜尋 + Line Bot「查 業務」</td></tr>
+            </tbody>
+        </table>
+
+        <div class="box success">
+            <strong>✅ 核心心法</strong><br>
+            <strong>「邏輯寫一次，入口開多個」</strong>— 把核心功能抽成獨立函式（searchData），不同入口只負責「接收輸入」和「格式化輸出」，這就是良好的程式架構！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 22: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <h1 style="font-size: 42px;">Part 12 完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">
+            你已經學會打造 <span class="highlight">Web App + Line Bot 雙入口查詢系統</span>
+        </p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌐</div>
+                <h3>Web App 介面</h3>
+                <p>漂亮的查詢網頁</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔗</div>
+                <h3>前後端溝通</h3>
+                <p>google.script.run</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔎</div>
+                <h3>模糊搜尋</h3>
+                <p>全欄位搜尋比對</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">💬</div>
+                <h3>Line Bot 查詢</h3>
+                <p>對話式互動查詢</p>
+            </div>
+        </div>
+
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🎯 下一站預告 — Part 13：AI 自動發文系統</strong>
+            <ul>
+                <li>串接 AI API 自動生成文章</li>
+                <li>定時排程自動發文</li>
+                <li>Line Bot 控制發文流程</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/12_查詢系統_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 GS 程式碼</a>
+            <a href="../GAS程式碼/12_查詢系統_前端.html" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #00695c; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 HTML 前端</a>
+            <a href="Day2_Part13_AI自動發文.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #e65100; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進到 AI 自動發文！</p>
+    </div>
+</div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

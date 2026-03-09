@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 實作 13 — AI 自動發文 × Line Bot AI 推播</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">📘 實作 13 — AI 自動發文 × Line Bot AI 推播</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🤖</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">AI 自動發文 × Line Bot</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            串接 Gemini API → Prompt 設計 → AI 寫文章 → <span class="highlight">自動推播</span>
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">Gemini API</span>
+            <span class="badge badge-blue">Prompt 工程</span>
+            <span class="badge badge-orange">正則表達式</span>
+            <span class="badge badge-green">試算表記錄</span>
+            <span class="badge badge-blue">每日排程</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">⏰ 排程觸發</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🧠 Gemini AI</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🔍 解析回覆</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 寫入試算表</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📱 Line 推播</div>
+        </div>
+        <div style="display: inline-block; background: linear-gradient(135deg, #1b5e20, #004d40); color: white; padding: 12px 30px; border-radius: 30px; font-size: 20px; margin-top: 25px;">
+            Day 2 最終實作（實作 13 / 共 13 個實作）
+        </div>
+        <p style="font-size: 15px; color: #999; margin-top: 15px;">使用鍵盤 ← → 或點擊兩側箭頭切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件，全部打勾才能順利完成本單元。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>✅ 必備條件（Day 1 已完成）</h3>
+                <ol>
+                    <li><strong>Line Bot 帳號</strong> — 你在 Day 1 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code>（一串很長的英數字）</li>
+                    <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」欄位（U 開頭的字串）</li>
+                    <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
+                </ol>
+            </div>
+            <div class="concept-card">
+                <h3>📦 本單元額外需要</h3>
+                <ol>
+                    <li><strong>Gemini API Key</strong> — 到 Google AI Studio 免費申請（下一頁會教你怎麼申請）</li>
+                    <li><strong>一個 Google 試算表</strong> — 用於記錄 AI 產生的文章（等一下步驟 2 會帶你建立）</li>
+                    <li><strong>下載本單元程式碼</strong> — 點擊簡報最後一頁的「📥 下載程式碼」按鈕，取得 <code>13_AI自動發文_LineBot.gs</code></li>
+                </ol>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <div style="background: #e3f2fd; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">⏱️</div>
+                <div style="font-size: 18px; font-weight: 600; color: #1565c0;">預估操作時間</div>
+                <div style="font-size: 28px; font-weight: 700; color: #0d47a1;">20 ~ 30 分鐘</div>
+            </div>
+            <div style="background: #fce4ec; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📊</div>
+                <div style="font-size: 18px; font-weight: 600; color: #c62828;">難度等級</div>
+                <div style="font-size: 28px; font-weight: 700; color: #b71c1c;">★★★☆☆ 中級</div>
+            </div>
+            <div style="background: #f3e5f5; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📄</div>
+                <div style="font-size: 18px; font-weight: 600; color: #6a1b9a;">操作步驟</div>
+                <div style="font-size: 28px; font-weight: 700; color: #4a148c;">共 6 大步驟</div>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 如果你還沒完成 Day 1 Part 0：</strong><br>
+            請先回到 <a href="Day1_Part0_GAS環境與LineBot建立.html" style="color: #856404; font-weight: bold;">Day 1 Part 0 — GAS 環境與 Line Bot 建立</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下 5 個核心技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🧠</div>
+                <h3>串接 Gemini API</h3>
+                <p>使用 <code>UrlFetchApp.fetch()</code> 呼叫 Google Gemini API，送出 Prompt 取得 AI 回覆</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">✍️</div>
+                <h3>Prompt 工程（提示詞設計）</h3>
+                <p>運用角色設定 + 明確要求 + 結構化輸出，讓 AI 每次都產出格式一致的高品質貼文</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
+                <h3>正則表達式解析 AI 回覆</h3>
+                <p>用 <code>.match()</code> 和正則表達式，從 AI 回覆中精準提取【標題】【內文】【標籤】</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>試算表自動記錄</h3>
+                <p>自動建立「AI 發文記錄」工作表，每篇文章的日期、主題、標題、內文、標籤全部記錄下來</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏰</div>
+                <h3>每日自動排程</h3>
+                <p>設定 GAS 觸發條件，每天自動選主題、寫文章、記錄、推播，完全不用手動操作</p>
+            </div>
+        </div>
+        <div class="box info" style="margin-top: 20px;">
+            <strong>💡 這是兩天課程的集大成！</strong><br>
+            結合了 Line Bot 推播、試算表操作、API 串接、排程觸發等所有技能，加上全新的 AI 整合能力，打造完整的自動化內容生產系統。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Vibe Coding 提示詞 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding — AI 提示詞</h2>
+        <p>用以下提示詞，讓 AI 幫你生成 AI 自動發文推播的完整程式碼：</p>
+        <pre><code>請幫我寫一個 Google Apps Script 程式，功能如下：
+1. 串接 Gemini API（Google AI）生成社群貼文
+2. 設計 Prompt 自動生成指定主題的文章（含標題、內文、hashtag）
+3. 用正則表達式解析 AI 回覆，提取【標題】【內文】【標籤】
+4. 將 AI 生成的文章記錄到 Google 試算表（含日期、主題、標題、內文、標籤、狀態）
+5. 透過 Line Bot pushText() 推播 AI 產生的貼文
+6. 可設定每日自動排程，隨機選主題生成文章並推播
+7. 包含 4 個測試函式：testPush、testGemini、testGenerateAndPost、testCustomTopic</code></pre>
+        <div class="box info">
+            <strong>💡 Vibe Coding 小提醒：</strong><br>
+            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 4 個設定值就能使用！
+        </div>
+        <div class="box warning">
+            <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>
+            AI 生成的程式碼<strong>可能與課程版本不同</strong>（例如變數宣告方式、函式名稱、API 參數等都會有差異）。<br>
+            本課程所有步驟都是依照 <code>13_AI自動發文_LineBot.gs</code> 這個檔案來教學。<br>
+            <strong>建議：直接使用課程提供的 .gs 檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📱 成果預覽</h2>
+        <p>完成後，你的 Line Bot 會每天自動推播 AI 生成的社群貼文，效果如下：</p>
+        <div class="two-col">
+            <div class="col" style="text-align: center;">
+                <h3>Line Bot 推播畫面</h3>
+                <div style="background: #7494c0; border-radius: 16px; padding: 20px; max-width: 360px; margin: 0 auto; min-height: 420px;">
+                    <div style="background: #5b7ea1; border-radius: 10px; padding: 10px 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">AI</div>
+                        <span style="color: white; font-weight: 600; font-size: 15px;">AI 自動發文 Bot</span>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <span style="background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 12px;">2026年3月9日 上午 9:15</span>
+                    </div>
+                    <div style="display: flex; justify-content: flex-start; margin-bottom: 10px;">
+                        <div style="background: white; border-radius: 0 16px 16px 16px; padding: 14px 16px; max-width: 300px; font-size: 13px; line-height: 1.7; color: #333;">
+                            <div style="font-size: 14px;">🤖 AI 每日好文</div>
+                            <div style="color: #1b5e20; margin: 4px 0;">━━━━━━━━━━━━━━━</div>
+                            <div style="font-weight: 700; font-size: 14px; margin-top: 8px;">📌 AI 時代的必備技能</div>
+                            <div style="font-size: 12px; color: #444; margin-top: 8px;">
+                                你有沒有發現，AI 已經悄悄融入生活？🚀<br><br>
+                                想在 AI 時代站穩腳步：<br>
+                                1. 學會「問對問題」✨<br>
+                                2. 善用 AI 工具提升效率 💪<br>
+                                3. 培養批判思考力 🧠<br><br>
+                                #AI #科技趨勢 #自我成長
+                            </div>
+                            <div style="color: #1b5e20; margin: 8px 0 4px;">━━━━━━━━━━━━━━━</div>
+                            <div style="font-size: 11px; color: #666;">📝 主題：科技新趨勢</div>
+                            <div style="font-size: 11px; color: #666;">💡 由 Gemini AI + GAS 自動產生</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <h3>功能特色</h3>
+                <ul>
+                    <li><strong>AI 寫文章</strong> — Gemini API 自動生成社群貼文</li>
+                    <li><strong>7 種主題輪播</strong> — 科技、生活、健康、職場、教育、環保、時間管理</li>
+                    <li><strong>格式統一</strong> — 每篇都有標題 + 內文 + hashtag</li>
+                    <li><strong>自動記錄</strong> — 每篇文章自動存入 Google 試算表</li>
+                    <li><strong>每日排程</strong> — 設定後完全自動，不用手動操作</li>
+                </ul>
+                <div class="box success">
+                    <strong>🎁 實用場景：</strong><br>
+                    每日自動產出社群貼文、知識分享、團隊內部資訊推播，完全由 AI + GAS 全自動完成！
+                </div>
+                <h3>完成後你會有</h3>
+                <ul>
+                    <li>一個串接 Gemini AI 的 GAS 專案</li>
+                    <li>一個記錄所有 AI 文章的試算表</li>
+                    <li>一個每天自動產文 + 推播的排程</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 系統架構圖 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🏗️ 系統架構圖</h2>
+        <p style="font-size: 22px; margin-bottom: 25px;">AI 自動發文系統的<span class="highlight">完整流程</span>：從排程觸發到 Line 推播</p>
+
+        <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 30px 0;">
+            <div class="flow-step" style="background: #e3f2fd; border-color: #1565c0;">
+                <span style="font-size: 24px;">⏰</span> dailyAutoPost()
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" style="background: #fce4ec; border-color: #e91e63;">
+                <span style="font-size: 24px;">📝</span> buildPrompt()
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" style="background: #f3e5f5; border-color: #9c27b0;">
+                <span style="font-size: 24px;">🧠</span> callGemini()
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" style="background: #fff3e0; border-color: #ff9800;">
+                <span style="font-size: 24px;">🔍</span> parseResponse()
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" style="background: #e8f5e9; border-color: #4caf50;">
+                <span style="font-size: 24px;">📊</span> saveToSheet()
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" style="background: #e8f5e9; border-color: #2e7d32;">
+                <span style="font-size: 24px;">📱</span> pushText()
+            </div>
+        </div>
+
+        <h3>程式碼六大區塊對應</h3>
+        <table>
+            <thead>
+                <tr><th>區塊</th><th>函式名稱</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>第一部分</td><td><code>pushText()</code> + <code>pushLine()</code></td><td>Line Bot 推播（與之前 Part 共用）</td></tr>
+                <tr><td>第二部分</td><td><code>callGemini(prompt)</code></td><td>呼叫 Gemini API 取得 AI 回覆</td></tr>
+                <tr><td>第三部分</td><td><code>buildPrompt(topic)</code> + <code>parseResponse(response)</code></td><td>設計 Prompt + 解析 AI 回覆</td></tr>
+                <tr><td>第四部分</td><td><code>initRecordSheet()</code> + <code>saveToSheet()</code></td><td>試算表自動建立 + 記錄文章</td></tr>
+                <tr><td>第五部分</td><td><code>generateAndPost(topic)</code> + <code>dailyAutoPost()</code></td><td>主函式 + 排程函式</td></tr>
+                <tr><td>第六部分</td><td><code>testGemini()</code> 等 4 個測試函式</td><td>逐步測試每個環節</td></tr>
+            </tbody>
+        </table>
+
+        <div class="box info">
+            <strong>💡 全自動化！</strong><br>
+            設定好排程後，每天系統會自動：隨機選主題 → 請 AI 寫文章 → 記錄到試算表 → 推播到你的 Line。完全不用手動操作！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟1 申請 Gemini API Key ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 申請 Gemini API Key（精確教學）</h2>
+        <p>Gemini 是 Google 的 AI 模型，我們需要一把「API Key」才能呼叫它。申請完全免費。</p>
+
+        <h3>Step 1-1：開啟 Google AI Studio</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開瀏覽器，在網址列輸入 <code>aistudio.google.com/apikey</code> 按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，頁面載入完成<br>
+            <span class="result">👀 結果：</span>你會看到 Google AI Studio 的 API Keys 管理頁面。如果還沒登入 Google，會先要求你登入
+        </div>
+
+        <h3>Step 1-2：建立 API Key</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>頁面中央附近<br>
+            <span class="action">👆 動作：</span>點擊 <code>Create API key</code> 按鈕（藍色按鈕）<br>
+            <span class="result">👀 結果：</span>會跳出一個選擇 GCP 專案的對話框
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>如果你有現有的 GCP 專案就選一個；如果沒有，點 <code>Create API key in new project</code>（在新專案中建立）<br>
+            <span class="result">⏱️ 等待：</span>約 5~10 秒，系統會自動建立專案並產生 Key<br>
+            <span class="result">👀 結果：</span>畫面會顯示你的 API Key（一串以 <code>AIza</code> 開頭的英數字）
+        </div>
+
+        <h3>Step 1-3：複製 API Key</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 API Key 旁邊的<strong>複製圖示</strong>（📋），或用滑鼠選取整串 Key 後按 <code>Ctrl+C</code><br>
+            <span class="result">👀 結果：</span>Key 已經複製到剪貼簿中，等一下貼到程式碼的 <code>GEMINI_API_KEY</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ API Key 安全提醒：</strong>
+            <ul style="margin-top: 8px;">
+                <li>API Key 等同密碼，<strong>不要公開分享</strong>或放到公開的 GitHub</li>
+                <li>Gemini API 免費額度：每分鐘 15 次、每日 1,500 次（<code>gemini-2.5-flash</code>），個人使用綽綽有餘</li>
+                <li>如果 Key 外洩，回到 AI Studio 刪除舊的、重新產生一個即可</li>
+                <li>Key 看起來像這樣：<code>AIzaSyA1B2c3D4e5F6g7H8i9J0...</code>（約 39 個字元）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟2 建立 GAS 專案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 建立 GAS 專案</h2>
+        <p>跟之前的 Part 一樣，我們從新的試算表開始建立 Apps Script 專案。</p>
+
+        <h3>Step 2-1：建立新的 Google 試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器網址列輸入 <code>sheets.new</code> 然後按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，瀏覽器會自動建立並開啟一個全新的 Google 試算表<br>
+            <span class="result">👀 結果：</span>你會看到一個空白的試算表，左上角顯示「未命名的試算表」
+        </div>
+
+        <h3>Step 2-2：替試算表命名</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>試算表畫面的<strong>左上角</strong>，有一行小字寫著「未命名的試算表」<br>
+            <span class="action">👆 動作：</span>點擊「未命名的試算表」那個文字，它會變成可編輯的輸入框<br>
+            <span class="action">👆 動作：</span>輸入 <code>AI 自動發文 LineBot</code>，然後按 Enter 或點擊其他地方<br>
+            <span class="result">👀 結果：</span>左上角的名稱會變成「AI 自動發文 LineBot」
+        </div>
+
+        <h3>Step 2-3：取得試算表 ID（很重要！）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器<strong>最上方的網址列</strong><br>
+            <span class="action">👆 動作：</span>看網址列，你會看到類似這樣的網址：
+        </div>
+        <pre><code>https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456/edit</code></pre>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用滑鼠<strong>選取 <code>/d/</code> 和 <code>/edit</code> 之間的那一整串英數字</strong>，按 <code>Ctrl+C</code> 複製<br>
+            <span class="result">👀 結果：</span>你已經複製了試算表 ID，等一下會貼到程式碼中
+        </div>
+
+        <h3>Step 2-4：開啟 Apps Script 編輯器</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>在試算表上方的選單列，找到<strong>最右邊的「擴充功能」</strong><br>
+            <span class="action">👆 動作：</span>點擊「擴充功能」→ 在下拉選單中點擊 <code>Apps Script</code><br>
+            <span class="result">⏱️ 等待：</span>瀏覽器會<strong>開啟一個全新的分頁</strong>，等待 3~5 秒直到編輯器完全載入<br>
+            <span class="result">👀 結果：</span>你會看到 Apps Script 編輯器：左邊是檔案列表（有一個「程式碼.gs」）、右邊是程式碼編輯區、上方有一個 <strong>▶ 執行</strong> 按鈕
+        </div>
+
+        <div class="box info">
+            <strong>💡 確認你看到的畫面：</strong><br>
+            編輯區裡面應該有一段預設程式碼：<code>function myFunction() { }</code>。這段等一下會全部刪除，替換成我們的 AI 自動發文程式碼。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟3 貼上程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 貼上程式碼</h2>
+        <p>現在要把課程提供的完整程式碼貼到 Apps Script 編輯器中。</p>
+
+        <h3>Step 3-1：選取並刪除預設程式碼</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>右半邊程式碼編輯區</strong><br>
+            <span class="action">👆 動作：</span>在編輯區裡面<strong>按一下</strong>（讓游標在編輯區裡），然後按 <code>Ctrl+A</code>（全選）<br>
+            <span class="result">👀 結果：</span>所有預設程式碼會被反白選取<br>
+            <span class="action">👆 動作：</span>按 <code>Delete</code> 鍵或 <code>Backspace</code> 鍵，刪除所有內容<br>
+            <span class="result">👀 結果：</span>編輯區變成完全空白
+        </div>
+
+        <h3>Step 3-2：開啟課程程式碼檔案</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到你下載的 <code>13_AI自動發文_LineBot.gs</code> 檔案（在你的下載資料夾中）<br>
+            <span class="action">👆 動作：</span>用<strong>記事本</strong>或任何文字編輯器開啟這個檔案<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選檔案中的所有文字），再按 <code>Ctrl+C</code>（複製）
+        </div>
+
+        <h3>Step 3-3：貼上程式碼到 Apps Script</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切回 Apps Script 編輯器的分頁<br>
+            <span class="action">👆 動作：</span>在空白的編輯區按一下，然後按 <code>Ctrl+V</code>（貼上）<br>
+            <span class="result">⏱️ 等待：</span>約 1~2 秒，程式碼會完整出現在編輯區中<br>
+            <span class="result">👀 結果：</span>你應該會看到程式碼的最前面是一段註解（以 <code>/**</code> 開頭），往下捲動可以看到多個函式
+        </div>
+
+        <h3>Step 3-4：儲存程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>上方的檔案名稱旁邊如果有一個橘色圓點，它會消失，表示已儲存成功
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：不要只貼一部分！</strong><br>
+            這個檔案有 376 行左右，包含 6 個區塊：設定區、Line Bot 推播、Gemini API 串接、Prompt 設計與解析、試算表記錄、主函式與測試函式。請確認<strong>全部都有貼進去</strong>。往下捲到最底部，應該能看到 <code>function testPush()</code>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟4 修改設定值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 修改設定值</h2>
+        <p>程式碼最上方有 4 個設定值需要替換為你自己的。這是<strong>唯一需要手動修改</strong>的地方。</p>
+
+        <h3>找到設定區（程式碼第 32~46 行）</h3>
+        <pre><code>// ========== Line Bot 設定 ==========
+var LINE_TOKEN = '在此貼上你的 Channel Access Token';
+var LINE_USER_ID = '在此貼上你的 User ID';
+
+// ========== AI 設定 ==========
+var GEMINI_API_KEY = '在此貼上你的 Gemini API Key';
+var GEMINI_MODEL = 'gemini-2.5-flash';
+
+// ========== 試算表設定 ==========
+var SPREADSHEET_ID = '在此貼上你的試算表 ID';
+var SHEET_NAME = 'AI 發文記錄';</code></pre>
+
+        <h3>逐一替換 4 個設定值</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>設定項目</th>
+                    <th>要替換的中文提示</th>
+                    <th>替換成什麼</th>
+                    <th>去哪裡找</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>LINE_TOKEN</code></td>
+                    <td><code>在此貼上你的 Channel Access Token</code></td>
+                    <td>你的 Channel Access Token（很長一串）</td>
+                    <td>LINE Developers → 你的 Bot → Messaging API 頁籤 → 最下方</td>
+                </tr>
+                <tr>
+                    <td><code>LINE_USER_ID</code></td>
+                    <td><code>在此貼上你的 User ID</code></td>
+                    <td>你的 User ID（U 開頭的字串）</td>
+                    <td>LINE Developers → 你的 Bot → Basic settings → Your user ID</td>
+                </tr>
+                <tr>
+                    <td><code>GEMINI_API_KEY</code></td>
+                    <td><code>在此貼上你的 Gemini API Key</code></td>
+                    <td>步驟 1 複製的 API Key（AIza 開頭）</td>
+                    <td>Google AI Studio → API Keys 頁面</td>
+                </tr>
+                <tr>
+                    <td><code>SPREADSHEET_ID</code></td>
+                    <td><code>在此貼上你的試算表 ID</code></td>
+                    <td>步驟 2 複製的試算表 ID</td>
+                    <td>試算表網址中 <code>/d/</code> 和 <code>/edit</code> 之間那串</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>替換方式（以 GEMINI_API_KEY 為例）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在程式碼中找到 <code>'在此貼上你的 Gemini API Key'</code>，用滑鼠<strong>只選取單引號中間的中文字</strong>（不要選到單引號本身！）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+V</code> 貼上你的 API Key<br>
+            <span class="result">👀 結果：</span>看起來會像 <code>var GEMINI_API_KEY = 'AIzaSyA1B2c3D4...';</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 四個常見錯誤，請務必檢查：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>多餘的空格</strong> — Token、Key 和 ID 的前後<strong>不要有空格</strong></li>
+                <li><strong>單引號被刪掉</strong> — 4 個值都要保持用<strong>單引號 <code>' '</code></strong> 包起來</li>
+                <li><strong>GEMINI_MODEL 不要改</strong> — 保持 <code>'gemini-2.5-flash'</code> 即可（推薦，速度快、免費額度高）</li>
+                <li><strong>SHEET_NAME 不要改</strong> — 保持 <code>'AI 發文記錄'</code>，程式會自動建立這個工作表</li>
+            </ul>
+        </div>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>4 個值都替換完後，按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 程式碼解析1 Gemini API 串接 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 1 — Gemini API 串接（callGemini）</h2>
+        <p><strong>這段的目的：</strong>呼叫 Google 的 Gemini AI，送出提示詞（Prompt），取回 AI 生成的文字回覆。</p>
+
+        <pre><code>function callGemini(prompt) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+    + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY;
+
+  var payload = {
+    contents: [{
+      parts: [{
+        text: prompt
+      }]
+    }],
+    generationConfig: {
+      temperature: 0.8,
+      maxOutputTokens: 1024
+    }
+  };
+
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    var code = response.getResponseCode();
+
+    if (code !== 200) {
+      Logger.log('Gemini API 呼叫失敗，狀態碼：' + code);
+      Logger.log('錯誤內容：' + response.getContentText());
+      return null;
+    }
+
+    var json = JSON.parse(response.getContentText());
+
+    if (json.candidates &amp;&amp; json.candidates[0] &amp;&amp;
+        json.candidates[0].content &amp;&amp; json.candidates[0].content.parts) {
+      var text = json.candidates[0].content.parts[0].text;
+      Logger.log('Gemini 回覆：' + text.substring(0, 100) + '...');
+      return text;
+    }
+
+    Logger.log('Gemini 回覆格式異常：' + JSON.stringify(json));
+    return null;
+
+  } catch (error) {
+    Logger.log('Gemini API 錯誤：' + error.message);
+    return null;
+  }
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>url</code> — Gemini API 的端點網址，格式：<code>models/{模型名}:generateContent?key={你的Key}</code></li>
+            <li><code>contents → parts → text</code> — 把我們的提示詞放進 Gemini 要求的 JSON 格式中</li>
+            <li><code>temperature: 0.8</code> — 控制 AI 創意度（0=保守，1=天馬行空），0.8 是「有創意但不失控」</li>
+            <li><code>maxOutputTokens: 1024</code> — 限制回覆長度，約 500~800 個中文字，足夠一篇貼文</li>
+            <li><code>UrlFetchApp.fetch(url, options)</code> — GAS 內建的 HTTP 請求工具</li>
+            <li><code>json.candidates[0].content.parts[0].text</code> — Gemini API 固定的回覆結構路徑</li>
+            <li><code>try-catch</code> — 捕獲網路錯誤，避免程式崩潰</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解析2 API 參數說明 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 2 — API 參數說明</h2>
+        <p><strong>這段的目的：</strong>了解送出去的 payload 和收回來的 JSON 長什麼樣子。</p>
+
+        <div class="two-col">
+            <div class="col">
+                <h3>📤 送出的 payload（我們送給 AI 的）</h3>
+                <pre style="font-size: 15px;"><code>{
+  "contents": [{
+    "parts": [{
+      "text": "你是一位專業的社群內容創作者..."
+    }]
+  }],
+  "generationConfig": {
+    "temperature": 0.8,
+    "maxOutputTokens": 1024
+  }
+}</code></pre>
+            </div>
+            <div class="col">
+                <h3>📥 收到的回覆（AI 回給我們的）</h3>
+                <pre style="font-size: 15px;"><code>{
+  "candidates": [{
+    "content": {
+      "parts": [{
+        "text": "【標題】AI 改變生活\n【內文】你有沒有發現...\n【標籤】#AI #科技"
+      }]
+    }
+  }]
+}</code></pre>
+            </div>
+        </div>
+
+        <h3>generationConfig 參數對照表</h3>
+        <table>
+            <thead>
+                <tr><th>參數</th><th>值</th><th>說明</th><th>調整建議</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>temperature</code></td><td>0.8</td><td>AI 回覆的創意程度</td><td>0.3 = 嚴謹穩定 / 0.8 = 有創意 / 1.0 = 很隨機</td></tr>
+                <tr><td><code>maxOutputTokens</code></td><td>1024</td><td>AI 回覆的最大長度</td><td>512 = 短文 / 1024 = 一般 / 2048 = 長文</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Gemini 模型選項</h3>
+        <table>
+            <thead>
+                <tr><th>模型</th><th>特點</th><th>免費額度</th></tr>
+            </thead>
+            <tbody>
+                <tr style="background: #e8f5e9;">
+                    <td><code><strong>gemini-2.5-flash</strong></code></td>
+                    <td><strong>推薦！</strong>速度快、品質佳</td>
+                    <td>每分鐘 15 次 / 每日 1,500 次</td>
+                </tr>
+                <tr>
+                    <td><code>gemini-2.5-pro</code></td>
+                    <td>更強的理解力和推理能力</td>
+                    <td>每分鐘 2 次 / 每日 50 次</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="box info">
+            <strong>💡 回覆路徑 json.candidates[0].content.parts[0].text</strong><br>
+            這條路徑是 Gemini API 的固定格式：<code>candidates</code> 是候選回覆陣列 → 取第一個 → <code>content.parts</code> 是回覆內容 → 取第一個 part 的 <code>text</code>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 程式碼解析3 Prompt 工程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 3 — Prompt 工程（buildPrompt）</h2>
+        <p><strong>這段的目的：</strong>設計一段精心撰寫的提示詞，讓 AI 每次都產出格式一致、品質穩定的社群貼文。</p>
+
+        <pre><code>function buildPrompt(topic) {
+  var prompt = '你是一位專業的社群內容創作者。\n\n';
+  prompt += '請幫我撰寫一篇關於「' + topic + '」的社群貼文。\n\n';
+  prompt += '要求：\n';
+  prompt += '1. 標題：吸引人、簡潔有力（15字以內）\n';
+  prompt += '2. 內文：200~300字，口語化、易讀\n';
+  prompt += '3. 包含 2~3 個實用的重點或建議\n';
+  prompt += '4. 結尾加上 3~5 個相關的 hashtag\n';
+  prompt += '5. 適當使用 emoji 讓文章更生動\n\n';
+  prompt += '請用以下格式回覆：\n';
+  prompt += '【標題】你的標題\n';
+  prompt += '【內文】你的內文\n';
+  prompt += '【標籤】#tag1 #tag2 #tag3';
+
+  return prompt;
+}</code></pre>
+
+        <h3>Prompt 設計三大原則</h3>
+        <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">🎭</div>
+                <h3 style="font-size: 18px;">1. 角色設定</h3>
+                <p style="font-size: 16px;">「你是一位專業的社群內容創作者」讓 AI 進入對應角色，產出更專業</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📏</div>
+                <h3 style="font-size: 18px;">2. 明確要求</h3>
+                <p style="font-size: 16px;">字數（200~300字）、格式（口語化）、風格（含 emoji）— 越明確越不會亂跑</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📐</div>
+                <h3 style="font-size: 18px;">3. 結構化輸出</h3>
+                <p style="font-size: 16px;">【標題】【內文】【標籤】固定格式，方便後續程式用正則表達式解析</p>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 為什麼要用【標題】【內文】【標籤】格式？</strong><br>
+            因為 AI 的回覆是一整段文字，我們需要用固定的「標記」把不同部分分開。有了這些標記，下一個函式 <code>parseResponse()</code> 才能用正則表達式精準提取每個欄位，分別存入試算表的不同欄位中。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析4 回覆解析 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 4 — 回覆解析（parseResponse）</h2>
+        <p><strong>這段的目的：</strong>用正則表達式從 AI 回覆中精準提取標題、內文、標籤三個部分。</p>
+
+        <pre><code>function parseResponse(response) {
+  var result = {
+    title: '',
+    content: '',
+    tags: ''
+  };
+
+  // 提取標題
+  var titleMatch = response.match(/【標題】(.+?)(\n|【)/);
+  if (titleMatch) {
+    result.title = titleMatch[1].trim();
+  }
+
+  // 提取內文
+  var contentMatch = response.match(/【內文】([\s\S]+?)【標籤】/);
+  if (contentMatch) {
+    result.content = contentMatch[1].trim();
+  }
+
+  // 提取標籤
+  var tagsMatch = response.match(/【標籤】(.+)/);
+  if (tagsMatch) {
+    result.tags = tagsMatch[1].trim();
+  }
+
+  // 如果格式解析失敗，用整篇文字作為內文
+  if (!result.title &amp;&amp; !result.content) {
+    result.title = '每日分享';
+    result.content = response;
+    result.tags = '';
+  }
+
+  return result;
+}</code></pre>
+
+        <h3>正則表達式逐一拆解</h3>
+        <table>
+            <thead>
+                <tr><th>正則表達式</th><th>拆解說明</th><th>提取結果</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>/【標題】(.+?)(\n|【)/</code></td>
+                    <td><code>(.+?)</code> = 盡量少的任意字元；到換行 <code>\n</code> 或下一個 <code>【</code> 為止</td>
+                    <td>標題文字（例如「AI 改變生活」）</td>
+                </tr>
+                <tr>
+                    <td><code>/【內文】([\s\S]+?)【標籤】/</code></td>
+                    <td><code>[\s\S]+?</code> = 任意字元（含換行）盡量少；到 <code>【標籤】</code> 為止</td>
+                    <td>內文全文（可能跨多行）</td>
+                </tr>
+                <tr>
+                    <td><code>/【標籤】(.+)/</code></td>
+                    <td><code>(.+)</code> = 【標籤】之後的所有文字到行尾</td>
+                    <td>hashtag 列表（例如「#AI #科技」）</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">💡 什麼是 .match()？</h3>
+                <p>JavaScript 的字串方法，用正則表達式搜尋匹配的內容。回傳陣列：<code>[0]</code> 是完整匹配、<code>[1]</code> 是第一個括號群組。</p>
+            </div>
+            <div class="col">
+                <h3 style="color: #e65100;">✅ 容錯設計</h3>
+                <p>即使 AI 沒按照格式回覆，程式也不會崩潰 — 會用預設標題「每日分享」搭配完整回覆文字，確保系統正常運作。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 程式碼解析5 試算表記錄 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 5 — 試算表記錄（initRecordSheet + saveToSheet）</h2>
+        <p><strong>這段的目的：</strong>自動建立「AI 發文記錄」工作表，並把每篇 AI 文章的日期、主題、標題、內文、標籤、狀態記錄下來。</p>
+
+        <h3>📁 initRecordSheet() — 初始化記錄表</h3>
+        <pre><code>function initRecordSheet() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    var headers = ['日期', '主題', '標題', '內文', '標籤', '狀態'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#1b5e20')
+      .setFontColor('white');
+    sheet.setFrozenRows(1);
+  }
+
+  return sheet;
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>SpreadsheetApp.openById()</code> — 用 ID 開啟試算表</li>
+            <li><code>getSheetByName(SHEET_NAME)</code> — 找名為「AI 發文記錄」的工作表</li>
+            <li><code>if (!sheet)</code> — 如果不存在就自動建立，設定 6 欄標題、深綠背景、白色粗體、凍結首列</li>
+        </ul>
+
+        <h3>📁 saveToSheet(topic, article) — 記錄到試算表</h3>
+        <pre><code>function saveToSheet(topic, article) {
+  var sheet = initRecordSheet();
+  var now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd HH:mm');
+
+  sheet.appendRow([
+    now,
+    topic,
+    article.title,
+    article.content,
+    article.tags,
+    '已推播'
+  ]);
+
+  Logger.log('文章已記錄到試算表');
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>Utilities.formatDate()</code> — 將日期格式化為台灣時間的 <code>yyyy/MM/dd HH:mm</code></li>
+            <li><code>sheet.appendRow()</code> — 在最後一行新增一列資料，依序填入 6 個欄位</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 試算表預覽效果：</strong>第一次執行後，試算表會自動出現「AI 發文記錄」工作表，標題列為深綠色白字，每篇文章佔一列。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 程式碼解析6 主函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 6 — 主函式（generateAndPost）</h2>
+        <p><strong>這段的目的：</strong>串起前面所有函式，完成「選主題 → 建 Prompt → 問 AI → 解析 → 記錄 → 推播」的完整流程。</p>
+
+        <pre><code>function generateAndPost(topic) {
+  Logger.log('===== 開始 AI 自動發文 =====');
+
+  // 如果沒指定主題，隨機選一個
+  if (!topic) {
+    topic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+  }
+  Logger.log('主題：' + topic);
+
+  // 步驟 1：建立 Prompt
+  var prompt = buildPrompt(topic);
+  Logger.log('Prompt 已建立');
+
+  // 步驟 2：呼叫 Gemini API
+  var aiResponse = callGemini(prompt);
+
+  if (!aiResponse) {
+    pushText(LINE_USER_ID, '⚠️ AI 自動發文失敗：無法取得 AI 回覆，請檢查 API Key。');
+    return;
+  }
+
+  // 步驟 3：解析回覆
+  var article = parseResponse(aiResponse);
+  Logger.log('標題：' + article.title);
+
+  // 步驟 4：記錄到試算表
+  saveToSheet(topic, article);
+
+  // 步驟 5：推播到 Line
+  var message = '🤖 AI 每日好文\n';
+  message += '━━━━━━━━━━━━━━━\n\n';
+  message += '📌 ' + article.title + '\n\n';
+  message += article.content + '\n\n';
+  if (article.tags) {
+    message += article.tags + '\n\n';
+  }
+  message += '━━━━━━━━━━━━━━━\n';
+  message += '📝 主題：' + topic + '\n';
+  message += '💡 由 Gemini AI + GAS 自動產生';
+
+  // Line 單則訊息上限 5000 字
+  if (message.length > 4900) {
+    message = message.substring(0, 4900) + '\n\n...（已截斷）';
+  }
+
+  pushText(LINE_USER_ID, message);
+
+  Logger.log('===== AI 自動發文完成 =====');
+}</code></pre>
+
+        <h3>5 步驟流程圖</h3>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
+            <div class="flow-step">1️⃣ buildPrompt()</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">2️⃣ callGemini()</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">3️⃣ parseResponse()</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">4️⃣ saveToSheet()</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">5️⃣ pushText()</div>
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3>📁 dailyAutoPost() — 排程函式</h3>
+                <pre style="font-size: 15px;"><code>function dailyAutoPost() {
+  generateAndPost();  // 隨機主題
+}</code></pre>
+                <p>排程觸發時呼叫的入口函式，不帶參數 → <code>generateAndPost()</code> 會從 <code>TOPICS</code> 隨機選一個主題。</p>
+            </div>
+            <div class="col">
+                <h3>💡 防呆設計</h3>
+                <ul>
+                    <li><code>if (!aiResponse)</code> — AI 回覆失敗時推播錯誤通知</li>
+                    <li><code>message.length > 4900</code> — 超長自動截斷，避免超出 Line 5000 字上限</li>
+                    <li><code>parseResponse</code> 容錯 — 格式異常時用預設值</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 步驟5 測試 + 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 測試 + 成功/失敗對照</h2>
+        <p>設定值修改好了，現在按照<strong>建議順序</strong>逐步測試每個環節！</p>
+
+        <h3>Step 5-1：先測試 Line 推播（testPush）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，<strong>▶ 執行</strong> 按鈕左邊的下拉選單<br>
+            <span class="action">👆 動作：</span>點擊下拉選單，找到並選擇 <code>testPush</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong> 按鈕<br>
+            <span class="result">👀 結果：</span>如果是<strong>第一次執行</strong>，會跳出授權對話框（流程：審查權限 → 選帳號 → 進階 → 前往「AI 自動發文 LineBot」（不安全）→ 允許）<br>
+            <span class="result">⏱️ 等待：</span>授權完成後約 3~5 秒<br>
+            <span class="result">👀 結果：</span>你的 Line 收到「🧪 AI 自動發文 Line Bot 連線測試成功！」
+        </div>
+
+        <h3>Step 5-2：測試 Gemini API 連線（testGemini）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>下拉選單選擇 <code>testGemini</code>，點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 5~10 秒（AI 需要時間生成回覆）<br>
+            <span class="result">👀 結果：</span>編輯器<strong>下方</strong>的「執行記錄」面板顯示「AI 回覆：」加上一段介紹 Google Apps Script 的文字
+        </div>
+
+        <h3>Step 5-3：完整測試（testGenerateAndPost）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>下拉選單選擇 <code>testGenerateAndPost</code>，點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 10~15 秒（AI 生成 + 寫入試算表 + 推播）<br>
+            <span class="result">👀 結果：</span>Line 收到一篇完整的 AI 文章（主題：科技新趨勢）+ 試算表出現「AI 發文記錄」工作表和第一筆記錄
+        </div>
+
+        <h3>Step 5-4：確認結果</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>執行記錄顯示「<span style="color: #2e7d32;">推播成功！</span>」</li>
+                    <li>Line 收到格式完整的 AI 文章（有標題、內文、標籤）</li>
+                    <li>試算表中出現新的「AI 發文記錄」工作表</li>
+                    <li>工作表第一列是深綠色標題，第二列是剛剛的文章資料</li>
+                    <li>執行記錄最後顯示「AI 自動發文完成」</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的樣子</h3>
+                <ul>
+                    <li>執行記錄顯示<strong>紅色錯誤文字</strong></li>
+                    <li>「狀態碼：400」→ API Key 格式錯誤</li>
+                    <li>「狀態碼：403」→ API Key 無效或過期</li>
+                    <li>「推播失敗，狀態碼：401」→ LINE_TOKEN 不正確</li>
+                    <li>「Spreadsheet not found」→ SPREADSHEET_ID 貼錯</li>
+                    <li>→ 請看第 19 頁「常見問題排解」</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 步驟6 設定排程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 設定每日自動排程</h2>
+        <p>最後一步：讓 AI 自動發文<strong>每天自動執行</strong>，不需要手動操作！</p>
+
+        <h3>Step 6-1：進入觸發條件頁面</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>左側選單</strong>（有一列圖示）<br>
+            <span class="action">👆 動作：</span>找到<strong>鬧鐘圖示</strong>（從上面數下來第 4 個圖示），把滑鼠移上去會顯示「觸發條件」，點擊它<br>
+            <span class="result">👀 結果：</span>畫面會切換到「觸發條件」頁面，如果之前沒設定過，頁面會是空白的
+        </div>
+
+        <h3>Step 6-2：新增觸發條件</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>觸發條件頁面的<strong>右下角</strong><br>
+            <span class="action">👆 動作：</span>點擊 <code>+ 新增觸發條件</code> 藍色按鈕<br>
+            <span class="result">👀 結果：</span>會彈出一個設定面板，裡面有好幾個下拉選單
+        </div>
+
+        <h3>Step 6-3：依照下表設定每個下拉選單</h3>
+        <table>
+            <thead>
+                <tr><th>下拉選單名稱</th><th>要選擇的值</th><th>說明</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>選擇要執行的函式</strong></td><td><code>dailyAutoPost</code></td><td>每天隨機選主題並自動發文的函式</td></tr>
+                <tr><td><strong>選擇要部署的版本</strong></td><td><code>Head</code></td><td>使用最新版程式碼（預設值，不用改）</td></tr>
+                <tr><td><strong>選取事件來源</strong></td><td><code>時間驅動</code></td><td>依照時間自動執行</td></tr>
+                <tr><td><strong>選取時間型觸發條件類型</strong></td><td><code>每日計時器</code></td><td>每天執行一次</td></tr>
+                <tr><td><strong>選取每日時段</strong></td><td><code>上午 9 點到 10 點</code></td><td>每天在這個時段內自動執行</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Step 6-4：儲存觸發條件</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>5 個下拉選單都確認好後，點擊面板右下角的 <code>儲存</code> 按鈕<br>
+            <span class="result">👀 結果：</span>觸發條件列表中會出現一筆新的記錄，顯示 <code>dailyAutoPost</code> 和執行時間<br>
+            <span class="result">⏱️ 效果：</span>從明天開始，每天早上 9:00~10:00 之間，GAS 會自動執行，你的 Line 就會收到一篇 AI 生成的文章！
+        </div>
+
+        <div class="box info">
+            <strong>💡 排程說明：</strong>選擇「上午 9 點到 10 點」表示 GAS 會在每天 9:00~10:00 之間的某個時間點自動執行。確切時間由 Google 伺服器決定。設定好後不需要電腦開著，Google 伺服器會自動執行！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 常見問題排解（強化版） ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解（強化版）</h2>
+
+        <h3>🔍 怎麼找到錯誤訊息？（第一步！）</h3>
+        <ol>
+            <li>在 Apps Script 編輯器<strong>左側選單</strong>，找到「⏱ 執行項目」圖示（時鐘圖示，從上面數第 3 個），點擊它</li>
+            <li>會出現<strong>執行歷史記錄列表</strong>，每次執行都會留下一筆記錄</li>
+            <li>找到最近一筆（最上面的），如果狀態是<strong>紅色「失敗」</strong>，點擊那一行的<strong>「▶」展開箭頭</strong></li>
+            <li>展開後看詳細資訊中的<strong>紅色文字</strong> — 那就是錯誤原因</li>
+        </ol>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">🔑 Gemini API 錯誤</h3>
+                <table style="font-size: 15px;">
+                    <tr><td><strong>狀態碼 400</strong></td><td>API Key 格式錯誤 → 確認是 <code>AIza</code> 開頭的完整字串</td></tr>
+                    <tr><td><strong>狀態碼 403</strong></td><td>API Key 無效 → 到 AI Studio 重新產生</td></tr>
+                    <tr><td><strong>狀態碼 429</strong></td><td>超過免費額度 → 等一小時後再試</td></tr>
+                    <tr><td><strong>狀態碼 500</strong></td><td>Google 伺服器問題 → 等幾分鐘再試</td></tr>
+                </table>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">📱 Line 推播失敗</h3>
+                <table style="font-size: 15px;">
+                    <tr><td><strong>狀態碼 401</strong></td><td>Token 不正確 → 重新複製 Channel Access Token</td></tr>
+                    <tr><td><strong>狀態碼 400</strong></td><td>User ID 格式錯 → 確認是大寫 <code>U</code> 開頭</td></tr>
+                    <tr><td><strong>完全沒反應</strong></td><td>確認 Line Bot 已加為好友（用手機掃 QR Code）</td></tr>
+                    <tr><td><strong>月推播上限</strong></td><td>免費帳號每月 500 則 → 到 LINE Developers 確認額度</td></tr>
+                </table>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">📊 試算表錯誤</h3>
+                <ul style="font-size: 16px;">
+                    <li><code>Spreadsheet not found</code> → SPREADSHEET_ID 貼錯，重新從網址列複製</li>
+                    <li><code>You do not have permission</code> → 試算表不是你的帳號建的，確認登入正確帳號</li>
+                    <li>工作表沒出現 → 手動執行一次 <code>testGenerateAndPost</code></li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">⏰ 排程沒有觸發</h3>
+                <ul style="font-size: 16px;">
+                    <li>回到「觸發條件」頁面，確認函式名稱是 <code>dailyAutoPost</code>（不是 <code>generateAndPost</code>）</li>
+                    <li>如果記錄旁有<strong>紅色驚嘆號</strong> → 先手動跑 <code>testGenerateAndPost</code> 修正錯誤</li>
+                    <li>排程設定的時區以你的 Google 帳號設定為準（通常是 GMT+8 台灣時間）</li>
+                    <li>新建立的排程最快隔天才會觸發</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: VibeCoding 延伸 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎵 VibeCoding — 延伸練習</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">
+            基礎功能搞定！試試以下<span class="highlight">延伸練習</span>，讓系統更強大：
+        </p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 42px; margin-bottom: 10px;">📝</div>
+                <h3>修改 TOPICS 加入自己的主題</h3>
+                <p>例如：美食推薦、旅遊攻略、投資理財、程式教學...主題越多，每天的內容越豐富！</p>
+                <pre style="font-size: 14px; margin-top: 10px;"><code>var TOPICS = [
+  '美食推薦', '旅遊攻略',
+  '投資理財', '程式教學'
+];</code></pre>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 42px; margin-bottom: 10px;">🎭</div>
+                <h3>調整 Prompt 改變文章風格</h3>
+                <p>只要修改 <code>buildPrompt()</code> 裡的角色設定，就能產出完全不同風格的文章：</p>
+                <pre style="font-size: 14px; margin-top: 10px;"><code>// 幽默風格
+'你是一位幽默風趣的部落客...'
+// 專業風格
+'你是一位資深產業分析師...'</code></pre>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 42px; margin-bottom: 10px;">🌡️</div>
+                <h3>調整 temperature 參數</h3>
+                <p>想要更穩定的文章用 <code>0.3</code>；想要更有創意用 <code>1.0</code>。找到 <code>generationConfig</code> 修改即可。</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 42px; margin-bottom: 10px;">🌍</div>
+                <h3>建立多語言版本</h3>
+                <p>在 Prompt 中加入語言要求，讓同一篇文章產出中文、英文、日文版本，拓展國際受眾。</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>💡 Prompt 是最好玩的部分！</strong><br>
+            不需要改程式碼架構，只要修改 <code>buildPrompt()</code> 裡的文字，就能讓 AI 產出完全不同的內容。試試「用台語」「模仿文青風格」「像新聞主播一樣報導」！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">今天在 Part 13 學到的新技能：</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>技能</th>
+                    <th>之前 Part 學過</th>
+                    <th>Part 13 新增</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Line 推播</strong></td>
+                    <td><code>pushText()</code> 文字推播</td>
+                    <td>推播 AI 生成的格式化文章</td>
+                </tr>
+                <tr>
+                    <td><strong>API 串接</strong></td>
+                    <td>天氣 API、RSS 等</td>
+                    <td><code>callGemini()</code> 串接 Gemini AI</td>
+                </tr>
+                <tr>
+                    <td><strong>Prompt 工程</strong></td>
+                    <td>（未涉及）</td>
+                    <td><code>buildPrompt()</code> 角色+要求+格式</td>
+                </tr>
+                <tr>
+                    <td><strong>正則表達式</strong></td>
+                    <td>（未涉及）</td>
+                    <td><code>.match()</code> 提取【標題】【內文】【標籤】</td>
+                </tr>
+                <tr>
+                    <td><strong>試算表操作</strong></td>
+                    <td><code>appendRow()</code> 寫入資料</td>
+                    <td><code>initRecordSheet()</code> 自動建立+格式化工作表</td>
+                </tr>
+                <tr>
+                    <td><strong>排程自動化</strong></td>
+                    <td>觸發條件、每日計時器</td>
+                    <td><code>dailyAutoPost()</code> 每日自動選主題+發文</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin-top: 30px;">本單元使用的函式一覽</h3>
+        <table>
+            <thead>
+                <tr><th>函式名稱</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>pushText(to, text)</code></td><td>推播文字訊息</td></tr>
+                <tr><td><code>pushLine(to, messages)</code></td><td>推播底層函式</td></tr>
+                <tr><td><code>callGemini(prompt)</code></td><td>呼叫 Gemini API 取得 AI 回覆</td></tr>
+                <tr><td><code>buildPrompt(topic)</code></td><td>建立結構化 Prompt</td></tr>
+                <tr><td><code>parseResponse(response)</code></td><td>用正則表達式解析 AI 回覆</td></tr>
+                <tr><td><code>initRecordSheet()</code></td><td>自動建立/取得記錄工作表</td></tr>
+                <tr><td><code>saveToSheet(topic, article)</code></td><td>將文章記錄到試算表</td></tr>
+                <tr><td><code>generateAndPost(topic)</code></td><td>主函式 — 完整 AI 發文流程</td></tr>
+                <tr><td><code>dailyAutoPost()</code></td><td>排程入口函式（隨機主題）</td></tr>
+                <tr><td><code>testGemini()</code></td><td>測試 Gemini API 連線</td></tr>
+                <tr><td><code>testGenerateAndPost()</code></td><td>測試完整流程（科技新趨勢）</td></tr>
+                <tr><td><code>testCustomTopic()</code></td><td>測試指定主題（教育創新方法）</td></tr>
+                <tr><td><code>testPush()</code></td><td>測試 Line Bot 推播</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 22: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎊</div>
+        <h1 style="font-size: 48px;">恭喜！Day 2 全部完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 25px;">
+            你已完成 <span class="highlight">13 個實作</span>，掌握了 GAS 自動化 × Line Bot 的完整技能樹！
+        </p>
+
+        <div class="box success" style="text-align: left; max-width: 750px; margin: 0 auto 25px;">
+            <strong>✅ 本單元學到的技能：</strong>
+            <ul>
+                <li>串接 Gemini API — 用 GAS 呼叫 Google AI 生成內容</li>
+                <li>Prompt 工程 — 設計結構化提示詞，控制 AI 輸出格式</li>
+                <li>正則表達式解析 — 從 AI 回覆中提取【標題】【內文】【標籤】</li>
+                <li>試算表自動記錄 — initRecordSheet + saveToSheet</li>
+                <li>每日自動排程 — GAS 觸發條件 + dailyAutoPost</li>
+            </ul>
+        </div>
+
+        <h3 style="color: #1b5e20; margin-bottom: 15px;">🏆 Day 2 全部 6 個實作完成清單</h3>
+        <div class="concept-grid" style="max-width: 900px; margin: 0 auto 25px; grid-template-columns: repeat(3, 1fr);">
+            <div class="concept-card" style="text-align: center; background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 28px;">✅</div>
+                <h3 style="font-size: 16px;">實作 8</h3>
+                <p style="font-size: 14px;">早安圖推播</p>
+            </div>
+            <div class="concept-card" style="text-align: center; background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 28px;">✅</div>
+                <h3 style="font-size: 16px;">實作 9</h3>
+                <p style="font-size: 14px;">RSS 新聞推播</p>
+            </div>
+            <div class="concept-card" style="text-align: center; background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 28px;">✅</div>
+                <h3 style="font-size: 16px;">實作 10</h3>
+                <p style="font-size: 14px;">出缺席通知</p>
+            </div>
+            <div class="concept-card" style="text-align: center; background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 28px;">✅</div>
+                <h3 style="font-size: 16px;">實作 11</h3>
+                <p style="font-size: 14px;">活動報名系統</p>
+            </div>
+            <div class="concept-card" style="text-align: center; background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 28px;">✅</div>
+                <h3 style="font-size: 16px;">實作 12</h3>
+                <p style="font-size: 14px;">查詢系統</p>
+            </div>
+            <div class="concept-card" style="text-align: center; background: #c8e6c9; border-color: #2e7d32;">
+                <div style="font-size: 28px;">🌟</div>
+                <h3 style="font-size: 16px;">實作 13</h3>
+                <p style="font-size: 14px;">AI 自動發文</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/13_AI自動發文_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #e65100, #ff6d00); color: white; border-radius: 30px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🎉 恭喜完成 Day 2 全部課程！</div>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">你已掌握 GAS 自動化 × Line Bot 的完整技能，開始打造屬於你的自動化系統吧！</p>
+    </div>
+</div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>
