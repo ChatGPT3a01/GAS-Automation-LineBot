@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📗 實作 7 — 自動化評量系統 × Line Bot</title>
+    <title>Part 7：自動化評量系統 — AI 自動評語 × PDF 解析 × Line Bot</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -40,8 +40,6 @@
         .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
         .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
         .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
-        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
-        .screenshot-placeholder strong { color: #666; font-size: 16px; }
         .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
         .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
         .dot.active { background: #69f0ae; transform: scale(1.3); }
@@ -54,12 +52,21 @@
         .badge-orange { background: #ffe0b2; color: #e65100; }
         .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
         .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
     </style>
 </head>
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">📗 實作 7 — 自動化評量系統 × Line Bot</div>
+        <div class="nav-title">Part 7：自動化評量</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -73,26 +80,70 @@
 <!-- ======================== Slide 1: 封面 ======================== -->
 <div class="slide active">
     <div class="content-card" style="text-align: center;">
-        <div style="font-size: 80px; margin-bottom: 20px;">📝</div>
+        <div style="font-size: 100px; margin-bottom: 20px;">📝</div>
         <h1 style="font-size: 58px; margin-bottom: 16px;">自動化評量系統</h1>
         <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
             AI 自動評語 × PDF 解析 × Line Bot 推送
         </p>
-        <div style="margin-bottom: 25px;">
-            <span class="badge badge-green">Line Bot</span>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">LINE Messaging API</span>
             <span class="badge badge-blue">Drive API</span>
             <span class="badge badge-orange">Gemini / OpenAI</span>
-            <span class="badge badge-green">Sheets</span>
-            <span class="badge badge-blue">PDF 提取</span>
+            <span class="badge badge-green">SpreadsheetApp</span>
+            <span class="badge badge-blue">PDF 文字提取</span>
         </div>
-        <div style="display: inline-block; background: linear-gradient(135deg, #1b5e20, #004d40); color: white; padding: 12px 30px; border-radius: 30px; font-size: 20px;">
-            約 40 分鐘 · Day 1 壓軸實作
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">👨‍🎓 輸入「幫我評語」</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📄 上傳 PDF</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🤖 AI 閱讀分析</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">💬 推送個人評語</div>
         </div>
-        <p style="font-size: 15px; color: #999; margin-top: 20px;">使用鍵盤 ← → 或點擊兩側箭頭切換投影片</p>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/07_自動化評量_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 1 — Part 7 / 壓軸實作</p>
     </div>
 </div>
 
-<!-- ======================== Slide 2: 今天要做什麼 ======================== -->
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件，全部打勾才能順利完成本單元。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>✅ 必備條件（Day 1 已完成）</h3>
+                <ol>
+                    <li><strong>Line Bot 帳號</strong> — 你在 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code></li>
+                    <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」（U 開頭的字串）</li>
+                    <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
+                    <li><strong>AI API Key</strong> — Gemini（免費推薦）或 OpenAI 的 API Key</li>
+                </ol>
+            </div>
+            <div class="concept-card">
+                <h3>📊 本單元資訊</h3>
+                <table>
+                    <tr><td><strong>預估時間</strong></td><td>約 40 分鐘</td></tr>
+                    <tr><td><strong>難度</strong></td><td>⭐⭐⭐⭐ 進階（Day 1 綜合應用）</td></tr>
+                    <tr><td><strong>前置單元</strong></td><td>Part 0（環境建置）、Part 1（RAG / AI API）、Part 5（試算表）</td></tr>
+                    <tr><td><strong>新技術</strong></td><td>PropertiesService、Drive API v2、PDF 轉文字</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 超重要！</strong>本專案需要啟用 <strong>Drive API 進階服務</strong>（一般 DriveApp 不夠用）。<br>
+            步驟：GAS 編輯器 → 左側「服務 +」→ 搜尋「Drive API」→ 按「新增」。<br>
+            少了這一步，PDF 提取文字會直接報錯 <code>Drive is not defined</code>！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 今天要做什麼 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>今天要做什麼？</h2>
@@ -100,7 +151,7 @@
             打造一個讓老師「解放雙手」的 <span class="highlight">AI 自動評語系統</span>
         </p>
 
-        <div class="concept-grid">
+        <div class="concept-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 10px;">📤</div>
                 <h3>學生上傳 PDF</h3>
@@ -130,7 +181,7 @@
     </div>
 </div>
 
-<!-- ======================== Slide 3: 系統架構 ======================== -->
+<!-- ======================== Slide 4: 系統架構圖 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>系統架構圖</h2>
@@ -148,9 +199,9 @@
             <span class="flow-step">📁 存入<br>Google Drive</span>
         </div>
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 30px; padding: 25px; background: #f8faf8; border-radius: 15px;">
-            <span class="flow-step">📁 Drive</span>
+            <span class="flow-step">📁 Drive PDF</span>
             <span class="flow-arrow">→</span>
-            <span class="flow-step">📖 PDF 轉文字<br>（Drive API）</span>
+            <span class="flow-step">📖 PDF 轉文字<br>（Drive API v2）</span>
             <span class="flow-arrow">→</span>
             <span class="flow-step">🤖 AI 生成評語<br>（Gemini）</span>
             <span class="flow-arrow">→</span>
@@ -164,96 +215,138 @@
         </div>
 
         <table>
-            <tr><th>技術</th><th>用途</th><th>對應 Part</th></tr>
+            <tr><th>技術</th><th>用途</th><th>哪裡學過</th></tr>
             <tr><td>LINE Messaging API</td><td>接收檔案 + 回傳評語</td><td>Part 0-2</td></tr>
-            <tr><td>PropertiesService</td><td>管理使用者對話狀態</td><td>新學！</td></tr>
+            <tr><td>PropertiesService</td><td>管理使用者對話狀態</td><td>本 Part 新學！</td></tr>
             <tr><td>DriveApp</td><td>儲存學生 PDF</td><td>Part 2</td></tr>
-            <tr><td>Drive API（進階）</td><td>PDF → 文字提取</td><td>新學！</td></tr>
-            <tr><td>Gemini / OpenAI</td><td>AI 自動生成評語</td><td>Part 1</td></tr>
+            <tr><td>Drive API（進階服務）</td><td>PDF → Google Docs → 文字提取</td><td>本 Part 新學！</td></tr>
+            <tr><td>Gemini / OpenAI API</td><td>AI 自動生成評語</td><td>Part 1</td></tr>
             <tr><td>SpreadsheetApp</td><td>記錄評量結果</td><td>Part 3, 5</td></tr>
         </table>
     </div>
 </div>
 
-<!-- ======================== Slide 4: 事前準備 ======================== -->
+<!-- ======================== Slide 5: 事前準備（micro-step 格式） ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>事前準備</h2>
-        <p>開始寫程式之前，請先準備好以下 4 樣東西</p>
+        <h2><span class="step-number">1</span> 事前準備 — 建立 Drive 資料夾 & 試算表</h2>
+        <p>開始寫程式之前，先準備好存放學生 PDF 的資料夾和記錄評語的試算表。</p>
 
-        <div class="concept-grid">
-            <div class="concept-card">
-                <h3><span class="step-number">1</span>LINE Bot</h3>
-                <p>需要已建好的 LINE Bot（Part 0 已完成）</p>
-                <ul>
-                    <li>Channel Access Token</li>
-                    <li>Webhook URL（部署後再填）</li>
-                </ul>
-            </div>
-            <div class="concept-card">
-                <h3><span class="step-number">2</span>Google Drive 資料夾</h3>
-                <p>新建一個資料夾存放學生 PDF</p>
-                <ul>
-                    <li>開啟 Google Drive</li>
-                    <li>新增資料夾「學生作品」</li>
-                    <li>從網址複製資料夾 ID</li>
-                </ul>
-            </div>
-            <div class="concept-card">
-                <h3><span class="step-number">3</span>Google 試算表</h3>
-                <p>新建試算表記錄評量結果</p>
-                <ul>
-                    <li>建立新的 Google 試算表</li>
-                    <li>從網址複製試算表 ID</li>
-                    <li>程式會自動建立標題列</li>
-                </ul>
-            </div>
-            <div class="concept-card">
-                <h3><span class="step-number">4</span>AI API Key</h3>
-                <p>推薦使用 Gemini（免費）</p>
-                <ul>
-                    <li>前往 <code>aistudio.google.com</code></li>
-                    <li>點選「Get API Key」</li>
-                    <li>建立並複製 API Key</li>
-                </ul>
-            </div>
+        <h3>Step 1-1：建立 Google Drive 資料夾</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器開啟 <code>drive.google.com</code><br>
+            <span class="action">👆 動作：</span>左上角「+ 新增」→「新資料夾」→ 輸入名稱 <code>學生作品</code> → 點「建立」<br>
+            <span class="action">👆 動作：</span>點進剛建的資料夾，看瀏覽器<strong>網址列</strong><br>
+            <span class="result">👀 結果：</span>網址格式為 <code>drive.google.com/drive/folders/<span class="highlight">這一段就是資料夾 ID</span></code>，把它複製下來
         </div>
 
-        <div class="box warning">
-            <strong>⚠️ 超重要！</strong>本專案需要啟用 <strong>Drive API 進階服務</strong>：<br>
-            GAS 編輯器 → 左側「服務 +」→ 搜尋「Drive API」→ 按「新增」<br>
-            少了這一步，PDF 提取文字會失敗！
+        <h3>Step 1-2：建立 Google 試算表</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器開啟 <code>sheets.google.com</code><br>
+            <span class="action">👆 動作：</span>點「+ 空白」建立新試算表，標題可命名為「自動化評量記錄」<br>
+            <span class="action">👆 動作：</span>看瀏覽器<strong>網址列</strong><br>
+            <span class="result">👀 結果：</span>網址格式為 <code>docs.google.com/spreadsheets/d/<span class="highlight">這一段就是試算表 ID</span>/edit</code>，複製下來
+        </div>
+
+        <h3>Step 1-3：取得 Gemini API Key（如已有可跳過）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器開啟 <code>aistudio.google.com</code><br>
+            <span class="action">👆 動作：</span>點選「Get API Key」→「Create API Key」→ 選擇一個 Google Cloud 專案<br>
+            <span class="result">👀 結果：</span>畫面會顯示一組 API Key（以 <code>AIza...</code> 開頭），複製保存好
+        </div>
+
+        <div class="box info">
+            <strong>目前你手上應該有 4 樣東西：</strong>
+            <ol>
+                <li>LINE Channel Access Token（Part 0 已取得）</li>
+                <li>Google Drive 資料夾 ID（剛才複製的）</li>
+                <li>Google 試算表 ID（剛才複製的）</li>
+                <li>AI API Key（Gemini 或 OpenAI）</li>
+            </ol>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 5: 設定常數 ======================== -->
+<!-- ======================== Slide 6: 建立 GAS 專案 + 啟用 Drive API ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 1：設定常數</h2>
-        <p>在 GAS 編輯器中建立新專案，貼上以下設定</p>
+        <h2><span class="step-number">2</span> 建立 GAS 專案 & 啟用 Drive API</h2>
+        <p>建立新的 Apps Script 專案，並啟用 PDF 文字提取所需的 Drive API 進階服務。</p>
 
-        <pre><code>// ============================================
-// 第一部分：設定常數（請填入你自己的值）
-// ============================================
+        <h3>Step 2-1：建立新專案</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器開啟 <code>script.google.com</code><br>
+            <span class="action">👆 動作：</span>點選左上角「+ 新專案」<br>
+            <span class="action">👆 動作：</span>點擊左上方「未命名的專案」→ 改名為 <code>自動化評量系統</code><br>
+            <span class="result">👀 結果：</span>編輯器開啟，預設有一個 <code>程式碼.gs</code> 檔案，裡面有空的 <code>myFunction</code>
+        </div>
 
-const LINE_TOKEN     = '你的 LINE Channel Access Token';
-const FOLDER_ID      = '你的 Google Drive 資料夾 ID';
-const SPREADSHEET_ID = '你的 Google 試算表 ID';
+        <h3>Step 2-2：啟用 Drive API 進階服務（超重要！）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>左側選單</strong>，找到「服務」（有一個 + 號）<br>
+            <span class="action">👆 動作：</span>點擊「服務」旁邊的 <code>+</code><br>
+            <span class="action">👆 動作：</span>在彈出的服務清單中，搜尋並找到 <code>Drive API</code>，點選它<br>
+            <span class="action">👆 動作：</span>確認版本顯示為 <code>v2</code>，點擊右下角「新增」按鈕<br>
+            <span class="result">👀 結果：</span>左側「服務」下方出現 <code>Drive</code> 字樣，代表啟用成功
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">DriveApp vs Drive API 差異</h3>
+                <table>
+                    <tr><th>項目</th><th>DriveApp</th><th>Drive API</th></tr>
+                    <tr><td>類型</td><td>內建服務</td><td>進階服務</td></tr>
+                    <tr><td>啟用</td><td>不用啟用</td><td>需手動啟用</td></tr>
+                    <tr><td>PDF 轉文字</td><td style="color:#e53935;font-weight:bold;">不支援</td><td style="color:#2e7d32;font-weight:bold;">支援</td></tr>
+                    <tr><td>基本操作</td><td>建立/讀取檔案</td><td>進階轉換功能</td></tr>
+                </table>
+            </div>
+            <div class="col">
+                <div class="box warning" style="margin-top: 0;">
+                    <strong>忘了啟用會怎樣？</strong><br>
+                    執行時會出現紅色錯誤：<br>
+                    <code>ReferenceError: Drive is not defined</code><br><br>
+                    看到這個錯誤 → 回來啟用 Drive API 就對了！
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 設定常數 + 逐行解釋 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 程式碼解析 1 — 設定常數</h2>
+        <p><strong>這段的目的：</strong>把所有需要填入的個人設定集中在開頭，方便一次修改完畢。</p>
+
+        <pre><code>var LINE_TOKEN     = '你的 LINE Channel Access Token';
+var FOLDER_ID      = '你的 Google Drive 資料夾 ID';
+var SPREADSHEET_ID = '你的 Google 試算表 ID';
 
 // === AI 設定 ===
 // 選擇：'gemini'（推薦，免費）或 'openai'
-const AI_PROVIDER = 'gemini';
-const AI_API_KEY  = '你的 AI API Key';
+var AI_PROVIDER = 'gemini';
+var AI_API_KEY  = '你的 AI API Key';
 
-// Gemini 模型選項
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// Gemini 模型選項：gemini-2.5-flash（推薦）、gemini-2.5-pro
+var GEMINI_MODEL = 'gemini-2.5-flash';
 
-// OpenAI 模型選項
-const OPENAI_MODEL = 'gpt-5.2';
+// OpenAI 模型選項：gpt-5.2（推薦）、gpt-5.1
+var OPENAI_MODEL = 'gpt-5.2';
 
 // 使用者狀態存儲
-const scriptProps = PropertiesService.getScriptProperties();</code></pre>
+var scriptProps = PropertiesService.getScriptProperties();</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>LINE_TOKEN</code> — 你的 LINE Bot 的身分證明，Part 0 取得的那串長英數字</li>
+            <li><code>FOLDER_ID</code> — 存放學生 PDF 的 Google Drive 資料夾 ID（Step 1-1 複製的）</li>
+            <li><code>SPREADSHEET_ID</code> — 記錄評語的試算表 ID（Step 1-2 複製的）</li>
+            <li><code>AI_PROVIDER</code> — 選擇用哪家 AI：<code>'gemini'</code>（免費推薦）或 <code>'openai'</code>（付費）</li>
+            <li><code>AI_API_KEY</code> — 你的 AI API Key</li>
+            <li><code>GEMINI_MODEL</code> / <code>OPENAI_MODEL</code> — 使用的模型名稱</li>
+            <li><code>scriptProps</code> — 取得 GAS 內建的「鍵值對」存儲，用來記住每個使用者目前的對話狀態</li>
+        </ul>
 
         <div class="two-col">
             <div class="col">
@@ -267,29 +360,30 @@ const scriptProps = PropertiesService.getScriptProperties();</code></pre>
                 </table>
             </div>
             <div class="col">
-                <h3>ID 在哪裡找？</h3>
-                <p><strong>資料夾 ID：</strong></p>
-                <p style="font-size: 14px;"><code>drive.google.com/drive/folders/<span class="highlight">這一段就是 ID</span></code></p>
-                <p><strong>試算表 ID：</strong></p>
-                <p style="font-size: 14px;"><code>docs.google.com/spreadsheets/d/<span class="highlight">這一段就是 ID</span>/edit</code></p>
+                <div class="micro-step">
+                    <span class="position">📍 位置：</span>Apps Script 編輯器的 <code>程式碼.gs</code><br>
+                    <span class="action">👆 動作：</span>把預設的 <code>myFunction</code> 全部刪除，貼上上面的設定常數<br>
+                    <span class="action">👆 動作：</span>把 4 個 <code>'你的...'</code> 替換成你自己的值<br>
+                    <span class="result">👀 結果：</span>設定區完成，每個值都換成自己的了
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 6: Webhook 入口 ======================== -->
+<!-- ======================== Slide 8: Webhook 入口 + 逐行解釋 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 2：Webhook 入口</h2>
-        <p>LINE 送來的訊息都會進入 <code>doPost</code>，這是整個系統的大門</p>
+        <h2><span class="step-number">4</span> 程式碼解析 2 — Webhook 入口</h2>
+        <p><strong>這段的目的：</strong>LINE 送來的訊息都會進入 <code>doPost</code>，這是整個系統的大門。<code>doGet</code> 則是用來驗證 Webhook 是否活著。</p>
 
         <pre><code>/** LINE Webhook 接收點 */
 function doPost(e) {
   try {
-    const events = JSON.parse(e.postData.contents).events;
+    var events = JSON.parse(e.postData.contents).events;
 
-    for (let i = 0; i < events.length; i++) {
-      handleEvent(events[i]);  // 逐一處理每個事件
+    for (var i = 0; i &lt; events.length; i++) {
+      handleEvent(events[i]);
     }
 
     return ContentService.createTextOutput(
@@ -308,101 +402,120 @@ function doGet(e) {
   return ContentService.createTextOutput('自動化評量系統運作中！');
 }</code></pre>
 
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>doPost(e)</code> — GAS 規定的 Webhook 入口函式名稱，LINE 每次送訊息都會呼叫它</li>
+            <li><code>JSON.parse(e.postData.contents).events</code> — 把 LINE 送來的 JSON 文字轉成物件，取出 events 陣列</li>
+            <li><code>for (var i = 0; ...)</code> — 逐一處理每個事件（通常只有一個，但可能有多個）</li>
+            <li><code>handleEvent(events[i])</code> — 呼叫我們自己寫的事件處理函式（下一頁會寫）</li>
+            <li><code>ContentService.createTextOutput</code> — 回傳「收到了」給 LINE 伺服器</li>
+            <li><code>try...catch</code> — 任何錯誤都不會讓程式直接崩掉，會記錄到 console</li>
+            <li><code>doGet(e)</code> — 用瀏覽器直接開 Webhook URL 時，會看到「運作中」的文字</li>
+        </ul>
+
         <div class="box info">
-            <strong>重點：</strong>
-            <code>doPost</code> 是 LINE 送訊息進來的入口，<code>doGet</code> 則用來驗證 Webhook 是否活著。<br>
-            這個結構跟 Part 1、2 完全一樣！
+            <strong>跟 Part 1、2 的結構完全一樣！</strong>差別只在 <code>handleEvent</code> 裡面的處理邏輯不同。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 7: 事件處理 ======================== -->
+<!-- ======================== Slide 9: 事件處理 — 對話流程 + 狀態管理 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 3：事件處理 — 對話流程</h2>
-        <p>根據使用者傳來的不同訊息，做出不同回應</p>
+        <h2><span class="step-number">5</span> 程式碼解析 3 — 事件處理 & 使用者狀態</h2>
+        <p><strong>這段的目的：</strong>根據使用者傳來的不同訊息做出不同回應，並用 <code>PropertiesService</code> 記住每個使用者目前在哪個步驟。</p>
 
-        <div style="background: #f8faf8; padding: 25px; border-radius: 15px; margin: 20px 0;">
+        <div style="background: #f8faf8; padding: 20px; border-radius: 15px; margin: 15px 0;">
             <h3 style="margin-top: 0;">對話流程設計</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-                <div style="flex: 1; min-width: 250px; background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #4caf50;">
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 12px;">
+                <div style="flex: 1; min-width: 220px; background: white; padding: 18px; border-radius: 12px; border-left: 4px solid #4caf50;">
                     <strong style="color: #2e7d32;">1. 加入好友</strong>
                     <p style="font-size: 16px;">event.type === 'follow'<br>→ 回覆歡迎訊息</p>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #1565c0;">
+                <div style="flex: 1; min-width: 220px; background: white; padding: 18px; border-radius: 12px; border-left: 4px solid #1565c0;">
                     <strong style="color: #1565c0;">2. 輸入「幫我評語」</strong>
-                    <p style="font-size: 16px;">設定狀態 = waiting_for_file<br>→ 請使用者上傳 PDF</p>
+                    <p style="font-size: 16px;">setUserState → waiting_for_file<br>→ 請使用者上傳 PDF</p>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #e65100;">
-                    <strong style="color: #e65100;">3. 上傳 PDF</strong>
-                    <p style="font-size: 16px;">檢查狀態 → 檢查格式<br>→ 開始處理檔案</p>
+                <div style="flex: 1; min-width: 220px; background: white; padding: 18px; border-radius: 12px; border-left: 4px solid #e65100;">
+                    <strong style="color: #e65100;">3. 上傳 PDF 檔案</strong>
+                    <p style="font-size: 16px;">檢查狀態 → 檢查格式<br>→ 回覆「處理中」→ 開始處理</p>
                 </div>
             </div>
         </div>
 
-        <pre><code>function handleEvent(event) {
-  const userId = event.source.userId;
-  const replyToken = event.replyToken;
+        <pre style="font-size: 15px;"><code>function handleEvent(event) {
+  var userId = event.source.userId;
+  var replyToken = event.replyToken;
 
-  // ─── 加入好友 ───
+  // ─── 加入好友歡迎訊息 ───
   if (event.type === 'follow') {
-    replyText(replyToken, '👋 歡迎！輸入「幫我評語」開始');
+    replyText(replyToken,
+      '👋 歡迎使用「自動化評量系統」！\n\n' +
+      '📝 使用方式：\n輸入「幫我評語」即可開始\n\n' +
+      '我會根據你的學習成果給予專屬評語！');
     return;
   }
 
-  // ─── 文字訊息 ───
+  // ─── 處理文字訊息 ───
   if (event.type === 'message' && event.message.type === 'text') {
-    if (event.message.text.trim() === '幫我評語') {
+    var text = event.message.text.trim();
+    if (text === '幫我評語') {
       setUserState(userId, 'waiting_for_file');
-      replyText(replyToken, '📄 請上傳 PDF...');
+      replyText(replyToken,
+        '📄 請上傳你的自主學習成果 PDF 檔案\n\n' +
+        '⚠️ 僅支援 PDF 格式，建議 10MB 以內');
       return;
     }
-    replyText(replyToken, '請輸入「幫我評語」開始');
+    replyText(replyToken, '🤖 我是自動化評量機器人\n\n請輸入「幫我評語」開始使用！');
     return;
   }
 
-  // ─── 檔案訊息 ───
-  if (event.type === 'message' && event.message.type === 'file') {
-    // 檢查狀態 → 檢查格式 → 處理檔案
-    // （下一頁詳細說明）
-  }
+  // ─── 處理檔案訊息（下一頁） ───
 }</code></pre>
+
+        <div class="box info">
+            <strong>為什麼需要狀態管理？</strong>LINE Webhook 每次收到訊息都是<strong>獨立的請求</strong>，GAS 不會記住「這個人剛才說了什麼」。<br>
+            <code>PropertiesService</code> 就像一本筆記簿，讓我們記住：這個人已經說過「幫我評語」，正在等他上傳檔案。
+        </div>
     </div>
 </div>
 
-<!-- ======================== Slide 8: 使用者狀態管理 ======================== -->
+<!-- ======================== Slide 10: 檔案訊息處理 + 狀態管理函式 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 4：使用者狀態管理</h2>
-        <p>用 <code>PropertiesService</code> 記住每個使用者目前在哪個步驟</p>
+        <h2><span class="step-number">6</span> 程式碼解析 4 — 檔案處理 & 狀態管理函式</h2>
+        <p><strong>這段的目的：</strong>接續上一頁的 <code>handleEvent</code>，處理使用者上傳的檔案訊息，並定義狀態管理的三個工具函式。</p>
 
-        <div class="two-col">
-            <div class="col">
-                <h3>為什麼需要狀態管理？</h3>
-                <p>LINE Webhook 每次收到訊息都是<strong>獨立的請求</strong>，GAS 不會自動記住「這個人剛才說了什麼」。</p>
-                <p>我們需要一個「記憶」機制：</p>
-                <ul>
-                    <li>使用者說「幫我評語」→ 記住他</li>
-                    <li>使用者傳 PDF → 檢查他是否說過</li>
-                    <li>處理完成 → 清除記憶</li>
-                </ul>
-            </div>
-            <div class="col">
-                <h3>狀態流程</h3>
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; font-size: 16px; line-height: 2.2;">
-                    <div style="padding: 8px; background: #e8f5e9; border-radius: 8px; margin: 5px 0;">（無狀態）</div>
-                    <div>↓ 輸入「幫我評語」</div>
-                    <div style="padding: 8px; background: #bbdefb; border-radius: 8px; margin: 5px 0;"><strong>waiting_for_file</strong></div>
-                    <div>↓ 上傳 PDF</div>
-                    <div style="padding: 8px; background: #e8f5e9; border-radius: 8px; margin: 5px 0;">（清除狀態，開始處理）</div>
-                </div>
-            </div>
-        </div>
+        <h3>handleEvent 的檔案處理段落</h3>
+        <pre style="font-size: 15px;"><code>  // ─── 處理檔案訊息（接續 handleEvent 內部） ───
+  if (event.type === 'message' && event.message.type === 'file') {
+    var state = getUserState(userId);
 
-        <pre><code>// 使用者狀態管理 — 用 ScriptProperties 存儲
-const scriptProps = PropertiesService.getScriptProperties();
+    if (state !== 'waiting_for_file') {
+      replyText(replyToken, '請先輸入「幫我評語」再上傳檔案喔！');
+      return;
+    }
 
-function setUserState(userId, state) {
+    var fileName = event.message.fileName;
+    var messageId = event.message.id;
+
+    // 檢查 PDF 格式
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      replyText(replyToken, '⚠️ 請上傳 PDF 格式的檔案！');
+      return;
+    }
+
+    // 回覆「處理中」
+    replyText(replyToken, '⏳ 正在處理你的檔案，約需 30 秒到 1 分鐘...');
+
+    // 清除狀態 & 非同步處理
+    clearUserState(userId);
+    processFileAsync(userId, messageId, fileName);
+  }
+}</code></pre>
+
+        <h3>使用者狀態管理函式</h3>
+        <pre style="font-size: 15px;"><code>function setUserState(userId, state) {
   scriptProps.setProperty('state_' + userId, state);
 }
 
@@ -414,27 +527,37 @@ function clearUserState(userId) {
   scriptProps.deleteProperty('state_' + userId);
 }</code></pre>
 
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>getUserState(userId)</code> — 檢查這個使用者有沒有在「等待上傳」的狀態</li>
+            <li><code>fileName.toLowerCase().endsWith('.pdf')</code> — 把檔名轉小寫後檢查結尾是不是 <code>.pdf</code>，防止使用者傳 Word 或圖片</li>
+            <li><code>replyText(...'⏳ 處理中...')</code> — 先回覆讓使用者知道系統在跑，不是沒反應</li>
+            <li><code>clearUserState(userId)</code> — 清除狀態，避免使用者重複觸發</li>
+            <li><code>processFileAsync(...)</code> — 開始核心的檔案處理流程（下一頁說明）</li>
+            <li><code>setProperty / getProperty / deleteProperty</code> — ScriptProperties 的增/查/刪操作</li>
+        </ul>
+
         <div class="box info">
-            <strong>小知識：</strong><code>ScriptProperties</code> 是 GAS 內建的「鍵值對」存儲，資料會永久保存直到你刪除它，很適合存放簡單的狀態資訊。
+            <strong>狀態流程：</strong>（無狀態）→ 輸入「幫我評語」→ <code>waiting_for_file</code> → 上傳 PDF →（清除狀態，開始處理）
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 9: LINE 檔案下載 + Drive 儲存 ======================== -->
+<!-- ======================== Slide 11: LINE 檔案下載 + Drive 儲存 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 5：下載檔案 & 存入 Drive</h2>
-        <p>從 LINE 伺服器下載使用者上傳的 PDF，存到 Google Drive</p>
+        <h2><span class="step-number">7</span> 程式碼解析 5 — 下載檔案 & 存入 Drive</h2>
+        <p><strong>這段的目的：</strong>從 LINE 伺服器下載使用者上傳的 PDF，重新命名後存到 Google Drive 指定資料夾。</p>
 
         <div class="two-col">
             <div class="col">
-                <h3>從 LINE 下載檔案</h3>
+                <h3>📥 downloadFromLine(messageId)</h3>
                 <pre style="font-size: 15px;"><code>function downloadFromLine(messageId) {
-  const url =
+  var url =
     'https://api-data.line.me/v2/bot/message/'
     + messageId + '/content';
 
-  const res = UrlFetchApp.fetch(url, {
+  var res = UrlFetchApp.fetch(url, {
     headers: {
       'Authorization': 'Bearer ' + LINE_TOKEN
     },
@@ -442,60 +565,62 @@ function clearUserState(userId) {
   });
 
   if (res.getResponseCode() !== 200) {
-    throw new Error('檔案下載失敗');
+    throw new Error('LINE 檔案下載失敗');
   }
   return res.getBlob();
 }</code></pre>
+                <ul class="explain-list">
+                    <li><code>api-data.line.me</code> — LINE 檔案下載用的 API 網址（注意不是 <code>api.line.me</code>）</li>
+                    <li><code>messageId</code> — LINE 每則訊息都有唯一 ID，用這個 ID 下載對應的檔案</li>
+                    <li><code>getBlob()</code> — 取得檔案的二進位資料（Blob），可以直接存到 Drive</li>
+                </ul>
             </div>
             <div class="col">
-                <h3>存入 Google Drive</h3>
+                <h3>📁 saveToDrive(blob, fileName, userId)</h3>
                 <pre style="font-size: 15px;"><code>function saveToDrive(blob, fileName, userId) {
-  const folder =
+  var folder =
     DriveApp.getFolderById(FOLDER_ID);
 
-  // 加上時間戳避免重名
-  const timestamp =
-    Utilities.formatDate(
-      new Date(), 'Asia/Taipei',
-      'yyyyMMdd_HHmmss'
-    );
-  const newName = timestamp + '_'
+  var timestamp = Utilities.formatDate(
+    new Date(), 'Asia/Taipei',
+    'yyyyMMdd_HHmmss'
+  );
+  var newName = timestamp + '_'
     + userId.substring(0, 8)
     + '_' + fileName;
 
   blob.setName(newName);
   return folder.createFile(blob);
 }</code></pre>
+                <ul class="explain-list">
+                    <li><code>getFolderById(FOLDER_ID)</code> — 用資料夾 ID 找到目標資料夾</li>
+                    <li><code>Utilities.formatDate</code> — 產生台灣時區的時間戳，如 <code>20260309_143025</code></li>
+                    <li><code>userId.substring(0, 8)</code> — 取使用者 ID 前 8 碼，方便辨識又保護隱私</li>
+                    <li><code>folder.createFile(blob)</code> — 在指定資料夾建立檔案，回傳 File 物件</li>
+                </ul>
             </div>
         </div>
 
         <div class="box info">
-            <strong>重點：</strong>
-            LINE 的檔案 API 網址是 <code>api-data.line.me</code>（不是一般的 <code>api.line.me</code>）。<br>
-            檔案名稱加上時間戳和使用者 ID 前 8 碼，方便管理不會重複。
+            <strong>檔案命名範例：</strong><code>20260309_143025_Uabcdef1_學習成果報告.pdf</code><br>
+            日期時間 + 使用者前 8 碼 + 原始檔名，不會重複也方便管理。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 10: PDF 文字提取 ======================== -->
+<!-- ======================== Slide 12: PDF 文字提取 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 6：PDF 文字提取（關鍵步驟）</h2>
-        <p>利用 Drive API 將 PDF 轉換為 Google Docs，就能讀出文字！</p>
+        <h2><span class="step-number">8</span> 程式碼解析 6 — PDF 文字提取（關鍵步驟）</h2>
+        <p><strong>這段的目的：</strong>利用 Drive API 把 PDF 「轉換」成 Google Docs，轉換後的 Docs 就包含了 PDF 裡的文字，再讀出來送給 AI。</p>
 
-        <pre><code>/**
- * PDF → 文字提取
- * 原理：Drive API 可以把 PDF「轉換」成 Google Docs
- *       轉換後的 Docs 就包含了 PDF 裡的文字
- * ⚠️ 必須啟用 Drive API 進階服務！
- */
-function extractPdfText(file) {
+        <pre><code>function extractPdfText(file) {
   try {
-    const blob = file.getBlob();
-    const tempName = 'temp_pdf_' + Date.now();
+    var blob = file.getBlob();
+    var tempName = 'temp_pdf_' + Date.now();
 
     // 1. 將 PDF 轉換為 Google Docs
-    const docFile = Drive.Files.insert(
+    var docFile = Drive.Files.insert(
       { title: tempName,
         mimeType: 'application/vnd.google-apps.document' },
       blob,
@@ -503,37 +628,57 @@ function extractPdfText(file) {
     );
 
     // 2. 讀取轉換後的文字
-    const doc = DocumentApp.openById(docFile.id);
-    const text = doc.getBody().getText();
+    var doc = DocumentApp.openById(docFile.id);
+    var text = doc.getBody().getText();
 
-    // 3. 清除暫存檔
+    // 3. 清除暫存檔（丟到垃圾桶）
     DriveApp.getFileById(docFile.id).setTrashed(true);
 
+    console.log('PDF 提取成功，文字長度：' + text.length);
     return text;
+
   } catch (error) {
     console.error('PDF 提取失敗：' + error.message);
     return '';
   }
 }</code></pre>
 
-        <div class="box warning">
-            <strong>⚠️ 常見錯誤：</strong>如果出現 <code>Drive is not defined</code>，代表你忘了啟用 Drive API！<br>
-            → GAS 編輯器 → 左側「服務 +」→ 搜尋 Drive API → 新增
-        </div>
-        <div class="box info">
-            <strong>限制：</strong>這個方法只能提取「文字型 PDF」。如果是掃描檔（圖片型），會提取不到文字。
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>file.getBlob()</code> — 從 Drive 檔案物件取得二進位資料</li>
+            <li><code>Drive.Files.insert({...}, blob, { convert: true })</code> — 這是 <strong>Drive API 進階服務</strong>（不是 DriveApp）的方法，<code>convert: true</code> 是關鍵參數，告訴 Google 把 PDF 轉成 Docs</li>
+            <li><code>mimeType: 'application/vnd.google-apps.document'</code> — 指定轉換目標為 Google Docs 格式</li>
+            <li><code>DocumentApp.openById(docFile.id)</code> — 用 DocumentApp 開啟轉換後的 Google Docs</li>
+            <li><code>doc.getBody().getText()</code> — 讀取整份文件的純文字內容</li>
+            <li><code>setTrashed(true)</code> — 用完就丟到垃圾桶，避免 Drive 裡堆滿暫存檔</li>
+        </ul>
+
+        <div class="two-col">
+            <div class="col">
+                <div class="box warning" style="margin: 0;">
+                    <strong>⚠️ 常見錯誤</strong><br>
+                    <code>ReferenceError: Drive is not defined</code><br>
+                    → 代表你忘了啟用 Drive API！回到 Step 2-2 操作。
+                </div>
+            </div>
+            <div class="col">
+                <div class="box info" style="margin: 0;">
+                    <strong>限制說明</strong><br>
+                    這個方法只能提取「文字型 PDF」。如果是掃描檔（整頁都是圖片），會提取不到文字，程式會回報「無法讀取 PDF 內容」。
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 11: AI 生成評語 ======================== -->
+<!-- ======================== Slide 13: AI 評語生成 — System Prompt ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 7：AI 生成評語</h2>
-        <p>把提取的文字送給 AI，讓它根據內容生成個人化評語</p>
+        <h2><span class="step-number">9</span> 程式碼解析 7 — AI 評語生成（Prompt 設計）</h2>
+        <p><strong>這段的目的：</strong>設計 AI 的角色與產出格式，再把 PDF 提取的文字餵給 AI 產出個人化評語。</p>
 
         <h3>System Prompt（AI 角色設定）</h3>
-        <pre style="font-size: 15px;"><code>const SYSTEM_PROMPT = [
+        <pre style="font-size: 15px;"><code>var SYSTEM_PROMPT = [
   '你是一位溫暖且專業的教育評語專家。',
   '根據學生的自主學習成果，給予正向鼓勵的評語。',
   '',
@@ -543,193 +688,502 @@ function extractPdfText(file) {
   '3. 結構：肯定努力 → 指出優點 → 未來建議',
   '4. 使用繁體中文',
   '5. 避免制式化語句'
-].join('\\n');</code></pre>
+].join('\n');</code></pre>
 
-        <h3>呼叫 Gemini API（推薦）</h3>
-        <pre style="font-size: 15px;"><code>function callGemini(systemPrompt, userPrompt) {
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-    + GEMINI_MODEL + ':generateContent?key=' + AI_API_KEY;
+        <h3>generateFeedback — 整理內容並呼叫 AI</h3>
+        <pre style="font-size: 15px;"><code>function generateFeedback(pdfContent) {
+  // 截取內容避免超過 token 限制
+  var maxLen = 8000;
+  var content = pdfContent.length > maxLen
+    ? pdfContent.substring(0, maxLen) + '...(內容已截取)'
+    : pdfContent;
 
-  const payload = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ parts: [{ text: userPrompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-  };
+  var userPrompt =
+    '請根據以下學生的自主學習成果，撰寫 100-150 字的正向評語：\n\n' +
+    '===學生作品===\n' + content + '\n===============';
 
-  const res = UrlFetchApp.fetch(url, {
-    method: 'post', contentType: 'application/json',
-    payload: JSON.stringify(payload), muteHttpExceptions: true
-  });
-  const result = JSON.parse(res.getContentText());
-
-  if (result.error) throw new Error('Gemini 錯誤：' + result.error.message);
-  return result.candidates[0].content.parts[0].text.trim();
+  if (AI_PROVIDER === 'gemini') {
+    return callGemini(SYSTEM_PROMPT, userPrompt);
+  } else {
+    return callOpenAI(SYSTEM_PROMPT, userPrompt);
+  }
 }</code></pre>
 
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>SYSTEM_PROMPT</code> — 用陣列 <code>.join('\n')</code> 組成多行文字，比用 <code>+</code> 連接更好讀</li>
+            <li><code>maxLen = 8000</code> — PDF 文字可能很長，截取前 8000 字避免超過 AI 的 token 上限</li>
+            <li><code>AI_PROVIDER === 'gemini'</code> — 根據設定區的選擇，呼叫對應的 AI API</li>
+        </ul>
+
         <div class="box success">
-            <strong>Prompt 設計技巧：</strong>指定「字數」、「語氣」、「結構」三要素，AI 生成的品質會大幅提升！
+            <strong>Prompt 設計三要素：</strong>指定「字數」（100-150 字）、「語氣」（溫暖正向）、「結構」（肯定→優點→建議），AI 生成的品質會大幅提升！
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 12: 試算表記錄 ======================== -->
+<!-- ======================== Slide 14: 呼叫 Gemini / OpenAI API ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 8：記錄到試算表</h2>
-        <p>每筆評語都自動記錄到 Google Sheets，方便老師追蹤管理</p>
+        <h2><span class="step-number">10</span> 程式碼解析 8 — 呼叫 AI API</h2>
+        <p><strong>這段的目的：</strong>實際發送 HTTP 請求到 Gemini 或 OpenAI，取得 AI 生成的評語文字。</p>
 
-        <pre><code>function logToSheet(userId, fileName, feedback) {
+        <div class="two-col">
+            <div class="col">
+                <h3>🟢 callGemini（推薦，免費）</h3>
+                <pre style="font-size: 14px;"><code>function callGemini(systemPrompt, userPrompt) {
+  var url =
+    'https://generativelanguage.googleapis.com'
+    + '/v1beta/models/' + GEMINI_MODEL
+    + ':generateContent?key=' + AI_API_KEY;
+
+  var payload = {
+    system_instruction: {
+      parts: [{ text: systemPrompt }]
+    },
+    contents: [{
+      parts: [{ text: userPrompt }]
+    }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 500
+    }
+  };
+
+  var res = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  var result = JSON.parse(res.getContentText());
+
+  if (result.error) {
+    throw new Error(
+      'Gemini 錯誤：' + result.error.message
+    );
+  }
+  return result.candidates[0]
+    .content.parts[0].text.trim();
+}</code></pre>
+            </div>
+            <div class="col">
+                <h3>🔵 callOpenAI（付費方案）</h3>
+                <pre style="font-size: 14px;"><code>function callOpenAI(systemPrompt, userPrompt) {
+  var url =
+    'https://api.openai.com/v1/chat/completions';
+
+  var payload = {
+    model: OPENAI_MODEL,
+    messages: [
+      { role: 'system',
+        content: systemPrompt },
+      { role: 'user',
+        content: userPrompt }
+    ],
+    max_tokens: 500,
+    temperature: 0.7
+  };
+
+  var res = UrlFetchApp.fetch(url, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + AI_API_KEY
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  var result = JSON.parse(res.getContentText());
+
+  if (result.error) {
+    throw new Error(
+      'OpenAI 錯誤：' + result.error.message
+    );
+  }
+  return result.choices[0]
+    .message.content.trim();
+}</code></pre>
+            </div>
+        </div>
+
+        <p><strong>關鍵差異：</strong></p>
+        <ul class="explain-list">
+            <li><strong>Gemini</strong> — API Key 放在 URL 的 <code>?key=</code> 參數中；回應在 <code>result.candidates[0].content.parts[0].text</code></li>
+            <li><strong>OpenAI</strong> — API Key 放在 HTTP Header 的 <code>Authorization: Bearer</code>；回應在 <code>result.choices[0].message.content</code></li>
+            <li><code>temperature: 0.7</code> — 控制 AI 創意程度（0 = 死板，1 = 天馬行空），0.7 是平衡點</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: LINE API + 試算表記錄 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">11</span> 程式碼解析 9 — LINE API & 試算表記錄</h2>
+        <p><strong>這段的目的：</strong>定義 LINE 的回覆/推播函式，以及把每筆評語自動記錄到 Google Sheets。</p>
+
+        <div class="two-col">
+            <div class="col">
+                <h3>💬 LINE 訊息函式</h3>
+                <pre style="font-size: 14px;"><code>/** 回覆訊息（使用 replyToken） */
+function replyText(replyToken, text) {
+  UrlFetchApp.fetch(
+    'https://api.line.me/v2/bot/message/reply', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({
+      replyToken: replyToken,
+      messages: [{ type: 'text', text: text }]
+    }),
+    muteHttpExceptions: true
+  });
+}
+
+/** 主動推送訊息（使用 userId） */
+function pushText(userId, text) {
+  UrlFetchApp.fetch(
+    'https://api.line.me/v2/bot/message/push', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({
+      to: userId,
+      messages: [{ type: 'text', text: text }]
+    }),
+    muteHttpExceptions: true
+  });
+}</code></pre>
+            </div>
+            <div class="col">
+                <h3>📊 logToSheet — 記錄到試算表</h3>
+                <pre style="font-size: 14px;"><code>function logToSheet(userId, fileName, feedback) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    let sheet = ss.getSheetByName('評語記錄');
+    var ss = SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+    var sheet = ss.getSheetByName('評語記錄');
 
-    // 若工作表不存在，自動建立並加標題
+    // 若工作表不存在，自動建立
     if (!sheet) {
       sheet = ss.insertSheet('評語記錄');
       sheet.getRange(1, 1, 1, 5).setValues([
-        ['時間', '使用者 ID', '檔案名稱', '評語', '狀態']
+        ['時間', '使用者 ID',
+         '檔案名稱', '評語', '狀態']
       ]);
-      sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 5)
+        .setFontWeight('bold');
     }
 
-    // 新增一筆記錄
-    const timestamp = Utilities.formatDate(
-      new Date(), 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss'
+    var timestamp = Utilities.formatDate(
+      new Date(), 'Asia/Taipei',
+      'yyyy/MM/dd HH:mm:ss'
     );
-    const maskedId = userId.substring(0, 10) + '***';
+    var maskedId =
+      userId.substring(0, 10) + '***';
 
-    sheet.appendRow([timestamp, maskedId, fileName, feedback, '完成']);
+    sheet.appendRow([
+      timestamp, maskedId, fileName,
+      feedback, '完成'
+    ]);
   } catch (error) {
     console.error('試算表記錄錯誤:', error);
   }
 }</code></pre>
-
-        <div class="two-col">
-            <div class="col">
-                <h3>試算表自動產生的結果</h3>
-                <table style="font-size: 14px;">
-                    <tr><th>時間</th><th>使用者 ID</th><th>檔案</th><th>評語</th><th>狀態</th></tr>
-                    <tr><td>2026/03/04 14:30</td><td>Uabcdef12***</td><td>報告.pdf</td><td>你的報告...</td><td>完成</td></tr>
-                    <tr><td>2026/03/04 14:35</td><td>U12345678***</td><td>心得.pdf</td><td>非常用心...</td><td>完成</td></tr>
-                </table>
-            </div>
-            <div class="col">
-                <h3>設計巧思</h3>
-                <ul>
-                    <li><strong>自動建立工作表</strong>：第一次使用會自動建立「評語記錄」工作表</li>
-                    <li><strong>ID 遮蔽</strong>：只顯示前 10 碼 + ***，保護學生隱私</li>
-                    <li><strong>時間記錄</strong>：精確到秒的台灣時區時間</li>
-                </ul>
             </div>
         </div>
+
+        <p><strong>逐行解釋重點：</strong></p>
+        <ul class="explain-list">
+            <li><code>replyText</code> vs <code>pushText</code> — reply 用 replyToken（30 秒內有效），push 用 userId（隨時可發）</li>
+            <li><code>ss.getSheetByName('評語記錄')</code> — 找名為「評語記錄」的工作表，找不到就自動建立一個</li>
+            <li><code>userId.substring(0, 10) + '***'</code> — 只記錄 ID 前 10 碼，保護學生隱私</li>
+            <li><code>sheet.appendRow([...])</code> — 在最後一行新增一筆記錄</li>
+        </ul>
     </div>
 </div>
 
-<!-- ======================== Slide 13: 核心流程整合 ======================== -->
+<!-- ======================== Slide 16: 核心處理流程 processFileAsync ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 9：核心處理流程</h2>
-        <p>把所有步驟串起來！這個函式是整個系統的心臟</p>
+        <h2><span class="step-number">12</span> 程式碼解析 10 — 核心處理流程</h2>
+        <p><strong>這段的目的：</strong>把前面所有步驟串起來！這個函式是整個系統的心臟。</p>
 
         <pre><code>function processFileAsync(userId, messageId, fileName) {
   try {
     // Step 1：從 LINE 下載檔案
-    const fileBlob = downloadFromLine(messageId);
+    var fileBlob = downloadFromLine(messageId);
 
     // Step 2：存到 Google Drive
-    const driveFile = saveToDrive(fileBlob, fileName, userId);
+    var driveFile = saveToDrive(fileBlob, fileName, userId);
 
     // Step 3：提取 PDF 文字
-    const pdfText = extractPdfText(driveFile);
+    var pdfText = extractPdfText(driveFile);
     if (!pdfText || pdfText.trim().length < 10) {
-      pushText(userId, '⚠️ 無法讀取 PDF 內容');
+      pushText(userId,
+        '⚠️ 無法讀取 PDF 內容\n\n' +
+        '可能原因：掃描檔或圖片型 PDF\n' +
+        '請確保 PDF 內含可選取的文字。');
       return;
     }
 
     // Step 4：AI 生成評語
-    const feedback = generateFeedback(pdfText);
+    var feedback = generateFeedback(pdfText);
 
     // Step 5：記錄到試算表
     logToSheet(userId, fileName, feedback);
 
     // Step 6：回傳評語給學生
     pushText(userId,
-      '✨ 你的自主學習評語 ✨\n\n' + feedback
-    );
+      '✨ 你的自主學習評語 ✨\n\n' +
+      feedback + '\n\n' +
+      '───\n📌 繼續加油！歡迎再次分享學習成果！');
 
   } catch (error) {
     console.error('processFileAsync 錯誤:', error);
-    pushText(userId, '❌ 處理時發生錯誤：' + error.message);
+    pushText(userId, '❌ 處理時發生錯誤：' + error.message + '\n\n請稍後再試。');
   }
 }</code></pre>
 
+        <h3>6 步驟流程圖</h3>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 20px 0;">
+            <div class="flow-step">1️⃣ LINE 下載</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">2️⃣ 存入 Drive</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">3️⃣ 提取文字</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">4️⃣ AI 評語</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">5️⃣ 記錄試算表</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">6️⃣ 推送結果</div>
+        </div>
+
         <div class="box info">
             <strong>為什麼用 pushText 不用 replyText？</strong><br>
-            因為 <code>replyToken</code> 只有 <strong>30 秒</strong>有效期。PDF 處理可能超過 30 秒，<br>
-            所以先用 replyText 回覆「處理中」，處理完再用 pushText 主動推送結果。
+            因為 <code>replyToken</code> 只有 <strong>30 秒</strong>有效期。PDF 處理（下載 + 轉換 + AI 生成）可能超過 30 秒，<br>
+            所以先用 <code>replyText</code> 回覆「處理中」，處理完再用 <code>pushText</code> 主動推送結果。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 14: 部署與測試 ======================== -->
+<!-- ======================== Slide 17: 部署步驟（micro-step 格式） ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>Step 10：部署 & 測試</h2>
-        <p>程式碼寫好了，來部署並測試吧！</p>
+        <h2><span class="step-number">13</span> 部署為網路應用程式</h2>
+        <p>程式碼寫好了，接下來要「部署」讓 LINE 伺服器能呼叫到你的 GAS。</p>
 
-        <div class="two-col">
-            <div class="col">
-                <h3>部署步驟</h3>
-                <ol>
-                    <li>點擊「部署」→「新增部署作業」</li>
-                    <li>類型選「網路應用程式」</li>
-                    <li>執行身分：<strong>我</strong></li>
-                    <li>存取權限：<strong>所有人</strong></li>
-                    <li>點擊「部署」→ 複製網址</li>
-                    <li>到 LINE Developers 貼上 Webhook URL</li>
-                    <li>開啟「Use webhook」</li>
-                </ol>
-            </div>
-            <div class="col">
-                <h3>測試函式</h3>
-                <pre style="font-size: 14px;"><code>// 測試 1：檢查設定
-function testBot() {
-  console.log('LINE Token:', LINE_TOKEN.length);
-  console.log('AI Provider:', AI_PROVIDER);
-  console.log('✅ 設定確認完成');
-}
+        <h3>Step 13-1：開啟部署選單</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>右上角</strong><br>
+            <span class="action">👆 動作：</span>點擊藍色的「部署」按鈕 → 選「新增部署作業」<br>
+            <span class="result">👀 結果：</span>彈出「新增部署作業」設定面板
+        </div>
 
-// 測試 2：測試 AI 連線
-function testAI() {
-  const feedback = generateFeedback(
-    '學生報告：關於環境保護...'
-  );
-  console.log('評語：' + feedback);
-}
+        <h3>Step 13-2：選擇部署類型</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>設定面板左上角的齒輪圖示<br>
+            <span class="action">👆 動作：</span>點擊齒輪 → 選「網路應用程式」<br>
+            <span class="result">👀 結果：</span>下方出現「執行身分」和「存取權限」的下拉選單
+        </div>
 
-// 測試 3：測試 PDF 提取
-function testPdfExtraction() {
-  // 從 Drive 資料夾取 PDF 測試
-}</code></pre>
-            </div>
+        <h3>Step 13-3：設定權限</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>「執行身分」選 <code>我</code>（你的 Google 帳號）<br>
+            <span class="action">👆 動作：</span>「存取權限」選 <code>所有人</code><br>
+            <span class="action">👆 動作：</span>點擊右下角「部署」按鈕<br>
+            <span class="result">⏱️ 等待：</span>等待幾秒鐘，出現部署成功畫面<br>
+            <span class="result">👀 結果：</span>複製「網路應用程式」的 URL（以 <code>https://script.google.com/macros/s/...</code> 開頭）
+        </div>
+
+        <h3>Step 13-4：設定 LINE Webhook</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>LINE Developers 後台 → 你的 Bot → Messaging API 頁籤<br>
+            <span class="action">👆 動作：</span>找到「Webhook URL」欄位 → 貼上剛才複製的 URL → 點「Update」<br>
+            <span class="action">👆 動作：</span>確認「Use webhook」是<strong>開啟</strong>狀態（綠色）<br>
+            <span class="result">👀 結果：</span>LINE 伺服器會把所有訊息轉發到你的 GAS
         </div>
 
         <div class="box warning">
-            <strong>部署注意：</strong>每次修改程式碼後，要點「部署」→「管理部署作業」→ 建立<strong>新版本</strong>，LINE 才會使用最新的程式碼！
-        </div>
-
-        <div class="box success">
-            <strong>實測流程：</strong><br>
-            1. 用手機打開 LINE → 加入你的 Bot<br>
-            2. 輸入「幫我評語」<br>
-            3. 上傳一個 PDF 檔案<br>
-            4. 等待 30 秒~1 分鐘收到評語<br>
-            5. 檢查 Google 試算表是否有記錄
+            <strong>⚠️ 更新程式碼後要重新部署！</strong><br>
+            每次修改程式碼 → 「部署」→「管理部署作業」→ 右上角鉛筆圖示 →「版本」選「新版本」→「部署」。<br>
+            不重新部署，LINE 還是會用舊版的程式碼！
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 15: VibeCoding ======================== -->
+<!-- ======================== Slide 18: 測試函式 + micro-step ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">14</span> 測試函式 — 分段驗證</h2>
+        <p>部署前，先用測試函式分段確認每個環節都正常。</p>
+
+        <h3>測試函式程式碼</h3>
+        <pre style="font-size: 15px;"><code>/** 測試基本設定 */
+function testBot() {
+  console.log('=== 自動化評量系統測試 ===');
+  console.log('LINE Token 長度:', LINE_TOKEN.length);
+  console.log('AI Provider:', AI_PROVIDER);
+  console.log('AI Model:', AI_PROVIDER === 'gemini' ? GEMINI_MODEL : OPENAI_MODEL);
+  console.log('Drive Folder ID:', FOLDER_ID);
+  console.log('Spreadsheet ID:', SPREADSHEET_ID);
+  console.log('✅ 基本設定確認完成');
+}
+
+/** 測試 AI 評語生成 */
+function testAI() {
+  var testContent = '這份報告探討了再生能源在台灣的發展現況。' +
+    '學生分析了太陽能和風力發電的效率，並提出校園節能方案。';
+  console.log('測試 AI 評語生成...');
+  try {
+    var feedback = generateFeedback(testContent);
+    console.log('✅ 成功！\n評語：\n' + feedback);
+  } catch (error) {
+    console.log('❌ 失敗：' + error.message);
+  }
+}
+
+/** 測試 PDF 提取 */
+function testPdfExtraction() {
+  var folder = DriveApp.getFolderById(FOLDER_ID);
+  var files = folder.getFilesByType('application/pdf');
+  if (!files.hasNext()) {
+    console.log('資料夾中沒有 PDF，請先上傳一個來測試');
+    return;
+  }
+  var file = files.next();
+  console.log('測試檔案：' + file.getName());
+  var text = extractPdfText(file);
+  if (text && text.length > 0) {
+    console.log('✅ 提取成功！文字長度：' + text.length);
+    console.log('前 300 字：\n' + text.substring(0, 300));
+  } else {
+    console.log('❌ 提取失敗');
+  }
+}</code></pre>
+
+        <h3>執行測試的操作步驟</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，<strong>▶ 執行</strong> 按鈕左邊的下拉選單<br>
+            <span class="action">👆 動作：</span>點擊下拉選單 → 選擇 <code>testBot</code> → 點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>首次執行會跳出授權對話框（審查權限 → 選帳號 → 進階 → 前往 → 允許）<br>
+            <span class="result">👀 結果：</span>編輯器下方「執行記錄」顯示所有設定值，確認無誤後再依序測試 <code>testAI</code> 和 <code>testPdfExtraction</code>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 測試成功/失敗對比 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">15</span> 實際測試 — 成功 / 失敗對比</h2>
+        <p>部署完成後，用手機實際測試完整流程。</p>
+
+        <h3>實測流程</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用手機打開 LINE → 找到你的 Bot → 輸入「幫我評語」<br>
+            <span class="result">👀 結果：</span>Bot 回覆「📄 請上傳你的自主學習成果 PDF 檔案」
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>傳送一個 PDF 檔案（可用任何 PDF 測試）<br>
+            <span class="result">👀 結果：</span>Bot 回覆「⏳ 正在處理你的檔案，約需 30 秒到 1 分鐘...」<br>
+            <span class="result">⏱️ 等待：</span>約 30 秒~1 分鐘後，收到 AI 生成的評語
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-top: 10px;">
+                    <p style="font-size: 16px; line-height: 1.8; margin: 0;">
+                        <strong>Bot 回覆：</strong><br>
+                        ✨ 你的自主學習評語 ✨<br><br>
+                        你的報告展現了對再生能源議題的深入思考，從太陽能到風力發電的分析十分全面。特別是校園節能方案的部分，能將所學與生活結合，令人印象深刻。建議未來可以嘗試加入數據圖表，讓論點更有說服力。繼續保持這份求知的熱忱！<br><br>
+                        ───<br>
+                        📌 繼續加油！
+                    </p>
+                </div>
+                <ul style="margin-top: 10px;">
+                    <li>Google 試算表出現新的一筆記錄</li>
+                    <li>Google Drive 資料夾中出現重新命名的 PDF</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的常見回覆</h3>
+                <div style="background: #ffebee; padding: 20px; border-radius: 12px; margin-top: 10px;">
+                    <p style="font-size: 16px; line-height: 1.8; margin: 0;">
+                        <strong>情況 1：</strong>完全沒回覆<br>
+                        → Webhook URL 設定錯誤或未部署<br><br>
+                        <strong>情況 2：</strong>回覆「❌ 處理時發生錯誤」<br>
+                        → 看錯誤訊息判斷原因（下一頁）<br><br>
+                        <strong>情況 3：</strong>回覆「⚠️ 無法讀取 PDF 內容」<br>
+                        → PDF 是掃描檔（圖片型），換一個文字型 PDF 試試
+                    </p>
+                </div>
+                <ul style="margin-top: 10px;">
+                    <li>試算表沒有新記錄 → 問題出在 AI 或 PDF 提取步驟</li>
+                    <li>Drive 沒有新檔案 → 問題出在 LINE 下載步驟</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>確認試算表：</strong>打開你的 Google 試算表，應該會看到一個「評語記錄」工作表，裡面有時間、使用者 ID（部分遮蔽）、檔案名稱、評語、狀態。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+
+        <h3>🔍 怎麼找到錯誤訊息？（第一步！）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>左側選單</strong>，找到「⏱ 執行項目」圖示（時鐘圖示，從上面數第 3 個）<br>
+            <span class="action">👆 動作：</span>點擊它 → 找到最近一筆記錄 → 如果狀態是紅色「失敗」，點擊那一行的 <strong>▶ 展開箭頭</strong><br>
+            <span class="result">👀 結果：</span>展開後的<strong>紅色文字</strong>就是錯誤原因
+        </div>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">ReferenceError: Drive is not defined</h3>
+                <p><strong>原因：</strong>沒有啟用 Drive API 進階服務</p>
+                <p><strong>解法：</strong>GAS 編輯器 → 左側「服務 +」→ 搜尋 Drive API → 新增</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Gemini 錯誤：API key not valid</h3>
+                <p><strong>原因：</strong>API Key 無效或已過期</p>
+                <p><strong>解法：</strong>到 <code>aistudio.google.com</code> 重新產生 API Key，貼回 <code>AI_API_KEY</code></p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">LINE 檔案下載失敗（狀態碼 401）</h3>
+                <p><strong>原因：</strong>LINE Channel Access Token 不正確</p>
+                <p><strong>解法：</strong>到 LINE Developers 後台重新 Issue Token，貼回 <code>LINE_TOKEN</code></p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Folder not found / Invalid argument: id</h3>
+                <p><strong>原因：</strong>資料夾 ID 或試算表 ID 貼錯</p>
+                <p><strong>解法：</strong>回到 Google Drive / Sheets，重新從網址列複製 <code>/folders/</code> 或 <code>/d/</code> 後面的那段 ID</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Gemini 錯誤：429 Resource exhausted</h3>
+                <p><strong>原因：</strong>Gemini 免費版有每分鐘請求次數限制</p>
+                <p><strong>解法：</strong>等 1 分鐘再試，或改用 <code>gemini-2.5-flash</code>（配額較高）</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Bot 完全沒回覆任何訊息</h3>
+                <p><strong>原因：</strong>Webhook URL 未設定或部署類型選錯</p>
+                <p><strong>解法：</strong>確認部署類型是「網路應用程式」，Webhook URL 已正確貼到 LINE Developers，「Use webhook」已開啟</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: VibeCoding ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>VibeCoding — AI 幫你寫程式</h2>
@@ -753,7 +1207,7 @@ function testPdfExtraction() {
 - 如果 PDF 無法提取文字要回報錯誤
 - 包含 testBot、testAI、testPdfExtraction 測試函式
 
-請提供完整可執行的程式碼。</code></pre>
+請使用 var 宣告變數，提供完整可執行的程式碼。</code></pre>
 
         <div class="box success">
             <strong>VibeCoding 秘訣：</strong>
@@ -762,49 +1216,54 @@ function testPdfExtraction() {
                 <li>指定技術細節（API 名稱、模型名稱）</li>
                 <li>描述錯誤處理和邊界情況</li>
                 <li>要求包含測試函式</li>
+                <li>指定變數宣告方式（GAS 建議用 <code>var</code>）</li>
             </ul>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 16: 總結 ======================== -->
+<!-- ======================== Slide 22: 完成頁（Day 1 全部完成） ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
-        <div style="font-size: 60px; margin-bottom: 15px;">🎉</div>
-        <h1 style="font-size: 42px;">Day 1 完成！</h1>
-        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會用 GAS + Line Bot 打造 8 個自動化系統</p>
+        <div style="font-size: 100px; margin-bottom: 15px;">🎉🏆🎉</div>
+        <h1 style="font-size: 48px; margin-bottom: 10px;">恭喜完成 Day 1 全部課程！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">
+            你已經從零開始，學會用 GAS + Line Bot 打造 <strong>8 個自動化系統</strong>
+        </p>
 
-        <div class="concept-grid" style="margin-bottom: 30px;">
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">🔧</div>
-                <h3>環境建置</h3>
-                <p>GAS + LINE Bot 從零設定</p>
+                <h3>Part 0-2</h3>
+                <p>環境建置、RAG 知識庫、訊息收集器</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">🔗</div>
-                <h3>API 串接</h3>
-                <p>LINE、Drive、Sheets、AI</p>
+                <h3>Part 3-4</h3>
+                <p>第一個 GAS、HTML 表單</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">📄</div>
-                <h3>檔案處理</h3>
-                <p>PDF 下載、存儲、文字提取</p>
+                <div style="font-size: 36px;">📊</div>
+                <h3>Part 5-6</h3>
+                <p>寫入試算表、天氣預報</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">🤖</div>
-                <h3>AI 整合</h3>
-                <p>Gemini / OpenAI 自動生成</p>
+                <h3>Part 7</h3>
+                <p>AI 自動評語 + PDF 解析</p>
             </div>
         </div>
 
-        <div class="box info" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
-            <strong>今天學到的核心技能：</strong>
+        <div class="box info" style="text-align: left; max-width: 750px; margin: 0 auto 30px;">
+            <strong>Day 1 學到的核心技能總回顧：</strong>
             <ul>
-                <li>Webhook 事件處理 + 使用者狀態管理</li>
-                <li>LINE 檔案下載 API + Google Drive 存儲</li>
-                <li>Drive API 進階服務（PDF 轉文字）</li>
-                <li>AI API 串接（Prompt 設計 + 回應解析）</li>
-                <li>試算表自動記錄 + VibeCoding 開發法</li>
+                <li>LINE Messaging API — Webhook、replyText、pushText</li>
+                <li>Google Apps Script — doPost、doGet、UrlFetchApp</li>
+                <li>Google Drive — DriveApp、Drive API 進階服務</li>
+                <li>Google Sheets — SpreadsheetApp、自動建表記錄</li>
+                <li>AI API 串接 — Gemini / OpenAI、Prompt 設計</li>
+                <li>進階技巧 — PropertiesService 狀態管理、PDF 文字提取</li>
+                <li>VibeCoding — 用自然語言讓 AI 幫你寫程式</li>
             </ul>
         </div>
 
@@ -812,11 +1271,11 @@ function testPdfExtraction() {
             <a href="../GAS程式碼/07_自動化評量_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
-        <p style="font-size: 16px; color: #999; margin-top: 20px;">今天辛苦了，好好休息，明天見！</p>
+        <p style="font-size: 18px; color: #666; margin-top: 25px;">今天辛苦了！好好休息，你已經很棒了 💪</p>
     </div>
 </div>
 
-    </div>
+</div>
 
     <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
     <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>

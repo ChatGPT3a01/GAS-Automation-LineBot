@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📗 實作 2 — Line Bot 訊息收集器</title>
+    <title>📘 Day 1 — LineBot 訊息收集器 × 原始資料解析</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -40,17 +40,33 @@
         .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
         .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
         .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
-        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
-        .screenshot-placeholder strong { color: #666; font-size: 16px; }
         .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
         .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
         .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
     </style>
 </head>
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">📗 實作 2 — Line Bot 訊息收集器</div>
+        <div class="nav-title">📘 Day 1 — LineBot 訊息收集器 × 原始資料解析</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -61,737 +77,1207 @@
 
     <div class="slide-container">
 
-        <!-- ========== Slide 1: Cover ========== -->
-        <div class="slide active">
-            <div class="content-card" style="text-align: center;">
-                <div style="font-size: 80px; margin-bottom: 20px;">📗</div>
-                <h1 style="font-size: 56px; margin-bottom: 16px;">實作 2：Line Bot 訊息收集器</h1>
-                <p style="font-size: 28px; color: #2e7d32; margin-bottom: 30px;">Line 訊息自動存入試算表 + 圖片存入 Google Drive</p>
-                <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px;">
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">Webhook</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">DriveApp</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">多媒體處理</span>
-                </div>
-                <div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px;">
-                    <div style="background: #e8f5e9; padding: 15px 30px; border-radius: 12px;">
-                        <div style="font-size: 16px; color: #666;">預估時間</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #1b5e20;">50 分鐘</div>
-                    </div>
-                    <div style="background: #e8f5e9; padding: 15px 30px; border-radius: 12px;">
-                        <div style="font-size: 16px; color: #666;">難度</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #1b5e20;">⭐⭐⭐</div>
-                    </div>
-                    <div style="background: #e8f5e9; padding: 15px 30px; border-radius: 12px;">
-                        <div style="font-size: 16px; color: #666;">類型</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #1b5e20;">Webhook 實作</div>
-                    </div>
-                </div>
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">📗</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">LineBot 訊息收集器</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            接收 Line Webhook → 自動記錄到試算表 → 圖片存入 Google Drive
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">doPost()</span>
+            <span class="badge badge-blue">Webhook</span>
+            <span class="badge badge-orange">DriveApp</span>
+            <span class="badge badge-green">SpreadsheetApp</span>
+            <span class="badge badge-blue">switch/case</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📨 使用者傳訊息</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🤖 Webhook 接收</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 寫入試算表</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📁 檔案存 Drive</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/02_LineBot訊息收集器.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 1 — Part 2 / 訊息收集與原始資料解析</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件，全部打勾才能順利完成本單元。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3>✅ 必備條件（Part 0 已完成）</h3>
+                <ol>
+                    <li><strong>Line Bot 帳號</strong> — 你在 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code>（一串很長的英數字）</li>
+                    <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」欄位（U 開頭的字串）</li>
+                    <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
+                    <li><strong>已加 Bot 為好友</strong> — 用手機掃過 Bot 的 QR Code，能在 Line 中看到 Bot 的聊天室</li>
+                </ol>
+            </div>
+            <div class="concept-card">
+                <h3>📦 本單元需要準備</h3>
+                <ol>
+                    <li><strong>一個新的 Google 試算表</strong> — 等一下會教你建立，用來存訊息記錄</li>
+                    <li><strong>一個新的 Google Drive 資料夾</strong> — 用來存圖片/影片/檔案</li>
+                    <li><strong>下載本單元程式碼</strong> — 點擊簡報最後一頁的「📥 下載程式碼」按鈕，取得 <code>02_LineBot訊息收集器.gs</code></li>
+                </ol>
             </div>
         </div>
 
-        <!-- ========== Slide 2: 學習目標 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🎯 學習目標</h2>
-                <p>完成這個實作後，你將學會以下四大核心技能：</p>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>📥 1. doPost() 接收 Webhook</h3>
-                        <p>理解 <code>doPost(e)</code> 函式如何接收來自 Line 平台的 Webhook 事件，解析 JSON 格式的事件資料，取得訊息內容與使用者資訊。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🌐 2. UrlFetchApp 呼叫 API</h3>
-                        <p>使用 <code>UrlFetchApp.fetch()</code> 呼叫 Line Messaging API，包含取得使用者資料、下載圖片內容等功能。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📁 3. DriveApp 操作雲端硬碟</h3>
-                        <p>使用 <code>DriveApp</code> 將圖片檔案儲存到指定的 Google Drive 資料夾，並取得檔案的分享連結。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>💬 4. 處理多種訊息類型</h3>
-                        <p>根據訊息類型（文字、圖片、位置、貼圖）做不同處理，建立完整的訊息收集與記錄機制。</p>
-                    </div>
-                </div>
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <div style="background: #e3f2fd; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">⏱️</div>
+                <div style="font-size: 18px; font-weight: 600; color: #1565c0;">預估操作時間</div>
+                <div style="font-size: 28px; font-weight: 700; color: #0d47a1;">40 ~ 50 分鐘</div>
+            </div>
+            <div style="background: #fce4ec; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📊</div>
+                <div style="font-size: 18px; font-weight: 600; color: #c62828;">難度等級</div>
+                <div style="font-size: 28px; font-weight: 700; color: #b71c1c;">★★★☆☆ 中等</div>
+            </div>
+            <div style="background: #f3e5f5; padding: 18px 30px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 32px;">📄</div>
+                <div style="font-size: 18px; font-weight: 600; color: #6a1b9a;">操作步驟</div>
+                <div style="font-size: 28px; font-weight: 700; color: #4a148c;">共 8 大步驟</div>
             </div>
         </div>
 
-        <!-- Slide: Vibe Coding 提示詞教學 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🤖 Vibe Coding — 用 AI 生成這個實作</h2>
-                <p>試試看把以下提示詞貼給 AI，讓它幫你生成訊息收集器的完整程式碼！</p>
+        <div class="box warning">
+            <strong>⚠️ 如果你還沒完成 Part 0：</strong><br>
+            請先回到 <a href="Day1_Part0_GAS環境與LineBot建立.html" style="color: #856404; font-weight: bold;">Part 0 — GAS 環境與 Line Bot 建立</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
+        </div>
+    </div>
+</div>
 
-                <h3>📝 提示詞範例（直接貼給 AI）</h3>
-                <pre><code>請幫我用 Google Apps Script 建立一個 Line Bot 訊息收集器，需求如下：
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下 5 個核心技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📥</div>
+                <h3>doPost() 接收 Webhook</h3>
+                <p>理解 Line 平台如何透過 HTTP POST 將使用者訊息即時傳送到你的 GAS</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔀</div>
+                <h3>switch/case 訊息分派</h3>
+                <p>用 <code>switch</code> 判斷訊息類型（文字、圖片、貼圖、位置、檔案），做不同處理</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>SpreadsheetApp 寫入</h3>
+                <p>使用 <code>sheet.appendRow()</code> 將每筆訊息自動記錄到 Google 試算表</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>DriveApp 儲存檔案</h3>
+                <p>從 Line 下載圖片/影片/檔案，用 <code>DriveApp</code> 存到 Google Drive</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🌐</div>
+                <h3>UrlFetchApp 呼叫 API</h3>
+                <p>使用 <code>UrlFetchApp.fetch()</code> 呼叫 Line API 取得用戶資料與下載檔案</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Vibe Coding 提示詞 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding — AI 提示詞</h2>
+        <p>用以下提示詞，讓 AI 幫你生成訊息收集器的完整程式碼：</p>
+        <pre><code>請幫我用 Google Apps Script 建立一個 Line Bot 訊息收集器，需求如下：
 
 1. 實作 doPost() 接收 Line Webhook 事件
 2. 支援以下訊息類型的處理：
    - 文字訊息：記錄到 Google 試算表
-   - 圖片訊息：下載圖片存到 Google Drive，試算表記錄 Drive 連結
+   - 圖片/影片/音檔/檔案：下載存到 Google Drive，試算表記錄 Drive 連結
    - 位置訊息：記錄地址和經緯度到試算表
    - 貼圖訊息：記錄貼圖 ID 到試算表
-   - 影片/音訊/檔案：下載存到 Drive
-3. 試算表記錄欄位：時間、群組ID、群組名稱、用戶ID、用戶名稱、訊息內容、檔案位置
+3. 試算表欄位：時間、群組ID、群組名稱、用戶ID、用戶名稱、訊息內容、檔案位置
 4. 使用 UrlFetchApp 呼叫 Line API 取得用戶資料和下載檔案
-5. 下載的檔案要用 DriveApp 存到指定資料夾
-6. 需要設定 4 個變數：LINE_TOKEN、LINE_USER_ID、ROOT_FOLDER_ID、SPREADSHEET_ID
-7. 圖片下載要用 Line 的 Content API：
-   https://api-data.line.me/v2/bot/message/{messageId}/content
-8. 加上完整中文註解和錯誤處理</code></pre>
-
-                <h3>🎯 這個提示詞的關鍵技巧</h3>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>✅ 列出每種訊息類型</h3>
-                        <p>Line 有很多訊息類型，不列出來的話 AI 可能只處理文字。明確說明每種類型要怎麼處理。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>✅ 指定儲存位置</h3>
-                        <p>告訴 AI 資料存哪裡（試算表 vs Drive），以及試算表的欄位結構，生成的程式碼才會有條理。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>✅ 提供 API 端點</h3>
-                        <p>像 Line Content API 的網址，如果你知道就直接告訴 AI，可以避免它用錯 API 或瞎猜。</p>
-                    </div>
-                </div>
-
-                <div class="box info">
-                    <strong>💡 Vibe Coding 小技巧：</strong>如果 AI 生成的程式碼有錯，不要從頭重寫。把錯誤訊息貼給 AI，說「執行時出現這個錯誤，請修正」，AI 通常能直接幫你修好！
-                </div>
-            </div>
+5. 需要設定 4 個變數：LINE_TOKEN、LINE_USER_ID、ROOT_FOLDER_ID、SPREADSHEET_ID
+6. 加上完整中文註解和錯誤處理</code></pre>
+        <div class="box info">
+            <strong>💡 Vibe Coding 小提醒：</strong><br>
+            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 4 個設定值就能使用！
         </div>
-
-        <!-- ========== Slide 3: 成果預覽 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>👀 成果預覽</h2>
-                <p>完成後，你的 Line Bot 將能自動收集並記錄以下三種訊息：</p>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>💬 文字訊息</h3>
-                        <p>在 Line 中傳送文字訊息給 Bot，訊息內容會<strong>自動記錄到 Google 試算表</strong>，包含時間戳記、使用者名稱、訊息內容等欄位。</p>
-                        <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 8px; font-size: 16px;">
-                            Line 傳文字 → 試算表新增一列記錄
-                        </div>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🖼️ 圖片訊息</h3>
-                        <p>傳送圖片給 Bot，圖片會<strong>自動下載並存到 Google Drive</strong> 指定資料夾，同時在試算表記錄檔案的分享連結。</p>
-                        <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 8px; font-size: 16px;">
-                            Line 傳圖片 → Drive 存檔 + 試算表記錄連結
-                        </div>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📍 位置訊息</h3>
-                        <p>傳送位置資訊給 Bot，<strong>經緯度座標</strong>會自動記錄到試算表，方便後續地理資訊分析。</p>
-                        <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 8px; font-size: 16px;">
-                            Line 傳位置 → 試算表記錄經緯度
-                        </div>
-                    </div>
-                </div>
-                <div class="box info" style="margin-top: 25px;">
-                    <strong>💡 實用場景：</strong>客服訊息記錄、活動簽到收集、巡檢回報系統、問卷收集等，都能用類似架構實現！
-                </div>
-            </div>
+        <div class="box warning">
+            <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>
+            AI 生成的程式碼<strong>可能與課程版本不同</strong>（例如變數宣告方式、函式名稱、URL 格式等都會有差異）。<br>
+            本課程所有步驟都是依照 <code>02_LineBot訊息收集器.gs</code> 這個檔案來教學。<br>
+            <strong>建議：直接使用課程提供的 .gs 檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
         </div>
+    </div>
+</div>
 
-        <!-- ========== Slide 4: 步驟 1 — 建立試算表 + 取得 ID ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 1 — 建立試算表 + 取得 ID</h2>
-
-                <h3>1-1. 建立新的 Google 試算表</h3>
-                <ol>
-                    <li>前往 <code>sheets.google.com</code> 或從 Google Drive 中新增</li>
-                    <li>將試算表命名為 <strong>「Line 訊息記錄」</strong></li>
-                    <li>在第一列（標題列）輸入欄位名稱：<code>時間</code>、<code>群組/用戶ID</code>、<code>用戶名稱</code>、<code>訊息類型</code>、<code>訊息內容</code>、<code>檔案連結</code></li>
-                </ol>
-
-                <h3>1-2. 取得試算表 ID</h3>
-                <p>試算表 ID 就在網址中，位於 <code>/d/</code> 和 <code>/edit</code> 之間的那一段：</p>
-                <pre><code>https://docs.google.com/spreadsheets/d/<span style="color: #e06c75; font-weight: bold;">這裡就是試算表ID</span>/edit#gid=0
-
-範例：
-https://docs.google.com/spreadsheets/d/<span style="color: #e06c75; font-weight: bold;">1aBcDeFgHiJkLmNoPqRsTuVwXyZ</span>/edit#gid=0
-                                        ↑ 複製這一段 ↑</code></pre>
-
-                <!-- 截圖 25：試算表 URL 顯示 ID -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- 瀏覽器標題列 -->
-                    <div style="background: #dee1e6; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                        <div style="display: flex; gap: 6px;">
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #febc2e;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #28c840;"></div>
-                        </div>
-                        <!-- URL 列 -->
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; font-family: 'Consolas', monospace; display: flex; align-items: center; overflow: hidden;">
-                            <span style="color: #5f6368;">&#128274;</span>
-                            <span style="color: #5f6368; margin-left: 6px;">https://docs.google.com/spreadsheets/d/</span><span style="background: #fff9c4; color: #e65100; font-weight: 700; padding: 2px 4px; border-radius: 3px;">1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789ABC</span><span style="color: #5f6368;">/edit#gid=0</span>
+<!-- ======================== Slide 5: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📱 成果預覽</h2>
+        <p>完成後，你的 Line Bot 會自動收集所有傳入的訊息，效果如下：</p>
+        <div class="two-col">
+            <div class="col" style="text-align: center;">
+                <h3>Line Bot 接收各種訊息</h3>
+                <!-- 模擬 Line 聊天 UI -->
+                <div style="background: #7494a7; border-radius: 16px; padding: 20px; max-width: 360px; margin: 0 auto; min-height: 420px;">
+                    <div style="background: #5b7f8f; border-radius: 10px; padding: 10px 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">M</div>
+                        <span style="color: white; font-weight: 600; font-size: 15px;">訊息收集 Bot</span>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <span style="background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 12px;">2026年3月9日 下午 2:30</span>
+                    </div>
+                    <!-- 文字訊息（右） -->
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <div style="background: #00b900; color: white; padding: 10px 14px; border-radius: 16px 16px 4px 16px; font-size: 14px; max-width: 200px;">大家好，今天天氣很好！</div>
+                    </div>
+                    <!-- 圖片訊息（右） -->
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <div style="background: #e0e0e0; width: 160px; height: 110px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 36px; color: #999;">📷</span>
+                            <span style="font-size: 11px; color: #888;">照片.jpg</span>
                         </div>
                     </div>
-                    <!-- 說明標籤 -->
-                    <div style="padding: 10px 20px; background: #fff8e1; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 20px;">&#9757;</span>
-                        <span style="font-size: 14px; color: #e65100; font-weight: 600;">黃色區域就是試算表 ID，複製這段文字</span>
-                    </div>
-                </div>
-
-                <div class="box warning">
-                    <strong>⚠️ 注意：</strong>試算表 ID 是一串英數字混合的字串（通常約 44 個字元），不要多複製到前後的斜線 <code>/</code>。
-                </div>
-            </div>
-        </div>
-
-        <!-- ========== Slide 5: 步驟 2 — 建立 Drive 資料夾 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📁 步驟 2 — 建立 Drive 資料夾</h2>
-
-                <h3>2-1. 建立新資料夾</h3>
-                <ol>
-                    <li>前往 <code>drive.google.com</code></li>
-                    <li>點選左上角「<strong>+ 新增</strong>」→「<strong>新資料夾</strong>」</li>
-                    <li>命名為 <strong>「Line 檔案」</strong></li>
-                    <li>點擊「建立」</li>
-                </ol>
-
-                <h3>2-2. 取得資料夾 ID</h3>
-                <p>打開剛建立的資料夾，資料夾 ID 在網址的 <code>folders/</code> 後面：</p>
-                <pre><code>https://drive.google.com/drive/folders/<span style="color: #e06c75; font-weight: bold;">這裡就是資料夾ID</span>
-
-範例：
-https://drive.google.com/drive/folders/<span style="color: #e06c75; font-weight: bold;">1AbCdEfGhIjKlMnOpQrStUvWxYz</span>
-                                        ↑ 複製這一段 ↑</code></pre>
-
-                <!-- 截圖 24：Drive 資料夾 URL 顯示 ID -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- 瀏覽器標題列 -->
-                    <div style="background: #dee1e6; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                        <div style="display: flex; gap: 6px;">
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #febc2e;"></div>
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #28c840;"></div>
-                        </div>
-                        <!-- URL 列 -->
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; font-family: 'Consolas', monospace; display: flex; align-items: center; overflow: hidden;">
-                            <span style="color: #5f6368;">&#128274;</span>
-                            <span style="color: #5f6368; margin-left: 6px;">https://drive.google.com/drive/folders/</span><span style="background: #fff9c4; color: #e65100; font-weight: 700; padding: 2px 4px; border-radius: 3px;">1FoLdErIdExAmPlE7890AbCdEfGhIjK</span>
-                        </div>
-                    </div>
-                    <!-- 說明標籤 -->
-                    <div style="padding: 10px 20px; background: #fff8e1; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 20px;">&#9757;</span>
-                        <span style="font-size: 14px; color: #e65100; font-weight: 600;">黃色區域就是資料夾 ID，複製這段文字</span>
-                    </div>
-                </div>
-
-                <div class="box warning">
-                    <strong>⚠️ 重要：</strong>把<strong>試算表 ID</strong> 和<strong>資料夾 ID</strong> 都先存到記事本！等一下程式碼裡面要用到這兩個 ID。
-                </div>
-            </div>
-        </div>
-
-        <!-- ========== Slide 6: 步驟 3-4 — 貼上程式碼 + 修改設定 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>💻 步驟 3-4 — 貼上程式碼 + 修改設定</h2>
-
-                <h3>3. 開啟程式碼檔案</h3>
-                <ol>
-                    <li>在教材資料夾中找到 <code>GAS程式碼/02_LineBot訊息收集器.gs</code></li>
-                    <li>用記事本或 VS Code 開啟，全選複製（<code>Ctrl + A</code> → <code>Ctrl + C</code>）</li>
-                    <li>回到 GAS 編輯器，清空 <code>Code.gs</code> 的內容</li>
-                    <li>貼上複製的程式碼（<code>Ctrl + V</code>）</li>
-                </ol>
-
-                <h3>4. 修改四個設定值</h3>
-                <p>找到程式碼最上方的設定區塊，將以下四個值替換成你自己的：</p>
-                <pre><code>// ===== 設定區 =====
-var LINE_TOKEN = '你的 Channel Access Token';
-var LINE_USER_ID = '你的 User ID';
-var ROOT_FOLDER_ID = 'Google Drive 資料夾 ID';
-var SPREADSHEET_ID = 'Google 試算表 ID';</code></pre>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>設定項目</th>
-                            <th>值的來源</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>LINE_TOKEN</code></td>
-                            <td>Line Developers → Messaging API → Channel Access Token</td>
-                        </tr>
-                        <tr>
-                            <td><code>LINE_USER_ID</code></td>
-                            <td>Line Developers → Basic Settings → Your User ID</td>
-                        </tr>
-                        <tr>
-                            <td><code>ROOT_FOLDER_ID</code></td>
-                            <td>步驟 2 取得的 Google Drive 資料夾 ID</td>
-                        </tr>
-                        <tr>
-                            <td><code>SPREADSHEET_ID</code></td>
-                            <td>步驟 1 取得的 Google 試算表 ID</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- 截圖 26：GAS 編輯器已修改設定 -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- GAS 編輯器頂部 -->
-                    <div style="background: #4285f4; padding: 8px 16px; display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 24px; height: 24px; background: #f4b400; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; font-weight: bold;">&lt;/&gt;</div>
-                        <span style="color: #fff; font-size: 16px; font-weight: 600;">Apps Script</span>
-                        <span style="color: rgba(255,255,255,0.7); font-size: 14px; margin-left: 12px;">Line 訊息記錄</span>
-                    </div>
-                    <!-- 編輯器主體 -->
-                    <div style="display: flex;">
-                        <!-- 左側檔案面板 -->
-                        <div style="width: 180px; background: #f8f9fa; border-right: 1px solid #dadce0; padding: 12px 0;">
-                            <div style="padding: 6px 16px; font-size: 12px; color: #5f6368; font-weight: 600; text-transform: uppercase;">檔案</div>
-                            <div style="padding: 8px 16px; font-size: 14px; color: #1a73e8; background: #e8f0fe; display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: 14px;">&#128196;</span> 程式碼.gs
+                    <!-- 位置訊息（右） -->
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <div style="background: #e8f5e9; width: 160px; border-radius: 12px; overflow: hidden; border: 1px solid #c8e6c9;">
+                            <div style="background: #c8e6c9; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 28px;">📍</span>
+                            </div>
+                            <div style="padding: 6px 10px; font-size: 11px; color: #333;">
+                                <div style="font-weight: 600;">台北 101</div>
+                                <div style="color: #888; font-size: 10px;">台北市信義區</div>
                             </div>
                         </div>
-                        <!-- 右側程式碼區 -->
-                        <div style="flex: 1; background: #282c34; padding: 16px 20px; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 2; color: #abb2bf; overflow-x: auto;">
-                            <div style="color: #5c6370; font-style: italic;">// ===== 設定區 =====</div>
-                            <div style="background: rgba(255, 235, 59, 0.15); padding: 2px 8px; border-left: 3px solid #fdd835; margin: 2px 0;">
-                                <span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_TOKEN</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的Token'</span><span style="color: #abb2bf;">;</span> <span style="color: #5c6370; font-style: italic;">// &lt;-- 改這裡</span>
-                            </div>
-                            <div style="background: rgba(255, 235, 59, 0.15); padding: 2px 8px; border-left: 3px solid #fdd835; margin: 2px 0;">
-                                <span style="color: #c678dd;">var</span> <span style="color: #e06c75;">LINE_USER_ID</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的UserID'</span><span style="color: #abb2bf;">;</span> <span style="color: #5c6370; font-style: italic;">// &lt;-- 改這裡</span>
-                            </div>
-                            <div style="background: rgba(255, 235, 59, 0.15); padding: 2px 8px; border-left: 3px solid #fdd835; margin: 2px 0;">
-                                <span style="color: #c678dd;">var</span> <span style="color: #e06c75;">SPREADSHEET_ID</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的試算表ID'</span><span style="color: #abb2bf;">;</span> <span style="color: #5c6370; font-style: italic;">// &lt;-- 改這裡</span>
-                            </div>
-                            <div style="background: rgba(255, 235, 59, 0.15); padding: 2px 8px; border-left: 3px solid #fdd835; margin: 2px 0;">
-                                <span style="color: #c678dd;">var</span> <span style="color: #e06c75;">FOLDER_ID</span> <span style="color: #56b6c2;">=</span> <span style="color: #98c379;">'你的資料夾ID'</span><span style="color: #abb2bf;">;</span> <span style="color: #5c6370; font-style: italic;">// &lt;-- 改這裡</span>
-                            </div>
-                            <div style="margin-top: 8px; color: #5c6370; font-style: italic;">// ===== 以下為主要程式碼 =====</div>
-                            <div style="margin-top: 4px;">
-                                <span style="color: #c678dd;">function</span> <span style="color: #61afef;">doPost</span><span style="color: #abb2bf;">(e) {</span>
-                            </div>
-                            <div style="padding-left: 20px; color: #abb2bf;">...</div>
-                        </div>
                     </div>
-                </div>
-
-                <div class="box warning">
-                    <strong>⚠️ 注意：</strong>四個值都要放在<strong>單引號 <code>' '</code> 裡面</strong>，不要刪除單引號！如果不小心刪掉，程式會出錯。
                 </div>
             </div>
-        </div>
-
-        <!-- ========== Slide 7: 程式碼架構解說 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🔍 程式碼架構解說</h2>
-                <p>來了解一下這支程式碼的核心架構，每個函式負責什麼工作：</p>
-
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>📥 doPost(e)</h3>
-                        <p><strong>入口函式</strong> — 接收 Line 平台發來的 Webhook 事件。解析 JSON 資料，判斷訊息類型（text / image / location / sticker），分派給對應的處理函式。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>💬 handleTextMessage()</h3>
-                        <p><strong>文字訊息處理</strong> — 取得使用者傳來的文字內容，連同時間戳記、使用者名稱等資訊，一併寫入 Google 試算表的新一列。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🖼️ handleImageMessage()</h3>
-                        <p><strong>圖片訊息處理</strong> — 透過 Line API 下載圖片的二進制資料，使用 DriveApp 存到指定資料夾，並將檔案連結記錄到試算表。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📍 handleLocationMessage()</h3>
-                        <p><strong>位置訊息處理</strong> — 取得使用者分享的地點名稱、地址、經度、緯度等資訊，記錄到試算表中。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>😄 handleStickerMessage()</h3>
-                        <p><strong>貼圖訊息處理</strong> — 記錄貼圖的 Package ID 和 Sticker ID 到試算表，雖然無法直接顯示貼圖，但可以追蹤使用者的互動。</p>
-                    </div>
+            <div class="col">
+                <h3>試算表自動記錄</h3>
+                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin: 0;">
+                        <thead>
+                            <tr>
+                                <th style="background: #1b5e20; color: white; padding: 6px 8px; font-size: 11px;">時間</th>
+                                <th style="background: #1b5e20; color: white; padding: 6px 8px; font-size: 11px;">用戶名稱</th>
+                                <th style="background: #1b5e20; color: white; padding: 6px 8px; font-size: 11px;">訊息內容</th>
+                                <th style="background: #1b5e20; color: white; padding: 6px 8px; font-size: 11px;">檔案位置</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">14:30</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">小明</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">大家好，今天天氣很好！</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;"></td></tr>
+                            <tr><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">14:31</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">小明</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">【圖片】</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px; color: #1a73e8;">https://drive...</td></tr>
+                            <tr><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">14:32</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">小明</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;">【位置】經度：121.56</td><td style="padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px;"></td></tr>
+                        </tbody>
+                    </table>
                 </div>
-
-                <div class="box info" style="margin-top: 25px;">
-                    <strong>💡 Webhook 運作原理：</strong>當使用者在 Line 傳訊息時，Line 平台會主動發送 HTTP POST 請求到你設定的 Webhook URL（也就是 GAS 的部署網址）。GAS 的 <code>doPost(e)</code> 函式會自動被觸發，參數 <code>e</code> 包含了完整的事件資料。這就是「被動接收」的概念 —— 你不需要主動去問 Line 有沒有新訊息，Line 會主動通知你。
-                </div>
-            </div>
-        </div>
-
-        <!-- ========== Slide 8: 步驟 5-6 — 部署 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🚀 步驟 5-6 — 部署為網頁應用程式</h2>
-
-                <h3>5. 儲存程式碼</h3>
-                <p>點擊工具列的 💾 儲存按鈕，或按 <code>Ctrl + S</code>。</p>
-
-                <h3>6. 部署為網頁應用程式</h3>
-                <ol>
-                    <li>點選右上角「<strong>部署</strong>」→「<strong>新增部署作業</strong>」</li>
-                    <li>點選齒輪圖示 ⚙️，選擇「<strong>網頁應用程式</strong>」</li>
-                    <li>填寫部署設定：</li>
-                </ol>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>設定欄位</th>
-                            <th>填入值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>說明</td>
-                            <td><code>訊息收集器 v1</code></td>
-                        </tr>
-                        <tr>
-                            <td>執行身分</td>
-                            <td><strong>我</strong>（你的 Google 帳號）</td>
-                        </tr>
-                        <tr>
-                            <td>誰可以存取</td>
-                            <td><strong>所有人</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <ol start="4">
-                    <li>點擊「<strong>部署</strong>」</li>
-                    <li>第一次部署會要求授權，點「<strong>授權存取</strong>」→ 選擇你的帳號 → 「<strong>進階</strong>」→「前往...（不安全）」→「<strong>允許</strong>」</li>
-                    <li>複製產生的<strong>部署網址</strong>（以 <code>https://script.google.com/macros/s/...</code> 開頭）</li>
-                </ol>
-
-                <div class="box info">
-                    <strong>💡 提醒：</strong>「誰可以存取」必須選「所有人」，因為 Line 平台需要從外部存取這個網址來發送 Webhook 事件。
-                </div>
-
-                <div class="box warning">
-                    <strong>⚠️ 注意：</strong>每次修改程式碼後，都需要重新「新增部署作業」才會生效。舊的部署網址不會自動更新。
-                </div>
-            </div>
-        </div>
-
-        <!-- ========== Slide 9: 步驟 7 — 設定 Webhook URL ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🔗 步驟 7 — 設定 Webhook URL</h2>
-
-                <div class="box warning">
-                    <strong>⚠️ 重要觀念：</strong>一個 Line Bot 同時只能設定<strong>一個</strong> Webhook URL！新的 URL 會<strong>覆蓋</strong>舊的。如果你之前在實作 1 設定過 Webhook URL，這裡設定新的 URL 後，實作 1 的功能就會失效。
-                </div>
-
-                <h3>設定步驟</h3>
-                <ol>
-                    <li>前往 <strong>Line Developers Console</strong>（<code>developers.line.biz</code>）</li>
-                    <li>選擇你的 Provider → 選擇你的 Channel</li>
-                    <li>切換到「<strong>Messaging API</strong>」分頁</li>
-                    <li>找到「<strong>Webhook URL</strong>」區塊</li>
-                    <li>點擊「<strong>Edit</strong>」，貼上步驟 6 複製的部署網址</li>
-                    <li>點擊「<strong>Update</strong>」儲存</li>
-                    <li>點擊「<strong>Verify</strong>」測試連線 → 看到 <span class="highlight">Success</span> 表示成功</li>
-                    <li>確認「<strong>Use webhook</strong>」開關是<strong>開啟</strong>狀態（綠色）</li>
-                </ol>
-
-                <div class="box info">
-                    <strong>💡 Verify 的意義：</strong>Line 平台會發一個測試請求到你的 Webhook URL，如果 GAS 正確回應（HTTP 200），就會顯示 Success。如果失敗，請檢查部署網址是否正確、是否已完成授權。
-                </div>
-
+                <h3>支援的訊息類型</h3>
+                <ul>
+                    <li><strong>文字訊息</strong> — 直接記錄文字內容</li>
+                    <li><strong>貼圖</strong> — 記錄 Package ID 和 Sticker ID</li>
+                    <li><strong>位置</strong> — 記錄經緯度和地址</li>
+                    <li><strong>圖片/影片/音檔/檔案</strong> — 下載存到 Drive 並記錄連結</li>
+                </ul>
                 <div class="box success">
-                    <strong>✅ 小技巧：</strong>如果想同時保留實作 1 的功能，可以在程式碼中將兩個實作的邏輯合併到同一個 <code>doPost(e)</code> 函式中！
+                    <strong>🎁 實用場景：</strong><br>
+                    客服訊息記錄、活動簽到收集、巡檢回報系統、問卷收集等！
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- ========== Slide 10: 步驟 8 — 測試 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🧪 步驟 8 — 測試三種訊息</h2>
+<!-- ======================== Slide 6: 步驟1 建立試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 建立 Google 試算表</h2>
+        <p>首先，我們要建立一個用來存放訊息記錄的 Google 試算表，並取得它的 ID。</p>
 
-                <h3>測試 1：傳送文字訊息</h3>
+        <h3>Step 1-1：建立新的 Google 試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在瀏覽器網址列輸入 <code>sheets.new</code> 然後按 Enter<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，瀏覽器會自動建立並開啟一個全新的 Google 試算表<br>
+            <span class="result">👀 結果：</span>你會看到一個空白的試算表，左上角顯示「未命名的試算表」
+        </div>
+
+        <h3>Step 1-2：替試算表命名</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>試算表畫面的<strong>左上角</strong>，有一行小字寫著「未命名的試算表」<br>
+            <span class="action">👆 動作：</span>點擊「未命名的試算表」那個文字，它會變成可編輯的輸入框<br>
+            <span class="action">👆 動作：</span>輸入 <code>Line 訊息記錄</code>，然後按 Enter 或點擊其他地方<br>
+            <span class="result">👀 結果：</span>左上角的名稱會變成「Line 訊息記錄」
+        </div>
+
+        <h3>Step 1-3：取得試算表 ID（最關鍵的一步！）</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>瀏覽器<strong>最上方的網址列</strong>，你會看到類似這樣的網址：
+        </div>
+        <pre><code>https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456/edit#gid=0
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                          這段就是試算表 ID，複製它！</code></pre>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用滑鼠<strong>選取 <code>/d/</code> 和 <code>/edit</code> 之間的那一整串英數字</strong>，按 <code>Ctrl+C</code> 複製<br>
+            <span class="action">👆 動作：</span>先貼到記事本存起來，等一下要用<br>
+            <span class="result">👀 結果：</span>你已經複製了試算表 ID
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>試算表 ID 是一串大約 44 個字元的英數字混合字串。不要複製到前後的斜線 <code>/</code>，也不要多複製到 <code>/edit</code> 後面的部分。
+        </div>
+
+        <div class="box info">
+            <strong>💡 不需要手動建標題列！</strong><br>
+            程式碼中有一個 <code>createHeaderRow()</code> 函式，會在第一次收到訊息時自動建立標題列（時間、群組ID、群組名稱、用戶ID、用戶名稱、訊息內容、檔案位置）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟2 建立 Drive 資料夾 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 建立 Google Drive 資料夾</h2>
+        <p>接下來，我們要在 Google Drive 建立一個資料夾，用來存放使用者傳送的圖片、影片和檔案。</p>
+
+        <h3>Step 2-1：開啟 Google Drive</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開瀏覽器，在網址列輸入 <code>drive.google.com</code> 按 Enter<br>
+            <span class="result">👀 結果：</span>你會看到 Google Drive 的主畫面，左側有「我的雲端硬碟」
+        </div>
+
+        <h3>Step 2-2：建立新資料夾</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Google Drive 畫面的<strong>左上方</strong><br>
+            <span class="action">👆 動作：</span>點擊 <code>+ 新增</code> 按鈕（藍色大按鈕） → 在展開的選單中點擊 <code>新資料夾</code><br>
+            <span class="result">👀 結果：</span>會跳出一個小視窗，要你輸入資料夾名稱
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在名稱欄位輸入 <code>Line 檔案</code>（或任何你喜歡的名稱），然後點擊 <code>建立</code><br>
+            <span class="result">👀 結果：</span>Drive 中會出現一個新的資料夾
+        </div>
+
+        <h3>Step 2-3：取得資料夾 ID</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span><strong>雙擊</strong>剛才建立的「Line 檔案」資料夾進入它<br>
+            <span class="position">📍 位置：</span>看<strong>瀏覽器最上方的網址列</strong>，你會看到類似這樣的網址：
+        </div>
+        <pre><code>https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                這段就是資料夾 ID，複製它！</code></pre>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用滑鼠<strong>選取 <code>folders/</code> 後面的那一整串英數字</strong>（不包含 <code>folders/</code> 本身），按 <code>Ctrl+C</code> 複製<br>
+            <span class="action">👆 動作：</span>貼到記事本存起來，跟試算表 ID 放在一起<br>
+            <span class="result">👀 結果：</span>你已經複製了資料夾 ID
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 重要提醒：</strong>現在你的記事本中應該有 4 個值了（如果 Token 和 User ID 在 Part 0 就取得的話）：
+            <ul style="margin-top: 8px;">
+                <li><code>LINE_TOKEN</code> — Channel Access Token（很長一串）</li>
+                <li><code>LINE_USER_ID</code> — 你的 User ID（U 開頭）</li>
+                <li><code>SPREADSHEET_ID</code> — 試算表 ID（剛才在步驟 1 複製的）</li>
+                <li><code>ROOT_FOLDER_ID</code> — 資料夾 ID（剛才複製的）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟3 建立 GAS 專案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 建立 GAS 專案</h2>
+        <p>現在我們要建立一個新的 Apps Script 專案。跟之前一樣，從試算表進入。</p>
+
+        <h3>Step 3-1：回到試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切回你剛才建立的「Line 訊息記錄」試算表分頁<br>
+            <span class="result">👀 結果：</span>你會看到空白的試算表
+        </div>
+
+        <h3>Step 3-2：開啟 Apps Script 編輯器</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>在試算表上方的選單列（檔案、編輯、檢視... 那一排），找到<strong>最右邊的「擴充功能」</strong><br>
+            <span class="action">👆 動作：</span>點擊「擴充功能」<br>
+            <span class="result">👀 結果：</span>會展開一個下拉選單
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在下拉選單中找到 <code>Apps Script</code>，點擊它<br>
+            <span class="result">⏱️ 等待：</span>瀏覽器會<strong>開啟一個全新的分頁</strong>，等待 3~5 秒直到編輯器完全載入<br>
+            <span class="result">👀 結果：</span>你會看到 Apps Script 編輯器：左邊是檔案列表（有一個「程式碼.gs」）、右邊是程式碼編輯區、上方有一個 <strong>▶ 執行</strong> 按鈕
+        </div>
+
+        <div class="box info">
+            <strong>💡 確認你看到的畫面：</strong><br>
+            編輯區裡面應該有一段預設程式碼：<code>function myFunction() { }</code>。這段等一下會全部刪除，替換成我們的訊息收集器程式碼。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟4 貼上程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 貼上程式碼</h2>
+        <p>現在要把課程提供的完整程式碼貼到 Apps Script 編輯器中。</p>
+
+        <h3>Step 4-1：選取並刪除預設程式碼</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器的<strong>右半邊程式碼編輯區</strong><br>
+            <span class="action">👆 動作：</span>在編輯區裡面<strong>按一下</strong>（讓游標在編輯區裡），然後按 <code>Ctrl+A</code>（全選）<br>
+            <span class="result">👀 結果：</span>所有預設程式碼會被反白選取<br>
+            <span class="action">👆 動作：</span>按 <code>Delete</code> 鍵或 <code>Backspace</code> 鍵，刪除所有內容<br>
+            <span class="result">👀 結果：</span>編輯區變成完全空白
+        </div>
+
+        <h3>Step 4-2：開啟課程程式碼檔案</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到你下載的 <code>02_LineBot訊息收集器.gs</code> 檔案（在你的下載資料夾中）<br>
+            <span class="action">👆 動作：</span>用<strong>記事本</strong>或任何文字編輯器開啟這個檔案<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選檔案中的所有文字），再按 <code>Ctrl+C</code>（複製）
+        </div>
+
+        <h3>Step 4-3：貼上程式碼到 Apps Script</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切回 Apps Script 編輯器的分頁<br>
+            <span class="action">👆 動作：</span>在空白的編輯區按一下，然後按 <code>Ctrl+V</code>（貼上）<br>
+            <span class="result">⏱️ 等待：</span>約 1~2 秒，程式碼會完整出現在編輯區中<br>
+            <span class="result">👀 結果：</span>你應該會看到程式碼的最前面是一段區塊註解（以 <code>/**</code> 開頭），往下捲動可以看到多個函式
+        </div>
+
+        <h3>Step 4-4：儲存程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>上方的檔案名稱旁邊如果有一個橘色圓點，它會消失，表示已儲存成功
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：不要只貼一部分！</strong><br>
+            這個檔案有 416 行，包含 6 大區塊：設定區、主要處理函式、訊息類型處理、檔案儲存功能、Line API 輔助函式、工具函式、推播函式和測試函式。請確認<strong>全部都有貼進去</strong>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟5 修改設定值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 修改四個設定值</h2>
+        <p>程式碼最上方有 4 個設定值需要替換為你自己的。這是<strong>唯一需要手動修改</strong>的地方。</p>
+
+        <h3>找到設定區（程式碼第 33~36 行）</h3>
+        <pre><code>// ========== 設定區（請修改以下四個值）==========
+var LINE_TOKEN = '在此貼上你的 Channel Access Token';
+var LINE_USER_ID = '在此貼上你的 User ID';
+var ROOT_FOLDER_ID = '在此貼上 Google Drive 資料夾 ID';
+var SPREADSHEET_ID = '在此貼上 Google 試算表 ID';</code></pre>
+
+        <h3>逐一替換 4 個設定值</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>設定項目</th>
+                    <th>要替換的中文提示</th>
+                    <th>替換成什麼</th>
+                    <th>去哪裡找</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>LINE_TOKEN</code></td>
+                    <td><code>在此貼上你的 Channel Access Token</code></td>
+                    <td>你的 Channel Access Token（很長一串）</td>
+                    <td>LINE Developers → 你的 Bot → Messaging API 頁籤 → 最下方</td>
+                </tr>
+                <tr>
+                    <td><code>LINE_USER_ID</code></td>
+                    <td><code>在此貼上你的 User ID</code></td>
+                    <td>你的 User ID（U 開頭的字串）</td>
+                    <td>LINE Developers → 你的 Bot → Basic settings 頁籤</td>
+                </tr>
+                <tr>
+                    <td><code>ROOT_FOLDER_ID</code></td>
+                    <td><code>在此貼上 Google Drive 資料夾 ID</code></td>
+                    <td>步驟 2 複製的資料夾 ID</td>
+                    <td>你的記事本中（步驟 2 複製的）</td>
+                </tr>
+                <tr>
+                    <td><code>SPREADSHEET_ID</code></td>
+                    <td><code>在此貼上 Google 試算表 ID</code></td>
+                    <td>步驟 1 複製的試算表 ID</td>
+                    <td>你的記事本中（步驟 1 複製的）</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>替換方式（以 LINE_TOKEN 為例）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在程式碼中找到 <code>'在此貼上你的 Channel Access Token'</code>，用滑鼠<strong>只選取單引號中間的中文字</strong>（不要選到單引號本身！）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+V</code> 貼上你的 Channel Access Token<br>
+            <span class="result">👀 結果：</span>看起來會像 <code>var LINE_TOKEN = 'eyJhbGciOiJ...(略)...';</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 四個常見錯誤，請務必檢查：</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>多餘的空格</strong> — Token 和 ID 的前後<strong>不要有空格</strong></li>
+                <li><strong>單引號被刪掉</strong> — 四個值都要保持用<strong>單引號 <code>' '</code></strong> 包起來</li>
+                <li><strong>試算表 ID 複製錯</strong> — 不要複製到 <code>/d/</code> 前面的斜線或 <code>/edit</code> 後面的部分</li>
+                <li><strong>資料夾 ID 複製錯</strong> — 不要複製到 <code>/folders/</code> 的斜線和文字</li>
+            </ul>
+        </div>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>4 個值都替換完後，按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 程式碼解析1 doPost 主流程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 1 — doPost() 主流程</h2>
+        <p><strong>這段的目的：</strong>這是 Webhook 的入口函式。每當使用者傳訊息給 Bot，Line 平台就會呼叫此函式。</p>
+
+        <pre><code>function doPost(e) {
+  try {
+    var userData = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+
+    // 檢查是否有標題列，沒有就建立
+    if (sheet.getLastRow() === 0) {
+      createHeaderRow(sheet);
+    }
+
+    // 逐一處理每個事件
+    for (var i = 0; i &lt; userData.events.length; i++) {
+      var event = userData.events[i];
+
+      // 跳過非訊息事件
+      if (event.type !== 'message') {
+        continue;
+      }
+
+      processMessage(event, sheet);
+    }
+  } catch (error) {
+    Logger.log('doPost 錯誤：' + error.toString());
+  }
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>doPost(e)</code> — GAS 的特殊函式名稱，當外部發送 HTTP POST 請求到部署網址時，GAS 會自動執行這個函式，參數 <code>e</code> 包含請求的所有資料</li>
+            <li><code>JSON.parse(e.postData.contents)</code> — 將 Line 傳來的 JSON 字串解析成 JavaScript 物件，裡面包含所有事件資料</li>
+            <li><code>SpreadsheetApp.openById(SPREADSHEET_ID)</code> — 用試算表 ID 開啟指定的 Google 試算表</li>
+            <li><code>.getActiveSheet()</code> — 取得試算表中目前的工作表（通常是第一個分頁）</li>
+            <li><code>sheet.getLastRow() === 0</code> — 檢查試算表是否是空的（沒有任何列），如果是就自動建標題列</li>
+            <li><code>userData.events</code> — Line 一次可能傳來多個事件（例如使用者快速傳了好幾則訊息），所以用 for 迴圈逐一處理</li>
+            <li><code>event.type !== 'message'</code> — 跳過非訊息事件（例如加入好友、退出群組等），我們只處理「message」類型</li>
+            <li><code>try...catch</code> — 錯誤防護，即使某一則訊息處理失敗，也不會讓整個函式崩潰</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 Webhook 運作原理：</strong><br>
+            你不需要主動去問 Line「有沒有新訊息」。Line 會<strong>主動</strong>發送 HTTP POST 請求到你的部署網址，GAS 的 <code>doPost(e)</code> 就會被觸發。這就是「被動接收」的概念。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解析2 processMessage ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 2 — processMessage() 訊息處理</h2>
+        <p><strong>這段的目的：</strong>處理單一訊息事件 — 取得來源、用戶資料、訊息內容，最後寫入試算表。</p>
+
+        <pre><code>function processMessage(event, sheet) {
+  var now = new Date();
+  var sourceInfo = getSourceInfo(event);
+  var userProfile = getUserProfile(
+    sourceInfo.sourceType, sourceInfo.groupId, event.source.userId
+  );
+  var displayName = userProfile ? userProfile.displayName : '未知用戶';
+  var messageResult = processMessageType(event, sourceInfo, now);
+
+  // 寫入試算表
+  sheet.appendRow([
+    now,                          // A 欄：時間
+    sourceInfo.groupId,           // B 欄：群組 ID
+    sourceInfo.groupName,         // C 欄：群組名稱
+    event.source.userId,          // D 欄：用戶 ID
+    displayName,                  // E 欄：用戶名稱
+    messageResult.text,           // F 欄：訊息內容
+    messageResult.fileLocation    // G 欄：檔案位置
+  ]);
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>new Date()</code> — 取得當下的時間，用來記錄訊息收到的時間戳記</li>
+            <li><code>getSourceInfo(event)</code> — 判斷訊息來自哪裡（個人聊天、群組、還是聊天室），取得群組 ID 和群組名稱</li>
+            <li><code>getUserProfile(...)</code> — 透過 Line API 取得使用者的顯示名稱</li>
+            <li><code>userProfile ? ... : '未知用戶'</code> — 三元運算子：如果成功取得用戶資料就用真名，否則顯示「未知用戶」</li>
+            <li><code>processMessageType(event, sourceInfo, now)</code> — 根據訊息類型（文字/圖片/貼圖/位置等）做不同處理，回傳 <code>{ text, fileLocation }</code></li>
+            <li><code>sheet.appendRow([...])</code> — 在試算表最後一列新增一列資料，陣列中每個元素對應一欄</li>
+        </ul>
+
+        <h3>試算表欄位對應</h3>
+        <table>
+            <thead><tr><th>欄位</th><th>變數</th><th>範例值</th></tr></thead>
+            <tbody>
+                <tr><td>A 欄：時間</td><td><code>now</code></td><td>2026/3/9 14:30:00</td></tr>
+                <tr><td>B 欄：群組 ID</td><td><code>sourceInfo.groupId</code></td><td>C1234...（群組才有）</td></tr>
+                <tr><td>C 欄：群組名稱</td><td><code>sourceInfo.groupName</code></td><td>我的班級群組</td></tr>
+                <tr><td>D 欄：用戶 ID</td><td><code>event.source.userId</code></td><td>Uabc123...</td></tr>
+                <tr><td>E 欄：用戶名稱</td><td><code>displayName</code></td><td>小明</td></tr>
+                <tr><td>F 欄：訊息內容</td><td><code>messageResult.text</code></td><td>大家好！ / 【圖片】 / 【位置】...</td></tr>
+                <tr><td>G 欄：檔案位置</td><td><code>messageResult.fileLocation</code></td><td>https://drive.google.com/...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 程式碼解析3 訊息類型分派 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔀 程式碼解析 3 — processMessageType() 訊息類型分派</h2>
+        <p><strong>這段的目的：</strong>根據不同的訊息類型（文字、貼圖、位置、圖片...），做不同的處理。</p>
+
+        <pre><code>function processMessageType(event, sourceInfo, now) {
+  var text = '';
+  var fileLocation = '';
+  var message = event.message;
+
+  switch (message.type) {
+    case 'text':
+      text = message.text;
+      break;
+
+    case 'sticker':
+      text = '【貼圖】';
+      fileLocation = 'Package：' + message.packageId
+                   + '、Sticker：' + message.stickerId;
+      break;
+
+    case 'location':
+      text = '【位置】經度：' + message.longitude
+           + '、緯度：' + message.latitude;
+      if (message.title) { text += '、' + message.title; }
+      if (message.address) { text += '、' + message.address; }
+      break;
+
+    case 'image': case 'video': case 'audio': case 'file':
+      text = '【' + getMessageTypeName(message.type) + '】';
+      fileLocation = saveFileToDrive(event, sourceInfo, now);
+      break;
+
+    default:
+      text = '【不支援的訊息類型：' + message.type + '】';
+  }
+
+  return { text: text, fileLocation: fileLocation };
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>switch (message.type)</code> — 根據 <code>message.type</code> 的值來決定執行哪一段程式碼</li>
+            <li><code>case 'text'</code> — 文字訊息：直接把 <code>message.text</code>（使用者傳的文字）記錄下來</li>
+            <li><code>case 'sticker'</code> — 貼圖訊息：記錄貼圖的 Package ID 和 Sticker ID（可用於辨識是哪張貼圖）</li>
+            <li><code>case 'location'</code> — 位置訊息：記錄經緯度，如果有地點名稱和地址也一併記錄</li>
+            <li><code>case 'image': case 'video': ...</code> — 圖片/影片/音檔/檔案：呼叫 <code>saveFileToDrive()</code> 下載並存到 Google Drive</li>
+            <li><code>getMessageTypeName()</code> — 把英文類型轉成中文（image→圖片、video→影片、audio→音檔、file→檔案）</li>
+            <li><code>default</code> — 其他未知的訊息類型：記錄一個提示文字，程式不會崩潰</li>
+            <li><code>break</code> — 結束當前 case，防止「穿透」到下一個 case（這是 switch 的標準用法）</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 什麼是 switch/case？</strong><br>
+            <code>switch</code> 就像一個「多路分岔口」，根據變數的值走不同的路。比起寫一堆 <code>if...else if...else if...</code>，用 <code>switch</code> 更簡潔易讀。每個 <code>case</code> 後面記得加 <code>break</code>！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析4 saveFileToDrive ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📁 程式碼解析 4 — saveFileToDrive() 檔案儲存</h2>
+        <p><strong>這段的目的：</strong>當使用者傳送圖片、影片、音檔或檔案時，從 Line 伺服器下載並存到 Google Drive。</p>
+
+        <pre><code>function saveFileToDrive(event, sourceInfo, now) {
+  try {
+    var rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    var folderName = sourceInfo.groupId || event.source.userId;
+    var destinationFolder = getOrCreateSubfolder(rootFolder, folderName);
+
+    // 從 Line 下載檔案
+    var messageId = event.message.id;
+    var fileBlob = getLineFileData(messageId).getBlob();
+
+    // 建立檔案
+    var file = destinationFolder.createFile(fileBlob);
+
+    // 設定檔案名稱
+    var prefix = formatFilePrefix(now);
+    if (event.message.type === 'file' &amp;&amp; event.message.fileName) {
+      file.setName(prefix + event.message.fileName);
+    } else {
+      var ext = file.getName().split('.').pop();
+      file.setName(prefix + messageId + '.' + ext);
+    }
+
+    return 'https://drive.google.com/open?id=' + file.getId();
+  } catch (error) {
+    return '儲存失敗：' + error.toString();
+  }
+}</code></pre>
+
+        <p><strong>逐行解釋：</strong></p>
+        <ul class="explain-list">
+            <li><code>DriveApp.getFolderById(ROOT_FOLDER_ID)</code> — 用資料夾 ID 找到你在步驟 2 建立的根資料夾</li>
+            <li><code>sourceInfo.groupId || event.source.userId</code> — 如果在群組中就用群組 ID 當子資料夾名稱，否則用使用者 ID（這樣不同來源的檔案會分開存放）</li>
+            <li><code>getOrCreateSubfolder()</code> — 在根資料夾底下找到（或新建）以 ID 命名的子資料夾</li>
+            <li><code>getLineFileData(messageId)</code> — 呼叫 Line Content API 下載檔案的二進制資料</li>
+            <li><code>.getBlob()</code> — 把下載回來的回應轉成 Blob（二進制大物件），這是 GAS 建立檔案需要的格式</li>
+            <li><code>destinationFolder.createFile(fileBlob)</code> — 在目標資料夾中建立一個新檔案</li>
+            <li><code>formatFilePrefix(now)</code> — 用時間戳記當檔案名稱的前綴（例如 <code>20260309143000-</code>），避免重名</li>
+            <li><code>file.getId()</code> — 取得新建檔案的 ID，組合成可分享的 Google Drive 連結</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 Line Content API：</strong><br>
+            下載 URL 是 <code>https://api-data.line.me/v2/bot/message/{messageId}/content</code>。注意這是 <code>api-data.line.me</code>（不是 <code>api.line.me</code>），是專門用來下載多媒體內容的端點。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 程式碼解析5 Line API 輔助函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🌐 程式碼解析 5 — Line API 輔助函式</h2>
+        <p><strong>這段的目的：</strong>提供取得來源資訊、用戶資料、群組資料的工具函式。</p>
+
+        <h3>📁 getSourceInfo(event) — 判斷訊息來源</h3>
+        <pre><code>function getSourceInfo(event) {
+  var groupId = '';
+  var groupName = '';
+  var sourceType = event.source.type || '';
+
+  if (sourceType === 'group') {
+    groupId = event.source.groupId;
+    var groupProfile = getGroupProfile(groupId);
+    groupName = groupProfile ? groupProfile.groupName : '未知群組';
+  } else if (sourceType === 'room') {
+    groupId = event.source.roomId;
+    groupName = '聊天室（無名稱）';
+  }
+
+  return { groupId: groupId, groupName: groupName, sourceType: sourceType };
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>event.source.type</code> — 訊息來源類型：<code>'user'</code>（個人）、<code>'group'</code>（群組）、<code>'room'</code>（聊天室）</li>
+            <li>如果是群組，會透過 <code>getGroupProfile()</code> 去 Line API 查詢群組名稱</li>
+            <li>如果是個人聊天，<code>groupId</code> 和 <code>groupName</code> 都是空字串</li>
+        </ul>
+
+        <h3>📁 getUserProfile() — 取得用戶顯示名稱</h3>
+        <pre><code>function getUserProfile(sourceType, groupId, userId) {
+  try {
+    var url = '';
+    switch (sourceType) {
+      case 'group':
+        url = 'https://api.line.me/v2/bot/group/' + groupId + '/member/' + userId;
+        break;
+      case 'room':
+        url = 'https://api.line.me/v2/bot/room/' + groupId + '/member/' + userId;
+        break;
+      default:
+        url = 'https://api.line.me/v2/bot/profile/' + userId;
+    }
+    var response = UrlFetchApp.fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + LINE_TOKEN },
+      method: 'get', muteHttpExceptions: true
+    });
+    if (response.getResponseCode() === 200) {
+      return JSON.parse(response.getContentText());
+    }
+    return null;
+  } catch (error) { return null; }
+}</code></pre>
+        <ul class="explain-list">
+            <li>根據來源類型使用不同的 API 端點 — 群組成員和個人的查詢 URL 不同</li>
+            <li><code>UrlFetchApp.fetch()</code> — GAS 內建的 HTTP 請求工具</li>
+            <li><code>'Authorization': 'Bearer ' + LINE_TOKEN</code> — 告訴 Line「我是哪一個 Bot」的身份驗證</li>
+            <li><code>muteHttpExceptions: true</code> — 即使 API 回傳錯誤也不會中斷程式</li>
+            <li>成功時回傳包含 <code>displayName</code> 的物件，失敗時回傳 <code>null</code></li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 程式碼解析6 工具函式與推播 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔧 程式碼解析 6 — 工具函式與推播</h2>
+        <p><strong>這段的目的：</strong>提供建標題列、時間格式化、推播訊息等輔助工具。</p>
+
+        <h3>📁 createHeaderRow(sheet) — 自動建立標題列</h3>
+        <pre><code>function createHeaderRow(sheet) {
+  var headers = ['時間', '群組ID', '群組名稱', '用戶ID', '用戶名稱', '訊息內容', '檔案位置'];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#1B5E20')
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>getRange(1, 1, 1, headers.length)</code> — 選取第 1 列、第 1 欄開始，共 1 列、headers.length 欄的範圍</li>
+            <li><code>.setValues([headers])</code> — 把標題陣列寫入（注意要包一層陣列，因為 setValues 接受二維陣列）</li>
+            <li><code>.setBackground('#1B5E20')</code> — 設定深綠色背景，讓標題列醒目好辨識</li>
+            <li><code>sheet.setFrozenRows(1)</code> — 凍結第 1 列（捲動時標題不會消失）</li>
+        </ul>
+
+        <h3>📁 replyText() / replyLine() — 回覆訊息函式</h3>
+        <pre><code>function replyText(replyToken, text) {
+  replyLine(replyToken, [{ type: 'text', text: text }]);
+}
+
+function replyLine(replyToken, messages) {
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({ replyToken: replyToken, messages: messages }),
+    muteHttpExceptions: true
+  });
+}</code></pre>
+        <ul class="explain-list">
+            <li><code>replyToken</code> — Line 每次事件都會附帶一個回覆用的 token，用這個 token 才能回覆訊息（免費，不算推播額度）</li>
+            <li>程式碼中自動回覆是<strong>被註解掉</strong>的（<code>// replyText(event.replyToken, '✅ 已記錄你的訊息！');</code>），如需啟用只要把 <code>//</code> 刪除即可</li>
+            <li><code>pushText</code> vs <code>replyText</code>：push 是主動推播（算額度），reply 是被動回覆（免費）</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 testSystem() 測試函式：</strong><br>
+            程式碼最後有一個 <code>testSystem()</code> 函式，它會推播一則測試訊息到你的 Line，用來確認 Token 和 User ID 是否正確。部署前可以先用它來測試。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 步驟6 先測試 testSystem ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 部署前先測試 testSystem</h2>
+        <p>在部署之前，先確認 Token 和 User ID 是否正確，免得部署後才發現設定有問題。</p>
+
+        <h3>Step 6-1：選擇要執行的函式</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，在 <strong>▶ 執行</strong> 按鈕的左邊，有一個<strong>下拉選單</strong>（預設可能顯示「doPost」或其他函式名稱）<br>
+            <span class="action">👆 動作：</span>點擊那個下拉選單，會展開一個函式清單<br>
+            <span class="action">👆 動作：</span>找到並選擇 <code>testSystem</code><br>
+            <span class="result">👀 結果：</span>下拉選單現在顯示「testSystem」
+        </div>
+
+        <h3>Step 6-2：點擊執行</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong> 按鈕（在工具列上，三角形圖示）<br>
+            <span class="result">👀 結果：</span>如果是<strong>第一次執行</strong>，會跳出一個「需要授權」的對話框
+        </div>
+
+        <h3>Step 6-3：完成授權流程（只有第一次需要）</h3>
+        <div class="micro-step">
+            <strong>授權第 1 步：</strong>彈出「需要授權」的對話框 → 點擊 <code>審查權限</code> 按鈕
+        </div>
+        <div class="micro-step">
+            <strong>授權第 2 步：</strong>選擇你的 Google 帳號（點擊你的帳號名稱）
+        </div>
+        <div class="micro-step">
+            <strong>授權第 3 步：</strong>會出現「Google 尚未驗證這個應用程式」的警告畫面 → 點擊<strong>左下角</strong>的 <code>進階</code> 小字
+        </div>
+        <div class="micro-step">
+            <strong>授權第 4 步：</strong>畫面會展開更多文字 → 點擊 <code>前往「Line 訊息記錄」（不安全）</code>
+        </div>
+        <div class="micro-step">
+            <strong>授權第 5 步：</strong>會列出程式需要的權限清單（試算表、Drive、外部服務） → 點擊 <code>允許</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>授權完成後，程式會<strong>自動開始執行</strong>，等待 5~10 秒
+        </div>
+
+        <h3>Step 6-4：確認結果</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>Apps Script 編輯器<strong>下方</strong>出現「執行記錄」面板</li>
+                    <li>記錄中顯示「<span style="color: #2e7d32;">測試推播已發送</span>」</li>
+                    <li>你的 Line <strong>收到一則訊息</strong>：「🔧 訊息收集器測試成功！」</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的樣子</h3>
+                <ul>
+                    <li>Line 沒收到任何訊息</li>
+                    <li>執行記錄顯示紅色錯誤</li>
+                    <li>→ 最常見原因：Token 貼錯或 User ID 貼錯</li>
+                    <li>→ 回到步驟 5 重新檢查 4 個設定值</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 一定要先通過這個測試！</strong><br>
+            如果 <code>testSystem</code> 都失敗，後面部署 Webhook 也一定會失敗。請確認 Line 收到測試訊息後，再繼續下一步。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 步驟7 部署為網頁應用程式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 部署為網頁應用程式</h2>
+        <p>testSystem 成功後，接下來要把程式碼部署成 Webhook URL，讓 Line 平台可以呼叫你的 <code>doPost()</code>。</p>
+
+        <h3>Step 7-1：點擊部署</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>右上角</strong><br>
+            <span class="action">👆 動作：</span>點擊藍色的 <code>部署</code> 按鈕<br>
+            <span class="result">👀 結果：</span>展開下拉選單，看到幾個選項
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <code>新增部署作業</code><br>
+            <span class="result">👀 結果：</span>彈出部署設定面板
+        </div>
+
+        <h3>Step 7-2：選擇部署類型</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>部署設定面板的<strong>左上角</strong>有一個齒輪圖示 ⚙️<br>
+            <span class="action">👆 動作：</span>點擊齒輪圖示 → 選擇 <code>網頁應用程式</code><br>
+            <span class="result">👀 結果：</span>面板會展開幾個設定欄位
+        </div>
+
+        <h3>Step 7-3：填寫部署設定</h3>
+        <table>
+            <thead><tr><th>設定欄位</th><th>要填的值</th><th>說明</th></tr></thead>
+            <tbody>
+                <tr><td><strong>說明</strong></td><td><code>訊息收集器 v1</code></td><td>方便辨識這次部署的版本</td></tr>
+                <tr><td><strong>執行身分</strong></td><td><code>我</code>（你的 Google 帳號）</td><td>程式會用你的身份執行（預設值，不用改）</td></tr>
+                <tr><td><strong>誰可以存取</strong></td><td><strong><code>所有人</code></strong></td><td>⚠️ 必須選「所有人」，否則 Line 無法呼叫你的 Webhook</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Step 7-4：完成部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>確認設定正確後，點擊 <code>部署</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒，會顯示部署成功畫面<br>
+            <span class="result">👀 結果：</span>畫面中會出現一個<strong>「網頁應用程式」URL</strong>，以 <code>https://script.google.com/macros/s/...</code> 開頭
+        </div>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 URL 旁邊的<strong>「複製」圖示</strong>（或手動全選複製），把這個 URL 貼到記事本存起來<br>
+            <span class="result">👀 結果：</span>你已經取得了部署網址，這就是 Webhook URL
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 重要：「誰可以存取」一定要選「所有人」！</strong><br>
+            Line 平台需要從外部存取這個網址。如果選了其他選項，Line 會收到 403 錯誤，Webhook 就無法運作。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 步驟8 設定 Webhook URL ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">8</span> 設定 Webhook URL</h2>
+        <p>最後一步：把剛才的部署網址貼到 Line Developers Console，讓 Line 知道要把訊息送到哪裡。</p>
+
+        <div class="box warning">
+            <strong>⚠️ 重要觀念：</strong>一個 Line Bot 同時只能設定<strong>一個</strong> Webhook URL！新的 URL 會<strong>覆蓋</strong>舊的。如果你之前在實作 1 設定過 Webhook URL，這裡設定新的 URL 後，實作 1 的功能就會停止。
+        </div>
+
+        <h3>Step 8-1：前往 Line Developers Console</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>開啟新分頁，前往 <code>developers.line.biz</code><br>
+            <span class="action">👆 動作：</span>登入後，選擇你的 <strong>Provider</strong> → 選擇你的 <strong>Channel（Bot）</strong><br>
+            <span class="action">👆 動作：</span>切換到 <code>Messaging API</code> 分頁
+        </div>
+
+        <h3>Step 8-2：貼上 Webhook URL</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Messaging API 頁面往下捲，找到「<strong>Webhook URL</strong>」區塊<br>
+            <span class="action">👆 動作：</span>點擊 <code>Edit</code> 按鈕<br>
+            <span class="action">👆 動作：</span>貼上步驟 7 複製的部署網址<br>
+            <span class="action">👆 動作：</span>點擊 <code>Update</code> 儲存
+        </div>
+
+        <h3>Step 8-3：驗證 Webhook</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊 <code>Verify</code> 按鈕<br>
+            <span class="result">⏱️ 等待：</span>約 3~5 秒<br>
+            <span class="result">👀 結果：</span>看到 <span class="highlight">Success</span> 綠色提示，表示 Webhook 連線成功！
+        </div>
+
+        <h3>Step 8-4：確認 Use webhook 已開啟</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>Webhook URL 區塊的下方<br>
+            <span class="action">👆 動作：</span>確認「<strong>Use webhook</strong>」的開關是<strong>開啟狀態</strong>（綠色），如果是灰色就點一下打開它<br>
+            <span class="result">👀 結果：</span>開關呈綠色，表示 Webhook 已啟用
+        </div>
+
+        <div class="box info">
+            <strong>💡 Verify 的意義：</strong>Line 平台會發一個測試 POST 請求到你的 Webhook URL，如果 GAS 正確回應（HTTP 200），就會顯示 Success。如果失敗，請檢查部署網址是否正確貼上、「誰可以存取」是否選了「所有人」。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: 實際測試 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 實際測試 — 傳三種訊息驗證</h2>
+        <p>Webhook 設定完成！現在打開 Line，實際傳送訊息來測試。</p>
+
+        <h3>測試 1：傳送文字訊息</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 Line 中打開你的 Bot 聊天室，傳送一段文字，例如：<code>Hello, 這是測試訊息！</code><br>
+            <span class="result">⏱️ 等待：</span>約 5~10 秒<br>
+            <span class="result">👀 結果：</span>打開 Google 試算表，你應該會看到<strong>標題列自動出現</strong>（深綠色背景），以及<strong>新的一列記錄</strong>，F 欄顯示你傳的文字
+        </div>
+
+        <h3>測試 2：傳送圖片</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 Line 聊天室中傳送一張圖片（從相簿選一張）<br>
+            <span class="result">⏱️ 等待：</span>約 10~15 秒（圖片需要下載和上傳）<br>
+            <span class="result">👀 結果：</span>試算表新增一列，F 欄顯示「【圖片】」，G 欄顯示 Google Drive 的連結。點擊連結可以看到圖片已存到 Drive
+        </div>
+
+        <h3>測試 3：傳送位置</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 Line 聊天室中點左下角的 <code>+</code> → 選擇 <code>位置資訊</code> → 選一個地點傳送<br>
+            <span class="result">⏱️ 等待：</span>約 5~10 秒<br>
+            <span class="result">👀 結果：</span>試算表新增一列，F 欄顯示「【位置】經度：xxx、緯度：xxx」加上地址
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 全部成功的樣子</h3>
+                <ul>
+                    <li>試算表出現 3 列新記錄（加上標題列共 4 列）</li>
+                    <li>每列的 A 欄有時間、E 欄有你的名稱</li>
+                    <li>圖片那列的 G 欄有 Drive 連結，點開能看到圖片</li>
+                    <li>Google Drive 的「Line 檔案」資料夾中出現子資料夾和圖片</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的排查順序</h3>
                 <ol>
-                    <li>在 Line 中打開你的 Bot 聊天室</li>
-                    <li>傳送一段文字，例如：<code>Hello, 這是測試訊息！</code></li>
-                    <li>打開 Google 試算表，確認是否出現新的一列記錄</li>
-                </ol>
-                <!-- 截圖 27：Line 傳送測試訊息 -->
-                <div style="margin: 20px auto; width: 280px;">
-                    <div style="background: #1a1a1a; border-radius: 28px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);">
-                        <div style="background: #7494c0; border-radius: 22px; overflow: hidden;">
-                            <!-- LINE 頂部 -->
-                            <div style="background: #00b900; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
-                                <span style="color: #fff; font-size: 16px;">&#10094;</span>
-                                <span style="color: #fff; font-size: 15px; font-weight: 600;">訊息收集 Bot</span>
-                                <div style="margin-left: auto;"><span style="color: #fff; font-size: 14px;">&#9776;</span></div>
-                            </div>
-                            <!-- 聊天區域 -->
-                            <div style="padding: 12px; min-height: 310px; display: flex; flex-direction: column; gap: 10px;">
-                                <!-- 文字訊息（右） -->
-                                <div style="display: flex; justify-content: flex-end; align-items: flex-end; gap: 4px;">
-                                    <span style="font-size: 10px; color: rgba(255,255,255,0.7);">14:30</span>
-                                    <div style="background: #00b900; color: #fff; padding: 8px 14px; border-radius: 16px 16px 4px 16px; font-size: 14px; max-width: 180px;">測試文字</div>
-                                </div>
-                                <!-- 圖片訊息（右） -->
-                                <div style="display: flex; justify-content: flex-end; align-items: flex-end; gap: 4px;">
-                                    <span style="font-size: 10px; color: rgba(255,255,255,0.7);">14:31</span>
-                                    <div style="background: #e0e0e0; width: 150px; height: 110px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px;">
-                                        <span style="font-size: 32px; color: #999;">&#128247;</span>
-                                        <span style="font-size: 11px; color: #888;">照片</span>
-                                    </div>
-                                </div>
-                                <!-- 位置訊息（右） -->
-                                <div style="display: flex; justify-content: flex-end; align-items: flex-end; gap: 4px;">
-                                    <span style="font-size: 10px; color: rgba(255,255,255,0.7);">14:32</span>
-                                    <div style="background: #e8f5e9; width: 150px; border-radius: 12px; overflow: hidden; border: 1px solid #c8e6c9;">
-                                        <div style="background: #c8e6c9; height: 70px; display: flex; align-items: center; justify-content: center;">
-                                            <span style="font-size: 28px;">&#128205;</span>
-                                        </div>
-                                        <div style="padding: 6px 10px; font-size: 11px; color: #333;">
-                                            <div style="font-weight: 600;">台北 101</div>
-                                            <div style="color: #888; font-size: 10px;">台北市信義區信義路五段7號</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 輸入列 -->
-                            <div style="background: #f5f5f5; padding: 8px 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 16px; color: #999;">+</span>
-                                <div style="flex: 1; background: #fff; border-radius: 18px; padding: 6px 14px; font-size: 13px; color: #aaa;">輸入訊息...</div>
-                                <span style="font-size: 16px; color: #00b900;">&#10148;</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- 截圖 28：試算表訊息記錄 -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- 試算表工具列 -->
-                    <div style="background: #f8f9fa; border-bottom: 1px solid #dadce0; padding: 6px 12px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 18px; color: #0f9d58; font-weight: bold;">S</span>
-                        <span style="font-size: 14px; color: #333; font-weight: 600; margin-left: 4px;">Line 訊息記錄</span>
-                        <span style="font-size: 13px; color: #5f6368; margin-left: auto; border: 1px solid #dadce0; padding: 2px 8px; border-radius: 4px;">100%</span>
-                    </div>
-                    <!-- 表格 -->
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0;">
-                            <thead>
-                                <tr>
-                                    <th style="background: #f8f9fa; padding: 4px 6px; border: 1px solid #e0e0e0; color: #666; width: 28px; font-size: 11px; font-weight: normal;"></th>
-                                    <th style="background: #f8f9fa; padding: 4px 8px; border: 1px solid #e0e0e0; color: #666; font-size: 11px; font-weight: 600;">A</th>
-                                    <th style="background: #f8f9fa; padding: 4px 8px; border: 1px solid #e0e0e0; color: #666; font-size: 11px; font-weight: 600;">B</th>
-                                    <th style="background: #f8f9fa; padding: 4px 8px; border: 1px solid #e0e0e0; color: #666; font-size: 11px; font-weight: 600;">C</th>
-                                    <th style="background: #f8f9fa; padding: 4px 8px; border: 1px solid #e0e0e0; color: #666; font-size: 11px; font-weight: 600;">D</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="background: #f8f9fa; padding: 4px 6px; border: 1px solid #e0e0e0; color: #666; text-align: center; font-size: 11px;">1</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-weight: 700; background: #e8f5e9; color: #1b5e20; font-size: 12px;">時間</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-weight: 700; background: #e8f5e9; color: #1b5e20; font-size: 12px;">類型</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-weight: 700; background: #e8f5e9; color: #1b5e20; font-size: 12px;">使用者</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-weight: 700; background: #e8f5e9; color: #1b5e20; font-size: 12px;">內容</td>
-                                </tr>
-                                <tr>
-                                    <td style="background: #f8f9fa; padding: 4px 6px; border: 1px solid #e0e0e0; color: #666; text-align: center; font-size: 11px;">2</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">2026/03/03 14:30</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-size: 12px;"><span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 4px; font-size: 11px;">text</span></td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">小明</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">測試文字</td>
-                                </tr>
-                                <tr>
-                                    <td style="background: #f8f9fa; padding: 4px 6px; border: 1px solid #e0e0e0; color: #666; text-align: center; font-size: 11px;">3</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">2026/03/03 14:31</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-size: 12px;"><span style="background: #fce4ec; color: #c62828; padding: 1px 6px; border-radius: 4px; font-size: 11px;">image</span></td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">小明</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #1a73e8; font-size: 12px; text-decoration: underline;">https://drive.google.com/...</td>
-                                </tr>
-                                <tr>
-                                    <td style="background: #f8f9fa; padding: 4px 6px; border: 1px solid #e0e0e0; color: #666; text-align: center; font-size: 11px;">4</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">2026/03/03 14:32</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; font-size: 12px;"><span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 4px; font-size: 11px;">location</span></td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">小明</td>
-                                    <td style="padding: 4px 8px; border: 1px solid #e0e0e0; color: #333; font-size: 12px;">台北101 (25.033, 121.564)</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <h3>測試 2：傳送圖片</h3>
-                <ol>
-                    <li>在 Line 中傳送一張圖片給 Bot</li>
-                    <li>打開 Google Drive 的「Line 檔案」資料夾，確認圖片是否出現</li>
-                    <li>回到試算表，確認是否有新記錄且包含檔案連結</li>
-                </ol>
-                <!-- 截圖 29：Drive 資料夾 -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- Drive 頂部 -->
-                    <div style="background: #fff; padding: 12px 20px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 12px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 24px;">&#128193;</span>
-                            <span style="font-size: 18px; font-weight: 600; color: #202124;">Line 檔案</span>
-                        </div>
-                        <div style="margin-left: auto; display: flex; gap: 8px;">
-                            <span style="font-size: 13px; color: #5f6368; border: 1px solid #dadce0; padding: 4px 10px; border-radius: 4px;">&#9776; 清單</span>
-                            <span style="font-size: 13px; color: #5f6368; border: 1px solid #dadce0; padding: 4px 10px; border-radius: 4px;">&#9638; 格狀</span>
-                        </div>
-                    </div>
-                    <!-- 檔案列表 -->
-                    <div style="padding: 16px 20px; display: flex; gap: 16px; flex-wrap: wrap;">
-                        <!-- 圖片檔案 1 -->
-                        <div style="width: 140px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; cursor: pointer;">
-                            <div style="width: 140px; height: 100px; background: linear-gradient(135deg, #e0e0e0, #bdbdbd); display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 36px; color: #999;">&#128444;</span>
-                            </div>
-                            <div style="padding: 8px 10px; background: #fff;">
-                                <div style="font-size: 12px; color: #333; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">20260303_143100.jpg</div>
-                                <div style="font-size: 10px; color: #999; margin-top: 2px;">2026/03/03</div>
-                            </div>
-                        </div>
-                        <!-- 圖片檔案 2 -->
-                        <div style="width: 140px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; cursor: pointer;">
-                            <div style="width: 140px; height: 100px; background: linear-gradient(135deg, #d7ccc8, #bcaaa4); display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 36px; color: #999;">&#128444;</span>
-                            </div>
-                            <div style="padding: 8px 10px; background: #fff;">
-                                <div style="font-size: 12px; color: #333; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">20260303_143500.jpg</div>
-                                <div style="font-size: 10px; color: #999; margin-top: 2px;">2026/03/03</div>
-                            </div>
-                        </div>
-                        <!-- 圖片檔案 3 -->
-                        <div style="width: 140px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; cursor: pointer;">
-                            <div style="width: 140px; height: 100px; background: linear-gradient(135deg, #c8e6c9, #a5d6a7); display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 36px; color: #999;">&#128444;</span>
-                            </div>
-                            <div style="padding: 8px 10px; background: #fff;">
-                                <div style="font-size: 12px; color: #333; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">20260303_144200.jpg</div>
-                                <div style="font-size: 10px; color: #999; margin-top: 2px;">2026/03/03</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3>測試 3：傳送位置</h3>
-                <ol>
-                    <li>在 Line 聊天室中點「<strong>+</strong>」→「<strong>位置資訊</strong>」</li>
-                    <li>選擇一個地點並傳送</li>
-                    <li>回到試算表，確認經緯度是否已記錄</li>
+                    <li>試算表完全沒反應 → 檢查 Webhook URL 和 Use webhook</li>
+                    <li>有記錄但 G 欄顯示「儲存失敗」→ 檢查 ROOT_FOLDER_ID</li>
+                    <li>E 欄顯示「未知用戶」→ Token 可能有問題（不影響功能）</li>
+                    <li>→ 更多問題請看下一頁「常見問題排解」</li>
                 </ol>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- ========== Slide 11: 測試結果確認 ========== -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>✅ 測試結果確認</h2>
+<!-- ======================== Slide 21: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
 
-                <h3>試算表應有的欄位資料</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>時間</th>
-                            <th>群組/用戶ID</th>
-                            <th>用戶名稱</th>
-                            <th>訊息類型</th>
-                            <th>訊息內容</th>
-                            <th>檔案連結</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2026/03/03 14:30:00</td>
-                            <td>Uabc123...</td>
-                            <td>小明</td>
-                            <td>text</td>
-                            <td>Hello, 這是測試訊息！</td>
-                            <td>—</td>
-                        </tr>
-                        <tr>
-                            <td>2026/03/03 14:31:00</td>
-                            <td>Uabc123...</td>
-                            <td>小明</td>
-                            <td>image</td>
-                            <td>（圖片）</td>
-                            <td>https://drive.google.com/...</td>
-                        </tr>
-                        <tr>
-                            <td>2026/03/03 14:32:00</td>
-                            <td>Uabc123...</td>
-                            <td>小明</td>
-                            <td>location</td>
-                            <td>台北101 (25.033, 121.564)</td>
-                            <td>—</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <h3>🔍 怎麼找到錯誤訊息？（第一步！）</h3>
+        <ol>
+            <li>在 Apps Script 編輯器<strong>左側選單</strong>，找到「⏱ 執行項目」圖示（時鐘圖示，從上面數第 3 個），點擊它</li>
+            <li>會出現<strong>執行歷史記錄列表</strong>，每次 Webhook 觸發都會留下一筆記錄</li>
+            <li>找到最近一筆（最上面的），如果狀態是<strong>紅色「失敗」</strong>，點擊那一行的<strong>「▶」展開箭頭</strong></li>
+            <li>展開後看詳細資訊中的<strong>紅色文字</strong> — 那就是錯誤原因</li>
+        </ol>
 
-                <h3>Google Drive 應有的檔案</h3>
-                <p>在「Line 檔案」資料夾中，應該能看到自動儲存的圖片檔案，檔名通常會是時間戳記格式。</p>
-
-                <div class="box warning">
-                    <strong>⚠️ 常見問題排除：</strong>
-                    <ul style="margin-top: 10px;">
-                        <li><strong>試算表沒有新記錄？</strong> → 檢查 Webhook URL 是否正確設定、Use webhook 是否開啟</li>
-                        <li><strong>圖片沒有存到 Drive？</strong> → 檢查 ROOT_FOLDER_ID 是否正確、是否已授權 Drive 存取權限</li>
-                        <li><strong>Verify 失敗？</strong> → 確認部署時「誰可以存取」是選「所有人」</li>
-                        <li><strong>出現權限錯誤？</strong> → 重新執行一次授權流程（部署 → 授權存取）</li>
-                        <li><strong>試算表 ID 或資料夾 ID 有誤？</strong> → 重新從網址列複製，注意不要多複製空格或斜線</li>
-                    </ul>
-                </div>
-
-                <div class="box info">
-                    <strong>💡 除錯技巧：</strong>到 GAS 編輯器 →「執行項目」查看執行記錄，可以看到每次 Webhook 觸發的 log，幫助找出問題所在。
-                </div>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Verify 失敗</h3>
+                <ul>
+                    <li>確認部署時「<strong>誰可以存取</strong>」選了「所有人」</li>
+                    <li>確認部署網址是以 <code>https://script.google.com/macros/s/</code> 開頭</li>
+                    <li>確認你貼的是「<strong>網頁應用程式</strong>」的 URL，不是「部署 ID」</li>
+                    <li>如果修改過程式碼，要<strong>重新「新增部署作業」</strong>（舊的部署不會自動更新！）</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">試算表沒有新記錄</h3>
+                <ul>
+                    <li>Webhook URL 是否正確設定？→ 回到 Line Developers 確認</li>
+                    <li>Use webhook 開關是否為綠色？→ 點開它</li>
+                    <li>SPREADSHEET_ID 是否正確？→ 重新從網址列複製</li>
+                    <li>是否已完成授權？→ 執行一次 <code>testSystem</code> 觸發授權流程</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">圖片沒存到 Drive</h3>
+                <ul>
+                    <li>G 欄顯示「儲存失敗：Folder not found」→ ROOT_FOLDER_ID 不正確</li>
+                    <li>G 欄顯示「儲存失敗：Access denied」→ 重新執行授權流程</li>
+                    <li>G 欄完全是空的 → 訊息類型可能不是圖片（純文字不會有檔案連結）</li>
+                    <li>確認資料夾沒有被刪除或移到垃圾桶</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">修改程式碼後沒生效</h3>
+                <ul>
+                    <li>每次修改程式碼後，必須<strong>重新「新增部署作業」</strong></li>
+                    <li>舊的 Webhook URL 會失效 → 新的部署會產生<strong>新的 URL</strong></li>
+                    <li>把新的 URL 貼到 Line Developers 的 Webhook URL 欄位</li>
+                    <li>按 Verify 確認新的 URL 可以正常運作</li>
+                </ul>
             </div>
         </div>
 
-        <!-- ========== Slide 12: 實作 2 總結 ========== -->
-        <div class="slide">
-            <div class="content-card" style="text-align: center;">
-                <h2 style="border: none; text-align: center;">🎉 實作 2 總結</h2>
-                <p style="font-size: 22px; margin-bottom: 30px;">回顧一下這 50 分鐘我們學到了什麼：</p>
+        <div class="box info">
+            <strong>💡 小技巧：</strong>如果只是想改設定值（Token、ID），可以用「管理部署作業」→ 編輯（鉛筆圖示）→ 版本選「新版本」→ 部署。這樣 URL 不會改變，就不用重新貼 Webhook URL。
+        </div>
+    </div>
+</div>
 
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>📥 Webhook 接收事件</h3>
-                        <p>學會使用 <code>doPost(e)</code> 接收 Line 平台的 Webhook 事件，理解「被動接收」的運作模式。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>💬 多種訊息類型處理</h3>
-                        <p>根據訊息類型（text / image / location / sticker）進行不同的處理邏輯，建立完整的訊息分派機制。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📁 DriveApp 儲存檔案</h3>
-                        <p>使用 <code>DriveApp</code> 將圖片自動儲存到指定的 Google Drive 資料夾，並取得分享連結。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>📊 試算表自動記錄</h3>
-                        <p>所有訊息資料自動寫入 Google 試算表，建立結構化的資料收集系統。</p>
-                    </div>
-                </div>
+<!-- ======================== Slide 22: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在 Part 2 學到的核心知識：</p>
 
-                <div class="box success" style="margin-top: 30px; text-align: left;">
-                    <strong>🎊 恭喜！實作 2 完成！</strong><br><br>
-                    你已經成功建立了一個能自動收集 Line 訊息的系統！這個技能在實務上非常有用 —— 無論是客服記錄、活動報名、巡檢回報，都可以用這個架構來實現。
-                </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>概念</th>
+                    <th>說明</th>
+                    <th>對應程式碼</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Webhook 接收</strong></td>
+                    <td>Line 平台主動 POST 事件到你的 GAS</td>
+                    <td><code>doPost(e)</code></td>
+                </tr>
+                <tr>
+                    <td><strong>JSON 解析</strong></td>
+                    <td>將 Line 傳來的字串轉成 JS 物件</td>
+                    <td><code>JSON.parse(e.postData.contents)</code></td>
+                </tr>
+                <tr>
+                    <td><strong>switch/case</strong></td>
+                    <td>根據訊息類型做不同處理</td>
+                    <td><code>switch (message.type)</code></td>
+                </tr>
+                <tr>
+                    <td><strong>試算表寫入</strong></td>
+                    <td>自動新增一列資料到試算表</td>
+                    <td><code>sheet.appendRow([...])</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Drive 檔案操作</strong></td>
+                    <td>下載檔案並存到指定資料夾</td>
+                    <td><code>DriveApp.getFolderById()</code> + <code>createFile()</code></td>
+                </tr>
+                <tr>
+                    <td><strong>API 呼叫</strong></td>
+                    <td>使用 UrlFetchApp 與 Line API 互動</td>
+                    <td><code>UrlFetchApp.fetch(url, options)</code></td>
+                </tr>
+                <tr>
+                    <td><strong>錯誤處理</strong></td>
+                    <td>try/catch 防止程式崩潰</td>
+                    <td><code>try { ... } catch (error) { ... }</code></td>
+                </tr>
+            </tbody>
+        </table>
 
-                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                    <a href="../GAS程式碼/02_LineBot訊息收集器.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
-                    <a href="Day1_Part3_第一個GAS.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">➡️ 下一個實作</a>
-                    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: rgba(27,94,32,0.1); color: #1b5e20; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; border: 2px solid #1b5e20;">🏠 回到總覽</a>
-                </div>
+        <h3 style="margin-top: 30px;">本單元函式一覽</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3>核心函式</h3>
+                <ul>
+                    <li><code>doPost(e)</code> — Webhook 入口</li>
+                    <li><code>processMessage()</code> — 處理單一訊息</li>
+                    <li><code>processMessageType()</code> — 訊息類型分派</li>
+                    <li><code>saveFileToDrive()</code> — 檔案下載存儲</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3>輔助函式</h3>
+                <ul>
+                    <li><code>getSourceInfo()</code> — 取得來源資訊</li>
+                    <li><code>getUserProfile()</code> — 取得用戶名稱</li>
+                    <li><code>getGroupProfile()</code> — 取得群組名稱</li>
+                    <li><code>createHeaderRow()</code> — 建標題列</li>
+                    <li><code>testSystem()</code> — 測試推播</li>
+                </ul>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 23: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">📗</div>
+        <h1 style="font-size: 42px;">Part 2 完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經成功建立了 Line Bot 訊息收集器！所有傳入的訊息都會自動記錄到試算表。</p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📥</div>
+                <h3>Webhook 接收</h3>
+                <p>自動接收訊息</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔀</div>
+                <h3>類型分派</h3>
+                <p>6 種訊息類型</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>試算表記錄</h3>
+                <p>自動建表寫入</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📁</div>
+                <h3>Drive 儲存</h3>
+                <p>檔案自動備份</p>
+            </div>
+        </div>
+
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🎯 下一站預告 — Part 3：第一個 GAS Line Bot</strong>
+            <ul>
+                <li>建立關鍵字自動回覆機制</li>
+                <li>學會 if/else 條件判斷</li>
+                <li>讓 Bot 根據使用者輸入做出不同回應</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/02_LineBot訊息收集器.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="Day1_Part3_第一個GAS.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進！</p>
+    </div>
+</div>
 
     </div>
 
     <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
     <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
     <div class="indicators" id="indicatorContainer"></div>
-
     <script>
         let currentSlide = 0;
         const slides = document.querySelectorAll('.slide');

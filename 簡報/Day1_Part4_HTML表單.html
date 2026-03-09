@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📗 實作 4 — HTML 表單 × Line Bot 通知</title>
+    <title>Part 4：HTML 表單 × Line Bot 通知</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -40,17 +40,33 @@
         .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
         .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
         .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
-        .screenshot-placeholder { background: #f5f5f5; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; margin: 20px 0; text-align: center; color: #999; font-size: 14px; }
-        .screenshot-placeholder strong { color: #666; font-size: 16px; }
         .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
         .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
         .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
     </style>
 </head>
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">📗 實作 4 — HTML 表單 × Line Bot 通知</div>
+        <div class="nav-title">Part 4：HTML 表單</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -61,58 +77,205 @@
 
     <div class="slide-container">
 
-        <!-- Slide 1: Cover -->
-        <div class="slide active">
-            <div class="content-card" style="text-align: center;">
-                <div style="font-size: 80px; margin-bottom: 20px;">📗</div>
-                <h1 style="font-size: 58px; margin-bottom: 16px;">實作 4：HTML 表單部署</h1>
-                <p style="font-size: 28px; color: #2e7d32; margin-bottom: 30px; font-weight: 600;">建立公開聯絡表單 → Line Bot 即時通知</p>
-                <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 35px;">
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">HtmlService</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">google.script.run</span>
-                    <span class="highlight" style="font-size: 22px; padding: 8px 20px;">Web App</span>
-                </div>
-                <p style="font-size: 22px; color: #666;">⏱️ 40 分鐘 · 前後端整合</p>
-                <div style="margin-top: 40px;">
-                    <p style="font-size: 18px; color: #999;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
-                </div>
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">📝</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">HTML 表單 × Line Bot 通知</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            建立公開聯絡表單 → 資料寫入試算表 → Line Bot 即時推播
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">HtmlService</span>
+            <span class="badge badge-blue">google.script.run</span>
+            <span class="badge badge-orange">Web App 部署</span>
+            <span class="badge badge-green">前後端整合</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📄 HTML 表單</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🔗 google.script.run</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">⚙️ GAS 後端</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 試算表 + 📱 Line</div>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="../GAS程式碼/04_HTML表單_主程式.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 後端程式碼</a>
+            <a href="../GAS程式碼/04_HTML表單_前端.html" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #1565c0; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 前端 HTML</a>
+        </div>
+        <p style="font-size: 18px; color: #999; margin-top: 30px;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 前置須知</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">40 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>難度等級</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #e65100;">★★★☆☆ 中等</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>檔案數量</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1565c0;">2 個檔案</p>
+                <p>Code.gs + form.html</p>
             </div>
         </div>
 
-        <!-- Slide 2: 學習目標 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🎯 學習目標</h2>
-                <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下四大核心能力：</p>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>📄 1. HtmlService 建立網頁介面</h3>
-                        <p>使用 GAS 內建的 <code>HtmlService</code> 服務，建立具有完整 HTML/CSS/JS 的互動式網頁介面，不需要額外的伺服器或網域。</p>
+        <h3>前置條件（必須先完成）</h3>
+        <table>
+            <tr><th>項目</th><th>說明</th><th>狀態</th></tr>
+            <tr><td>Google 帳號</td><td>已登入且可存取 Google Drive</td><td>Part 0 已完成</td></tr>
+            <tr><td>LINE Bot Channel</td><td>已取得 Channel Access Token 和 User ID</td><td>Part 0 已完成</td></tr>
+            <tr><td>Apps Script 基礎</td><td>知道如何開啟編輯器、貼上程式碼、儲存</td><td>Part 3 已完成</td></tr>
+        </table>
+
+        <div class="box info">
+            <strong>💡 本實作特色：</strong>這是課程中第一次處理「前後端整合」。你會建立兩個檔案：後端 <code>Code.gs</code> 處理邏輯，前端 <code>form.html</code> 處理畫面，兩者透過 <code>google.script.run</code> 溝通。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下四大核心能力：</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h3>📄 1. HtmlService 建立網頁介面</h3>
+                <p>使用 GAS 內建的 <code>HtmlService</code> 服務，建立具有完整 HTML/CSS/JS 的互動式網頁介面，不需要額外的伺服器或網域。</p>
+            </div>
+            <div class="concept-card">
+                <h3>🌐 2. doGet() 回傳 HTML 頁面</h3>
+                <p>透過 <code>doGet()</code> 函式攔截 HTTP GET 請求，將自訂的 HTML 檔案回傳給瀏覽器，讓使用者看到漂亮的表單頁面。</p>
+            </div>
+            <div class="concept-card">
+                <h3>🔗 3. google.script.run 前端呼叫後端</h3>
+                <p>學會使用 <code>google.script.run</code> 這個神奇的橋梁，讓前端 HTML 頁面能呼叫後端 GAS 函式，實現前後端溝通。</p>
+            </div>
+            <div class="concept-card">
+                <h3>🚀 4. 完整的 Web App 部署流程</h3>
+                <p>掌握從開發到部署的完整流程：撰寫程式碼 → 新增 HTML 檔案 → 設定權限 → 部署為網頁應用程式 → 取得公開網址。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✨ 成果預覽</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成後你會得到：一個公開的聯絡表單網頁，任何人都可以填寫，送出後資料自動寫入試算表並推播 Line 通知！</p>
+        <div class="two-col">
+            <div class="col" style="text-align: center;">
+                <h3>📝 公開聯絡表單</h3>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 30px; margin: 15px 0; color: white;">
+                    <p style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 15px;">聯絡我們</p>
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left;">
+                        <span style="color: rgba(255,255,255,0.7); font-size: 16px;">👤 您的姓名</span>
                     </div>
-                    <div class="concept-card">
-                        <h3>🌐 2. doGet() 回傳 HTML 頁面</h3>
-                        <p>透過 <code>doGet()</code> 函式攔截 HTTP GET 請求，將自訂的 HTML 檔案回傳給瀏覽器，讓使用者看到漂亮的表單頁面。</p>
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left;">
+                        <span style="color: rgba(255,255,255,0.7); font-size: 16px;">📧 電子郵件</span>
                     </div>
-                    <div class="concept-card">
-                        <h3>🔗 3. google.script.run 前端呼叫後端</h3>
-                        <p>學會使用 <code>google.script.run</code> 這個神奇的橋梁，讓前端 HTML 頁面能呼叫後端 GAS 函式，實現前後端溝通。</p>
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left; min-height: 60px;">
+                        <span style="color: rgba(255,255,255,0.7); font-size: 16px;">💬 您的訊息</span>
                     </div>
-                    <div class="concept-card">
-                        <h3>🚀 4. 完整的 Web App 部署流程</h3>
-                        <p>掌握從開發到部署的完整流程：撰寫程式碼 → 新增 HTML 檔案 → 設定權限 → 部署為網頁應用程式 → 取得公開網址。</p>
-                    </div>
+                    <div style="background: #4caf50; border-radius: 8px; padding: 12px; margin-top: 15px; font-weight: bold; font-size: 18px;">送出表單</div>
                 </div>
+                <p>任何人都可以透過網址打開並填寫</p>
+            </div>
+            <div class="col" style="text-align: center;">
+                <h3>📱 Line 即時通知</h3>
+                <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 15px 0; text-align: left;">
+                    <p style="font-size: 16px; line-height: 1.8; color: #333;">
+                        📬 收到新的表單填寫！<br>
+                        ━━━━━━━━━━━━<br>
+                        👤 姓名：王小明<br>
+                        📧 Email：wang@example.com<br>
+                        💬 訊息：想了解更多課程資訊<br>
+                        ━━━━━━━━━━━━<br>
+                        📅 時間：2026/3/3 下午1:05:00<br>
+                        📊 累計第 1 筆
+                    </p>
+                </div>
+                <p>表單一送出，Line 立即收到通知！</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>💡 應用場景：</strong>活動報名表、客戶聯絡表、問卷調查、意見回饋、訂單通知... 任何需要「填表 + 即時通知」的場景都能用！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 系統架構圖 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🏗️ 系統架構：兩個檔案如何協作</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">Part 4 需要建立兩個檔案，它們各自負責不同工作，透過 <code>google.script.run</code> 互相溝通：</p>
+
+        <div class="two-col">
+            <div class="col" style="border: 2px solid #1565c0;">
+                <h3 style="color: #1565c0;">📄 前端：form.html</h3>
+                <ul>
+                    <li>使用者看到的<strong>表單畫面</strong></li>
+                    <li>HTML + CSS 打造漂亮介面</li>
+                    <li>JavaScript 處理表單驗證</li>
+                    <li>用 <code>google.script.run</code> 呼叫後端</li>
+                    <li>顯示成功/失敗訊息</li>
+                </ul>
+            </div>
+            <div class="col" style="border: 2px solid #2e7d32;">
+                <h3 style="color: #2e7d32;">⚙️ 後端：Code.gs</h3>
+                <ul>
+                    <li><code>doGet()</code>：回傳 HTML 頁面</li>
+                    <li><code>processForm()</code>：處理表單資料</li>
+                    <li><code>createFormSheet()</code>：建立工作表</li>
+                    <li><code>pushText()</code>：推播 Line 通知</li>
+                    <li><code>testFormSubmit()</code>：測試函式</li>
+                </ul>
             </div>
         </div>
 
-        <!-- Slide: Vibe Coding 提示詞教學 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🤖 Vibe Coding — 用 AI 生成這個實作</h2>
-                <p>這個實作包含前端 + 後端兩個檔案，用 Vibe Coding 來一次搞定！</p>
+        <div style="background: #f1f8e9; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center;">
+            <p style="font-size: 20px; line-height: 2.2;">
+                <span style="background: #667eea; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">使用者開啟網址</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #1b5e20; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">doGet()</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #1565c0; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">form.html 顯示</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #e65100; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">填表送出</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #2e7d32; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">processForm()</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #4caf50; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">📊 + 📱</span>
+            </p>
+        </div>
 
-                <h3>📝 提示詞範例（直接貼給 AI）</h3>
-                <pre><code>請幫我用 Google Apps Script 建立一個 HTML 聯絡表單系統，
+        <div class="box warning">
+            <strong>⚠️ 重要觀念：</strong>前端 <code>form.html</code> 的檔名必須和 <code>createHtmlOutputFromFile('form')</code> 中的 <code>'form'</code> 完全一致（不含 .html）。名字打錯會導致找不到檔案！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: Vibe Coding ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding — 用 AI 生成這個實作</h2>
+        <p>這個實作包含前端 + 後端兩個檔案，用 Vibe Coding 來一次搞定！</p>
+
+        <h3>📝 提示詞範例（直接貼給 AI）</h3>
+<pre><code>請幫我用 Google Apps Script 建立一個 HTML 聯絡表單系統，
 包含後端 GAS 程式和前端 HTML 頁面，需求如下：
 
 【後端 Code.gs】
@@ -135,773 +298,826 @@
 6. 成功後自動清空表單
 7. 純 HTML+CSS+JS，不使用外部框架</code></pre>
 
-                <h3>🎯 這個提示詞的關鍵技巧</h3>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>✅ 分「前後端」描述</h3>
-                        <p>用【後端】【前端】分段，讓 AI 知道要生成兩個檔案，不會混在一起。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>✅ 指定互動細節</h3>
-                        <p>「loading 狀態」「disabled 效果」「成功後清空」這些 UX 細節，不說的話 AI 通常會省略。</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>✅ 指定技術限制</h3>
-                        <p>「不使用外部框架」確保 AI 不會引入 React 或 jQuery，GAS 的 HtmlService 用純 HTML 最穩定。</p>
-                    </div>
-                </div>
-
-                <div class="box info">
-                    <strong>💡 Vibe Coding 雙檔案技巧：</strong>當你需要前後端兩個檔案時，在提示詞中用【檔案名稱】標記分段，AI 會分別生成。記得告訴 AI 前後端的溝通方式（這裡是 <code>google.script.run</code>）。
-                </div>
+        <h3>🎯 這個提示詞的關鍵技巧</h3>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h3>✅ 分「前後端」描述</h3>
+                <p>用【後端】【前端】分段，讓 AI 知道要生成兩個檔案，不會混在一起。</p>
+            </div>
+            <div class="concept-card">
+                <h3>✅ 指定互動細節</h3>
+                <p>「loading 狀態」「disabled 效果」「成功後清空」這些 UX 細節，不說的話 AI 通常會省略。</p>
+            </div>
+            <div class="concept-card">
+                <h3>✅ 指定技術限制</h3>
+                <p>「不使用外部框架」確保 AI 不會引入 React 或 jQuery，GAS 的 HtmlService 用純 HTML 最穩定。</p>
             </div>
         </div>
 
-        <!-- Slide 4: 成果預覽 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>✨ 成果預覽</h2>
-                <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成後你會得到：一個公開的聯絡表單網頁，任何人都可以填寫，送出後資料自動寫入試算表並推播 Line 通知！</p>
-                <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📝 公開聯絡表單</h3>
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 30px; margin: 15px 0; color: white;">
-                            <p style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 15px;">聯絡我們</p>
-                            <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left;">
-                                <span style="color: rgba(255,255,255,0.7); font-size: 16px;">👤 您的姓名</span>
-                            </div>
-                            <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left;">
-                                <span style="color: rgba(255,255,255,0.7); font-size: 16px;">📧 電子郵件</span>
-                            </div>
-                            <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; margin: 8px 0; text-align: left; min-height: 60px;">
-                                <span style="color: rgba(255,255,255,0.7); font-size: 16px;">💬 您的訊息</span>
-                            </div>
-                            <div style="background: #4caf50; border-radius: 8px; padding: 12px; margin-top: 15px; font-weight: bold; font-size: 18px;">送出表單</div>
-                        </div>
-                        <p>任何人都可以透過網址打開並填寫</p>
-                    </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📱 Line 即時通知</h3>
-                        <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 15px 0; text-align: left;">
-                            <p style="font-size: 16px; line-height: 1.8; color: #333;">
-                                📬 收到新的表單填寫！<br>
-                                ━━━━━━━━━━━━<br>
-                                👤 姓名：王小明<br>
-                                📧 Email：wang@example.com<br>
-                                💬 訊息：想了解更多課程資訊<br>
-                                ━━━━━━━━━━━━<br>
-                                📅 時間：2026/3/3 下午1:05:00<br>
-                                📊 累計第 1 筆
-                            </p>
-                        </div>
-                        <p>表單一送出，Line 立即收到通知！</p>
-                    </div>
-                </div>
-                <div class="box info">
-                    <strong>💡 應用場景：</strong>活動報名表、客戶聯絡表、問卷調查、意見回饋、訂單通知... 任何需要「填表 + 即時通知」的場景都能用！
-                </div>
-            </div>
+        <div class="box info">
+            <strong>💡 Vibe Coding 雙檔案技巧：</strong>當你需要前後端兩個檔案時，在提示詞中用【檔案名稱】標記分段，AI 會分別生成。記得告訴 AI 前後端的溝通方式（這裡是 <code>google.script.run</code>）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟 1 — 建立試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 建立新的 Google 試算表</h2>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">瀏覽器 → 前往 <a href="https://sheets.google.com" target="_blank" style="color:#1565c0;">sheets.google.com</a></span></p>
+            <p>👆 <span class="action">點擊左上角「+」建立空白試算表</span></p>
+            <p>⏱️ 等待試算表載入完成</p>
+            <p>👀 <span class="result">看到空白的試算表畫面</span></p>
         </div>
 
-        <!-- Slide 4: 步驟 1-2 — 建立試算表 + 開啟 Apps Script -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📋 步驟 1-2：建立試算表 + 開啟 Apps Script</h2>
-
-                <h3>步驟 1：建立新的試算表</h3>
-                <ol>
-                    <li>打開 <a href="https://sheets.google.com" target="_blank" style="color: #1b5e20; font-weight: bold;">Google 試算表</a></li>
-                    <li>建立一個新的空白試算表</li>
-                    <li>將試算表命名為 <code>表單系統</code></li>
-                </ol>
-
-                <div class="box info">
-                    <strong>💡 說明：</strong>這個試算表將用來儲存所有表單提交的資料。當有人填寫表單時，姓名、Email、訊息等資料會自動寫入這裡。
-                </div>
-
-                <h3>步驟 2：開啟 Apps Script 編輯器</h3>
-                <ol>
-                    <li>在試算表中，點擊上方選單 <code>擴充功能</code></li>
-                    <li>選擇 <code>Apps Script</code></li>
-                    <li>會開啟新的 Apps Script 編輯器分頁</li>
-                </ol>
-
-                <!-- 模擬 Google 試算表選單 -->
-                <div style="background: #fff; border: 1px solid #dadce0; border-radius: 8px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <!-- 試算表標題列 -->
-                    <div style="background: #0f9d58; padding: 8px 16px; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 20px;">📊</span>
-                        <span style="color: white; font-weight: bold; font-size: 14px;">表單系統</span>
-                        <span style="color: rgba(255,255,255,0.7); font-size: 11px; margin-left: auto;">Google 試算表</span>
-                    </div>
-                    <!-- 選單列 -->
-                    <div style="display: flex; gap: 0; padding: 0; background: #fff; border-bottom: 1px solid #e0e0e0;">
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">檔案</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">編輯</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">檢視</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">插入</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">格式</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">資料</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">工具</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #1a73e8; font-weight: bold; background: #e8f0fe; border-radius: 4px;">擴充功能</div>
-                        <div style="padding: 7px 14px; font-size: 13px; color: #333;">說明</div>
-                    </div>
-                    <!-- 下拉選單 -->
-                    <div style="position: relative;">
-                        <div style="position: relative; left: 320px; top: 0; background: #fff; border: 1px solid #dadce0; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 220px; z-index: 5;">
-                            <div style="padding: 10px 16px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px;">
-                                <span>🧩</span> 外掛程式
-                                <span style="margin-left: auto; color: #999;">&#9656;</span>
-                            </div>
-                            <div style="padding: 10px 16px; font-size: 13px; color: #1a73e8; font-weight: bold; background: #e8f0fe; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <span>📜</span> Apps Script
-                            </div>
-                        </div>
-                    </div>
-                    <div style="height: 20px;"></div>
-                </div>
-
-                <div class="box warning">
-                    <strong>⚠️ 注意：</strong>請確保你已經登入 Google 帳號，且使用的是與之前實作相同的帳號（已設定好 LINE Token 的那個）。
-                </div>
-            </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">試算表左上角 → 目前顯示「未命名試算表」</span></p>
+            <p>👆 <span class="action">點擊「未命名試算表」文字，改名為 <code>表單系統</code></span></p>
+            <p>👀 <span class="result">標題變成「表單系統」</span></p>
         </div>
 
-        <!-- Slide 5: 步驟 3 — 貼上後端程式碼 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>💻 步驟 3：貼上後端程式碼（Code.gs）</h2>
+        <div class="box info">
+            <strong>💡 說明：</strong>這個試算表將用來儲存所有表單提交的資料。程式會自動建立「表單回覆」工作表，包含格式化的標題列（時間戳記、姓名、Email、訊息內容）。
+        </div>
 
-                <h3>操作步驟</h3>
-                <ol>
-                    <li>打開教材資料夾中的 <code>GAS程式碼/04_HTML表單_主程式.gs</code></li>
-                    <li>全選複製（Ctrl+A → Ctrl+C）</li>
-                    <li>回到 Apps Script 編輯器，選取 <code>Code.gs</code> 中所有預設內容</li>
-                    <li>貼上（Ctrl+V）</li>
-                </ol>
+        <h3><span class="step-number">2</span> 開啟 Apps Script 編輯器</h3>
 
-                <h3>核心函式：doGet()</h3>
-<pre><code>function doGet() {
-  return HtmlService.createHtmlOutputFromFile('form')
-    .setTitle('聯絡我們')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+        <div class="micro-step">
+            <p>📍 <span class="position">試算表上方選單列</span></p>
+            <p>👆 <span class="action">點擊「擴充功能」→ 選擇「Apps Script」</span></p>
+            <p>⏱️ 等待新分頁開啟（約 3-5 秒）</p>
+            <p>👀 <span class="result">看到 Apps Script 編輯器，左側有 <code>Code.gs</code> 檔案</span></p>
+        </div>
+
+        <!-- 模擬 Google 試算表選單 -->
+        <div style="background: #fff; border: 1px solid #dadce0; border-radius: 8px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="background: #0f9d58; padding: 8px 16px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">📊</span>
+                <span style="color: white; font-weight: bold; font-size: 14px;">表單系統</span>
+                <span style="color: rgba(255,255,255,0.7); font-size: 11px; margin-left: auto;">Google 試算表</span>
+            </div>
+            <div style="display: flex; gap: 0; padding: 0; background: #fff; border-bottom: 1px solid #e0e0e0;">
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">檔案</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">編輯</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">檢視</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">插入</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">格式</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">資料</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">工具</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #1a73e8; font-weight: bold; background: #e8f0fe; border-radius: 4px;">擴充功能</div>
+                <div style="padding: 7px 14px; font-size: 13px; color: #333;">說明</div>
+            </div>
+            <div style="position: relative;">
+                <div style="position: relative; left: 320px; top: 0; background: #fff; border: 1px solid #dadce0; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 220px; z-index: 5;">
+                    <div style="padding: 10px 16px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px;">
+                        <span>🧩</span> 外掛程式 <span style="margin-left: auto; color: #999;">&#9656;</span>
+                    </div>
+                    <div style="padding: 10px 16px; font-size: 13px; color: #1a73e8; font-weight: bold; background: #e8f0fe; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <span>📜</span> Apps Script
+                    </div>
+                </div>
+            </div>
+            <div style="height: 20px;"></div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>請確保你已登入 Google 帳號，且使用的是與之前實作相同的帳號（已設定好 LINE Token 的那個）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟 3 — 貼上後端程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 貼上後端程式碼（Code.gs）</h2>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">教材資料夾 → <code>GAS程式碼/04_HTML表單_主程式.gs</code></span></p>
+            <p>👆 <span class="action">用文字編輯器開啟檔案 → <code>Ctrl+A</code> 全選 → <code>Ctrl+C</code> 複製</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 左側點擊 <code>Code.gs</code></span></p>
+            <p>👆 <span class="action">點擊編輯區 → <code>Ctrl+A</code> 全選預設內容 → <code>Ctrl+V</code> 貼上</span></p>
+            <p>👀 <span class="result">看到程式碼開頭是 <code>// ========== Line Bot 設定 ==========</code></span></p>
+        </div>
+
+        <h3>目的說明</h3>
+        <p>Code.gs 是整個系統的「後端大腦」，負責三件事：提供表單頁面、處理表單資料、推播 Line 通知。</p>
+
+        <h3>設定區（最上方兩行）</h3>
+<pre><code>var LINE_TOKEN = '在此貼上你的 Channel Access Token';
+var LINE_USER_ID = '在此貼上你的 User ID';</code></pre>
+
+        <ul class="explain-list">
+            <li><code>var LINE_TOKEN</code> — 你的 LINE Bot 授權金鑰，用來呼叫 LINE Messaging API 推播訊息</li>
+            <li><code>var LINE_USER_ID</code> — 你自己的 LINE User ID，指定推播通知要送給誰</li>
+        </ul>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">Code.gs 第 1~2 行</span></p>
+            <p>👆 <span class="action">將 <code>'在此貼上你的 Channel Access Token'</code> 替換為你的 Token（含單引號）</span></p>
+            <p>👆 <span class="action">將 <code>'在此貼上你的 User ID'</code> 替換為你的 User ID（含單引號）</span></p>
+            <p>👀 <span class="result">兩行都變成你自己的值，例如 <code>var LINE_TOKEN = 'abc123...';</code></span></p>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 常見錯誤：</strong>Token 和 User ID 都要保留外面的<strong>單引號</strong>！只替換引號裡面的中文字。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: doGet() 逐行解釋 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 後端程式碼解說（一）：doGet()</h2>
+        <h3>目的：當使用者開啟網址時，顯示 HTML 表單頁面</h3>
+
+<pre><code>function doGet(e) {
+  var html = HtmlService.createHtmlOutputFromFile('form');
+  html.setTitle('聯絡表單');
+  html.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return html;
 }</code></pre>
 
-                <div class="box info">
-                    <strong>💡 重點理解：</strong><code>doGet()</code> 就是當有人用瀏覽器打開你的 Web App 網址時，會自動執行的函式。它會去找名為 <code>form</code> 的 HTML 檔案，並回傳給瀏覽器顯示。
-                </div>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>function doGet(e)</code> — GAS 的特殊函式：當有人用瀏覽器開啟部署網址時，自動執行此函式。<code>e</code> 是請求參數（本例未使用）</li>
+            <li><code>var html = HtmlService.createHtmlOutputFromFile('form')</code> — 去找名為 <code>form</code> 的 HTML 檔案（即 form.html），將其內容轉成可回傳的 HTML 物件</li>
+            <li><code>html.setTitle('聯絡表單')</code> — 設定瀏覽器分頁標題（顯示在分頁標籤上的文字）</li>
+            <li><code>html.setXFrameOptionsMode(...ALLOWALL)</code> — 允許此頁面被嵌入 iframe（可選設定，讓頁面更靈活）</li>
+            <li><code>return html</code> — 將 HTML 頁面回傳給瀏覽器顯示</li>
+        </ul>
 
-                <table>
-                    <tr>
-                        <th>程式碼</th>
-                        <th>說明</th>
-                    </tr>
-                    <tr>
-                        <td><code>HtmlService</code></td>
-                        <td>GAS 提供的 HTML 服務，用來建立網頁</td>
-                    </tr>
-                    <tr>
-                        <td><code>createHtmlOutputFromFile('form')</code></td>
-                        <td>從 form.html 檔案建立 HTML 輸出</td>
-                    </tr>
-                    <tr>
-                        <td><code>.setTitle('聯絡我們')</code></td>
-                        <td>設定瀏覽器分頁標題</td>
-                    </tr>
-                    <tr>
-                        <td><code>.setXFrameOptionsMode(...)</code></td>
-                        <td>允許嵌入 iframe（可選）</td>
-                    </tr>
-                </table>
-            </div>
+        <div class="box info">
+            <strong>💡 核心概念：</strong><code>doGet()</code> 和 <code>doPost()</code> 是 GAS Web App 的兩個入口。<code>doGet()</code> 處理「打開網頁」的請求（GET），<code>doPost()</code> 處理「提交資料」的請求（POST）。本實作只用 <code>doGet()</code>，因為表單提交是透過 <code>google.script.run</code> 而非 HTTP POST。
         </div>
+    </div>
+</div>
 
-        <!-- Slide 6: 步驟 4 — 新增 HTML 檔案 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📄 步驟 4：新增 HTML 檔案（重點！）</h2>
-
-                <h3>新增 HTML 檔案</h3>
-                <ol>
-                    <li>在 Apps Script 編輯器左側的「檔案」列表旁，點擊 <code>+</code> 按鈕</li>
-                    <li>選擇 <code>HTML</code></li>
-                    <li>輸入檔名 <code>form</code>（不要加 .html，系統會自動加上）</li>
-                </ol>
-
-                <!-- 模擬 GAS 編輯器 + 按鈕新增 HTML 檔案 -->
-                <div style="background: #252526; border-radius: 10px; overflow: hidden; margin: 20px 0; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-                    <!-- 編輯器頂部 -->
-                    <div style="background: #2d2d2d; padding: 8px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #404040;">
-                        <div style="display: flex; gap: 6px;">
-                            <span style="width: 10px; height: 10px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 10px; height: 10px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 10px; height: 10px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
-                        </div>
-                        <span style="color: #ccc; font-size: 12px; font-weight: 600; margin-left: 8px;">Apps Script</span>
-                    </div>
-                    <!-- 左側邊欄 -->
-                    <div style="display: flex; min-height: 160px;">
-                        <div style="width: 200px; background: #252526; border-right: 1px solid #404040; padding: 10px 0;">
-                            <div style="padding: 6px 14px; font-size: 11px; color: #888; display: flex; justify-content: space-between; align-items: center;">
-                                <span style="text-transform: uppercase; letter-spacing: 1px;">檔案</span>
-                                <!-- + 按鈕 -->
-                                <span style="background: #0078d4; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; cursor: pointer;">+</span>
-                            </div>
-                            <!-- 檔案項 -->
-                            <div style="padding: 7px 14px; color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                                <span style="color: #4FC3F7;">{ }</span> Code.gs
-                            </div>
-                            <!-- 下拉選單（從 + 按鈕展開） -->
-                            <div style="margin: 4px 14px; background: #333; border: 1px solid #555; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                                <div style="padding: 8px 12px; font-size: 12px; color: #ccc; border-bottom: 1px solid #444; display: flex; align-items: center; gap: 6px;">
-                                    <span style="color: #4FC3F7;">{ }</span> 指令碼
-                                </div>
-                                <div style="padding: 8px 12px; font-size: 12px; color: #fff; background: #0078d4; display: flex; align-items: center; gap: 6px; font-weight: bold;">
-                                    <span style="color: #fff;">&lt;/&gt;</span> HTML
-                                </div>
-                            </div>
-                        </div>
-                        <!-- 右側提示 -->
-                        <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 13px; font-style: italic;">
-                            選擇「HTML」新增前端頁面
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 模擬 GAS 編輯器檔案列表 -->
-                <div style="background: #252526; border-radius: 10px; overflow: hidden; margin: 20px 0; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-                    <div style="background: #2d2d2d; padding: 8px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #404040;">
-                        <div style="display: flex; gap: 6px;">
-                            <span style="width: 10px; height: 10px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 10px; height: 10px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 10px; height: 10px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
-                        </div>
-                        <span style="color: #ccc; font-size: 12px; font-weight: 600; margin-left: 8px;">Apps Script — 表單系統</span>
-                    </div>
-                    <div style="display: flex; min-height: 120px;">
-                        <div style="width: 200px; background: #252526; border-right: 1px solid #404040; padding: 10px 0;">
-                            <div style="padding: 6px 14px; font-size: 11px; color: #888; display: flex; justify-content: space-between; align-items: center;">
-                                <span style="text-transform: uppercase; letter-spacing: 1px;">檔案</span>
-                                <span style="color: #888; font-size: 16px;">+</span>
-                            </div>
-                            <div style="padding: 7px 14px; background: #37373d; color: #fff; font-size: 12px; display: flex; align-items: center; gap: 6px; border-left: 2px solid #4FC3F7;">
-                                <span style="color: #4FC3F7;">{ }</span> Code.gs
-                            </div>
-                            <div style="padding: 7px 14px; color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                                <span style="color: #e06c75;">&lt;/&gt;</span> form.html
-                            </div>
-                        </div>
-                        <div style="flex: 1; padding: 14px 18px; color: #d4d4d4; line-height: 1.7; overflow-x: auto;">
-                            <div><span style="color: #6A9955;">// ===== LINE 設定 =====</span></div>
-                            <div><span style="color: #569cd6;">var</span> <span style="color: #9cdcfe;">LINE_TOKEN</span> = <span style="color: #ce9178;">'你的Token'</span>;</div>
-                            <div><span style="color: #569cd6;">var</span> <span style="color: #9cdcfe;">LINE_USER_ID</span> = <span style="color: #ce9178;">'你的UserID'</span>;</div>
-                            <div style="height: 6px;"></div>
-                            <div><span style="color: #569cd6;">function</span> <span style="color: #dcdcaa;">doGet</span>() {</div>
-                            <div style="padding-left: 20px;"><span style="color: #569cd6;">return</span> <span style="color: #4ec9b0;">HtmlService</span>.<span style="color: #dcdcaa;">createHtmlOutputFromFile</span>(<span style="color: #ce9178;">'form'</span>)</div>
-                            <div>}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3>貼上前端程式碼</h3>
-                <ol>
-                    <li>打開教材資料夾中的 <code>GAS程式碼/04_HTML表單_前端.html</code></li>
-                    <li>全選複製（Ctrl+A → Ctrl+C）</li>
-                    <li>回到 Apps Script 編輯器，選取 <code>form.html</code> 中所有預設內容</li>
-                    <li>貼上（Ctrl+V）</li>
-                </ol>
-
-                <div class="box warning">
-                    <strong>⚠️ 重要：</strong>HTML 檔名一定要是 <code>form</code>（全小寫），因為程式碼用 <code>createHtmlOutputFromFile('form')</code> 載入，檔名不一致會導致錯誤！
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 7: 前端程式碼解說 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🔗 前端程式碼解說：google.script.run</h2>
-
-                <h3>核心橋梁：前端呼叫後端</h3>
-                <p>當使用者在 HTML 表單中點擊「送出」按鈕時，前端 JavaScript 會透過 <code>google.script.run</code> 來呼叫後端 GAS 函式：</p>
-
-<pre><code>google.script.run
-  .withSuccessHandler(onSuccess)    // 成功時執行
-  .withFailureHandler(onFailure)    // 失敗時執行
-  .processForm(formData);           // 呼叫後端的 processForm 函式</code></pre>
-
-                <div class="box info">
-                    <strong>💡 核心概念：</strong><code>google.script.run</code> 是前端（HTML）呼叫後端（GAS）的橋梁。它讓你在瀏覽器中執行的 JavaScript，能夠遠端呼叫伺服器上的 GAS 函式！
-                </div>
-
-                <h3>完整資料流程</h3>
-                <div style="background: #f1f8e9; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center;">
-                    <p style="font-size: 20px; line-height: 2.2;">
-                        <span style="background: #667eea; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">前端表單</span>
-                        <span style="font-size: 28px; margin: 0 10px;">→</span>
-                        <span style="background: #1b5e20; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">google.script.run</span>
-                        <span style="font-size: 28px; margin: 0 10px;">→</span>
-                        <span style="background: #e65100; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">後端 processForm()</span>
-                        <span style="font-size: 28px; margin: 0 10px;">→</span>
-                        <span style="background: #4caf50; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;">寫入試算表 + 推播 Line</span>
-                    </p>
-                </div>
-
-                <table>
-                    <tr>
-                        <th>方法</th>
-                        <th>說明</th>
-                    </tr>
-                    <tr>
-                        <td><code>.withSuccessHandler(fn)</code></td>
-                        <td>後端函式成功執行後，呼叫前端的 fn 函式處理回傳值</td>
-                    </tr>
-                    <tr>
-                        <td><code>.withFailureHandler(fn)</code></td>
-                        <td>後端函式發生錯誤時，呼叫前端的 fn 函式處理錯誤</td>
-                    </tr>
-                    <tr>
-                        <td><code>.processForm(formData)</code></td>
-                        <td>呼叫後端名為 processForm 的函式，並傳入 formData 參數</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- Slide 8: 後端 processForm() 解說 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>⚙️ 後端 processForm() 解說</h2>
-
-                <h3>processForm() 函式做了三件事</h3>
-                <p>當前端透過 <code>google.script.run.processForm(formData)</code> 呼叫後端時，這個函式會依序執行：</p>
+<!-- ======================== Slide 10: processForm() 逐行解釋 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 後端程式碼解說（二）：processForm()</h2>
+        <h3>目的：接收表單資料 → 寫入試算表 → 推播 Line 通知 → 回傳結果</h3>
 
 <pre><code>function processForm(formData) {
-  // 1. 取得試算表
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var timestamp = new Date().toLocaleString('zh-TW');
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(FORM_SHEET_NAME);
 
-  // 2. 寫入試算表（新增一列資料）
-  sheet.appendRow([
-    timestamp,
-    formData.name,
-    formData.email,
-    formData.message
-  ]);
+    if (!sheet) {
+      sheet = createFormSheet(ss);
+    }
 
-  // 3. 組合 Line 通知訊息
-  var rowCount = sheet.getLastRow() - 1;
-  var msg = '📬 收到新的表單填寫！\n'
-          + '━━━━━━━━━━━━\n'
-          + '👤 姓名：' + formData.name + '\n'
-          + '📧 Email：' + formData.email + '\n'
-          + '💬 訊息：' + formData.message + '\n'
-          + '━━━━━━━━━━━━\n'
-          + '📅 時間：' + timestamp + '\n'
-          + '📊 累計第 ' + rowCount + ' 筆';
+    var now = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 
-  // 4. 推播 Line 通知
-  pushText(LINE_USER_ID, msg);
+    sheet.appendRow([
+      now, formData.name, formData.email, formData.message
+    ]);
 
-  // 5. 回傳成功訊息給前端
-  return { success: true, message: '表單已成功送出！' };
+    var rowCount = sheet.getLastRow() - 1;
+
+    var notification = '📬 收到新的表單填寫！\n'
+      + '━━━━━━━━━━━━\n'
+      + '👤 姓名：' + formData.name + '\n'
+      + '📧 Email：' + formData.email + '\n'
+      + '💬 訊息：' + formData.message + '\n'
+      + '━━━━━━━━━━━━\n'
+      + '📅 時間：' + now + '\n'
+      + '📊 累計第 ' + rowCount + ' 筆';
+
+    pushText(LINE_USER_ID, notification);
+
+    return { success: true, message: '提交成功！感謝你的填寫。' };
+  } catch (error) {
+    return { success: false, message: '提交失敗：' + error.toString() };
+  }
 }</code></pre>
 
-                <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📊 第一步</h3>
-                        <p>將表單資料（時間、姓名、Email、訊息）寫入 Google 試算表</p>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>function processForm(formData)</code> — 接收前端傳來的物件 <code>{ name, email, message }</code></li>
+            <li><code>try { ... } catch (error) { ... }</code> — 錯誤處理：如果中間任何步驟出錯，不會讓程式當掉，而是回傳失敗訊息</li>
+            <li><code>ss.getSheetByName(FORM_SHEET_NAME)</code> — 尋找名為「表單回覆」的工作表</li>
+            <li><code>if (!sheet) { sheet = createFormSheet(ss); }</code> — 如果工作表不存在，自動建立一個（含格式化標題列）</li>
+            <li><code>sheet.appendRow([...])</code> — 在試算表最後一列新增一筆資料</li>
+            <li><code>sheet.getLastRow() - 1</code> — 取得目前總筆數（扣掉標題列）</li>
+            <li><code>pushText(LINE_USER_ID, notification)</code> — 將通知訊息推播到你的 LINE</li>
+            <li><code>return { success: true, ... }</code> — 回傳 JSON 物件給前端，前端依此顯示成功或失敗訊息</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 步驟 4 — 新增 HTML 檔案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 新增 HTML 檔案（form.html）</h2>
+        <p style="font-size: 22px; color: #e65100; font-weight: 600; margin-bottom: 20px;">⚡ 這一步是 Part 4 最關鍵的步驟！務必操作正確。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 左側「檔案」區塊</span></p>
+            <p>👆 <span class="action">點擊「檔案」旁邊的 <code>+</code> 按鈕</span></p>
+            <p>👀 <span class="result">出現下拉選單，有「指令碼」和「HTML」兩個選項</span></p>
+        </div>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">下拉選單</span></p>
+            <p>👆 <span class="action">選擇「HTML」</span></p>
+            <p>⏱️ 出現命名輸入框</p>
+            <p>👆 <span class="action">輸入 <code>form</code>（全小寫，不要加 .html）→ 按 Enter</span></p>
+            <p>👀 <span class="result">左側出現 <code>form.html</code> 檔案，編輯區顯示預設 HTML 內容</span></p>
+        </div>
+
+        <!-- 模擬 GAS 編輯器 -->
+        <div style="background: #252526; border-radius: 10px; overflow: hidden; margin: 20px 0; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+            <div style="background: #2d2d2d; padding: 8px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #404040;">
+                <div style="display: flex; gap: 6px;">
+                    <span style="width: 10px; height: 10px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
+                    <span style="width: 10px; height: 10px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
+                    <span style="width: 10px; height: 10px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
+                </div>
+                <span style="color: #ccc; font-size: 12px; font-weight: 600; margin-left: 8px;">Apps Script — 表單系統</span>
+            </div>
+            <div style="display: flex; min-height: 140px;">
+                <div style="width: 200px; background: #252526; border-right: 1px solid #404040; padding: 10px 0;">
+                    <div style="padding: 6px 14px; font-size: 11px; color: #888; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="text-transform: uppercase; letter-spacing: 1px;">檔案</span>
+                        <span style="background: #0078d4; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">+</span>
                     </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>📱 第二步</h3>
-                        <p>組合通知訊息，透過 LINE Messaging API 推播給你</p>
+                    <div style="padding: 7px 14px; color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span style="color: #4FC3F7;">{ }</span> Code.gs
                     </div>
-                    <div class="concept-card" style="text-align: center;">
-                        <h3>✅ 第三步</h3>
-                        <p>回傳成功訊息給前端，讓使用者看到「送出成功」提示</p>
+                    <div style="margin: 4px 14px; background: #333; border: 1px solid #555; border-radius: 4px; overflow: hidden;">
+                        <div style="padding: 8px 12px; font-size: 12px; color: #ccc; border-bottom: 1px solid #444; display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4FC3F7;">{ }</span> 指令碼
+                        </div>
+                        <div style="padding: 8px 12px; font-size: 12px; color: #fff; background: #0078d4; display: flex; align-items: center; gap: 6px; font-weight: bold;">
+                            <span style="color: #fff;">&lt;/&gt;</span> HTML ← 選這個
+                        </div>
                     </div>
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 13px; font-style: italic;">
+                    輸入檔名：form（不加 .html）
                 </div>
             </div>
         </div>
 
-        <!-- Slide 9: 步驟 5-7 — 修改設定 + 部署 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🚀 步驟 5-7：修改設定 + 部署</h2>
+        <div class="micro-step">
+            <p>📍 <span class="position">教材資料夾 → <code>GAS程式碼/04_HTML表單_前端.html</code></span></p>
+            <p>👆 <span class="action">用文字編輯器開啟 → <code>Ctrl+A</code> 全選 → <code>Ctrl+C</code> 複製</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script → 點擊左側 <code>form.html</code></span></p>
+            <p>👆 <span class="action"><code>Ctrl+A</code> 全選預設內容 → <code>Ctrl+V</code> 貼上</span></p>
+            <p>👀 <span class="result">看到表單的 HTML/CSS/JS 程式碼，開頭是 <code>&lt;!DOCTYPE html&gt;</code></span></p>
+        </div>
 
-                <h3>步驟 5：修改 LINE 設定</h3>
-                <p>在 <code>Code.gs</code> 的最上方，找到以下兩行並填入你的資料：</p>
-<pre><code>var LINE_TOKEN   = '你的 Channel Access Token';
-var LINE_USER_ID = '你的 User ID';</code></pre>
+        <div class="box warning">
+            <strong>⚠️ 檔名必須是 <code>form</code>！</strong>因為 Code.gs 中寫死了 <code>createHtmlOutputFromFile('form')</code>。如果命名為 <code>Form</code>、<code>index</code> 或其他名字，開啟網頁時會出現「找不到檔案」錯誤。
+        </div>
+    </div>
+</div>
 
-                <div class="box info">
-                    <strong>💡 提示：</strong>這兩個值和前面實作中使用的相同。如果你之前已記下來，直接複製貼上即可。
+<!-- ======================== Slide 12: 前端程式碼解說 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 前端程式碼解說：form.html</h2>
+        <h3>目的：提供漂亮的表單介面，送出時透過 google.script.run 呼叫後端</h3>
+
+        <h3>核心 JavaScript：submitForm()</h3>
+<pre><code>function submitForm(event) {
+  event.preventDefault();
+
+  var formData = {
+    name: document.getElementById('name').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    message: document.getElementById('message').value.trim()
+  };
+
+  if (!formData.name || !formData.email || !formData.message) {
+    showResult('請填寫所有欄位！', false);
+    return;
+  }
+
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = '提交中...';
+  document.getElementById('loading').classList.add('show');
+
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(onFailure)
+    .processForm(formData);
+}</code></pre>
+
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>event.preventDefault()</code> — 阻止表單預設的提交行為（預設會重新整理頁面），改用 JavaScript 控制</li>
+            <li><code>var formData = { name: ..., email: ..., message: ... }</code> — 從三個輸入框取值，<code>.trim()</code> 去掉前後空白</li>
+            <li><code>if (!formData.name || ...)</code> — 前端驗證：如果有任何欄位是空的，顯示錯誤訊息並中止</li>
+            <li><code>submitBtn.disabled = true</code> — 按鈕灰掉，防止重複點擊送出</li>
+            <li><code>google.script.run</code> — 前端呼叫後端的橋梁</li>
+            <li><code>.withSuccessHandler(onSuccess)</code> — 後端成功執行後，呼叫前端的 <code>onSuccess</code> 函式</li>
+            <li><code>.withFailureHandler(onFailure)</code> — 後端發生錯誤時，呼叫前端的 <code>onFailure</code> 函式</li>
+            <li><code>.processForm(formData)</code> — 呼叫後端的 <code>processForm</code> 函式，傳入表單資料</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 重要：</strong><code>google.script.run</code> 只能在 GAS 部署的 HTML 頁面中使用。它不是標準的 JavaScript API，而是 Google 提供的專屬橋梁。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 前端回呼函式解說 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 前端程式碼解說：回呼函式</h2>
+        <h3>目的：處理後端回傳的結果，顯示成功或失敗訊息</h3>
+
+<pre><code>function onSuccess(result) {
+  document.getElementById('loading').classList.remove('show');
+
+  if (result.success) {
+    showResult(result.message, true);
+    document.getElementById('contactForm').reset();
+  } else {
+    showResult(result.message, false);
+  }
+
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = '送出表單';
+}
+
+function onFailure(error) {
+  document.getElementById('loading').classList.remove('show');
+  showResult('提交失敗：' + error.message, false);
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = '送出表單';
+}
+
+function showResult(message, isSuccess) {
+  var el = document.getElementById('resultMessage');
+  el.textContent = message;
+  el.className = 'result-message ' + (isSuccess ? 'success' : 'error');
+}</code></pre>
+
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>onSuccess(result)</code> — 後端 <code>processForm</code> 成功執行後自動被呼叫，<code>result</code> 就是後端 <code>return</code> 的 <code>{ success, message }</code> 物件</li>
+            <li><code>loading.classList.remove('show')</code> — 隱藏「提交中...」的載入動畫</li>
+            <li><code>if (result.success)</code> — 判斷後端回傳的結果是成功還是失敗</li>
+            <li><code>contactForm.reset()</code> — 成功時清空表單，讓使用者可以再填一次</li>
+            <li><code>onFailure(error)</code> — 後端發生未預期的錯誤（例如網路斷線、權限問題）時被呼叫</li>
+            <li><code>showResult(message, isSuccess)</code> — 顯示結果訊息，<code>true</code> 顯示綠色成功框，<code>false</code> 顯示紅色失敗框</li>
+        </ul>
+
+        <div style="background: #f1f8e9; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center;">
+            <p style="font-size: 18px; line-height: 2;">
+                <span style="background: #667eea; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold;">前端送出</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #1b5e20; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold;">後端處理</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #4caf50; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold;">return { success, message }</span>
+                <span class="flow-arrow">→</span>
+                <span style="background: #e65100; color: white; padding: 6px 14px; border-radius: 8px; font-weight: bold;">onSuccess / onFailure</span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: createFormSheet 與 pushText ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 後端程式碼解說（三）：工具函式</h2>
+
+        <h3>createFormSheet()：自動建立工作表</h3>
+<pre><code>function createFormSheet(ss) {
+  var sheet = ss.insertSheet(FORM_SHEET_NAME);
+
+  var headers = ['時間戳記', '姓名', 'Email', '訊息內容'];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#3F51B5')
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center');
+
+  sheet.setColumnWidth(1, 180);
+  sheet.setColumnWidth(2, 120);
+  sheet.setColumnWidth(3, 200);
+  sheet.setColumnWidth(4, 400);
+  sheet.setFrozenRows(1);
+
+  return sheet;
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>ss.insertSheet(FORM_SHEET_NAME)</code> — 在試算表中新增名為「表單回覆」的工作表</li>
+            <li><code>setValues([headers])</code> — 在第一列寫入標題：時間戳記、姓名、Email、訊息內容</li>
+            <li><code>setFontWeight / setBackground / setFontColor</code> — 格式化標題列：粗體白字、藍色背景</li>
+            <li><code>setColumnWidth</code> — 設定各欄寬度，讓資料更易閱讀</li>
+            <li><code>setFrozenRows(1)</code> — 凍結第一列，向下捲動時標題列不會消失</li>
+        </ul>
+
+        <h3>pushText() 與 pushLine()：Line 推播</h3>
+<pre><code>function pushText(to, text) {
+  pushLine(to, [{ type: 'text', text: text }]);
+}
+
+function pushLine(to, messages) {
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({ to: to, messages: messages }),
+    muteHttpExceptions: true
+  });
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>pushText(to, text)</code> — 簡化版：傳入收件者 ID 和文字，自動包裝成 LINE 訊息格式</li>
+            <li><code>pushLine(to, messages)</code> — 底層函式：呼叫 LINE Push Message API 送出訊息</li>
+            <li><code>muteHttpExceptions: true</code> — 即使 API 回傳錯誤，也不要讓程式中斷（靜默處理）</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 步驟 5-6 — 儲存 + 部署 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 儲存兩個檔案</h2>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 左側點擊 <code>Code.gs</code></span></p>
+            <p>👆 <span class="action">按 <code>Ctrl+S</code> 儲存</span></p>
+            <p>👀 <span class="result">檔名旁的圓點消失，表示已儲存</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 左側點擊 <code>form.html</code></span></p>
+            <p>👆 <span class="action">按 <code>Ctrl+S</code> 儲存</span></p>
+            <p>👀 <span class="result">檔名旁的圓點消失，表示已儲存</span></p>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 兩個檔案都要存！</strong>只存一個會導致部署時使用舊版本的程式碼。如果忘記存 form.html，開啟網址會看到預設的空白 HTML 而非你的表單。
+        </div>
+
+        <h2 style="margin-top: 30px;"><span class="step-number">6</span> 部署為網頁應用程式</h2>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 右上角</span></p>
+            <p>👆 <span class="action">點擊藍色「部署」按鈕 → 選擇「新增部署作業」</span></p>
+            <p>👀 <span class="result">出現部署設定對話框</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">部署設定對話框</span></p>
+            <p>👆 <span class="action">點擊「選取類型」旁的齒輪 → 選擇「網頁應用程式」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">部署設定 → 各欄位</span></p>
+            <p>👆 <span class="action">說明：輸入 <code>聯絡表單 v1</code></span></p>
+            <p>👆 <span class="action">執行身分：選擇「我」</span></p>
+            <p>👆 <span class="action">存取權限：選擇「所有人」（重要！）</span></p>
+            <p>👆 <span class="action">點擊「部署」</span></p>
+            <p>⏱️ 等待部署完成（約 5-10 秒）</p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">部署完成對話框</span></p>
+            <p>👆 <span class="action">點擊「複製」按鈕複製部署網址</span></p>
+            <p>👀 <span class="result">網址格式類似 <code>https://script.google.com/macros/s/AKfyc.../exec</code></span></p>
+        </div>
+
+        <div class="box info">
+            <strong>💡 存取權限為什麼選「所有人」？</strong>因為我們希望任何人（不需要 Google 帳號）都能打開表單並填寫。如果選「僅限自己」，只有你能看到表單。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 步驟 7 — 開啟表單測試 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 開啟表單網頁並測試</h2>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">瀏覽器 → 新分頁</span></p>
+            <p>👆 <span class="action">在網址列貼上剛才複製的部署網址 → 按 Enter</span></p>
+            <p>⏱️ 等待頁面載入（首次可能需要 5-10 秒）</p>
+            <p>👀 <span class="result">看到紫色漸層背景的聯絡表單頁面</span></p>
+        </div>
+
+        <!-- 模擬瀏覽器窗口 + 表單 -->
+        <div style="border: 1px solid #c0c0c0; border-radius: 10px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
+            <div style="background: #dee1e6; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; gap: 6px;">
+                    <span style="width: 11px; height: 11px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
+                    <span style="width: 11px; height: 11px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
+                    <span style="width: 11px; height: 11px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
                 </div>
+                <div style="flex: 1; background: #fff; border-radius: 20px; padding: 6px 14px; font-size: 12px; color: #666; font-family: 'Arial', sans-serif; display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #0f9d58;">🔒</span>
+                    <span style="color: #999;">script.google.com/macros/s/AKfyc...</span><span style="color: #333; font-weight: 600;">/exec</span>
+                </div>
+            </div>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 30px; width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: 'Microsoft JhengHei', Arial, sans-serif;">
+                    <h3 style="text-align: center; color: #333; font-size: 22px; margin: 0 0 6px 0;">聯絡我們</h3>
+                    <p style="text-align: center; color: #888; font-size: 13px; margin: 0 0 20px 0;">填寫表單後，我們會收到 Line 即時通知</p>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">姓名 <span style="color:#e74c3c;">*</span></label>
+                        <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999;">請輸入你的姓名</div>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">Email <span style="color:#e74c3c;">*</span></label>
+                        <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999;">請輸入你的 Email</div>
+                    </div>
+                    <div style="margin-bottom: 18px;">
+                        <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">訊息內容 <span style="color:#e74c3c;">*</span></label>
+                        <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999; min-height: 50px;">請輸入你想說的話...</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold;">送出表單</div>
+                </div>
+            </div>
+        </div>
 
-                <h3>步驟 6：儲存兩個檔案</h3>
+        <h3>填寫測試資料</h3>
+        <table>
+            <tr><th>欄位</th><th>填入內容</th></tr>
+            <tr><td>姓名</td><td><code>測試同學</code></td></tr>
+            <tr><td>Email</td><td><code>test@example.com</code></td></tr>
+            <tr><td>訊息內容</td><td><code>你好！第一次表單測試。</code></td></tr>
+        </table>
+
+        <div class="micro-step">
+            <p>👆 <span class="action">填寫完成後，點擊「送出表單」按鈕</span></p>
+            <p>⏱️ 按鈕變灰、顯示「提交中...」（約 3-5 秒）</p>
+            <p>👀 <span class="result">出現綠色提示「提交成功！感謝你的填寫。」</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 成功/失敗對比 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅ 測試結果：成功 vs 失敗對比</h2>
+
+        <div class="two-col">
+            <div class="col" style="border: 2px solid #28a745;">
+                <h3 style="color: #28a745; text-align: center;">✅ 成功畫面</h3>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; margin: 10px 0;">
+                    <div style="background: white; border-radius: 12px; padding: 20px;">
+                        <div style="background: #bbb; color: white; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; margin-bottom: 10px;">已送出</div>
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 10px; text-align: center; color: #155724; font-weight: 600;">
+                            &#10003; 提交成功！感謝你的填寫。
+                        </div>
+                    </div>
+                </div>
+                <h3>同時確認兩個地方：</h3>
                 <ul>
-                    <li>切換到 <code>Code.gs</code>，按 <code>Ctrl + S</code> 儲存</li>
-                    <li>切換到 <code>form.html</code>，按 <code>Ctrl + S</code> 儲存</li>
+                    <li>📊 <strong>試算表</strong>：出現「表單回覆」工作表，有一筆新資料</li>
+                    <li>📱 <strong>LINE</strong>：收到推播通知，含姓名、Email、訊息、時間</li>
                 </ul>
-
-                <div class="box warning">
-                    <strong>⚠️ 注意：</strong>兩個檔案都要儲存！只存一個會導致部署時使用舊版本的程式碼。
+            </div>
+            <div class="col" style="border: 2px solid #dc3545;">
+                <h3 style="color: #dc3545; text-align: center;">&#10007; 失敗畫面</h3>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; margin: 10px 0;">
+                    <div style="background: white; border-radius: 12px; padding: 20px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; margin-bottom: 10px;">送出表單</div>
+                        <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 10px; text-align: center; color: #721c24; font-weight: 600;">
+                            &#10007; 提交失敗：Script function not found: processForm
+                        </div>
+                    </div>
                 </div>
-
-                <h3>步驟 7：部署為網頁應用程式</h3>
-                <ol>
-                    <li>點擊右上角 <code>部署</code> → <code>新增部署作業</code></li>
-                    <li>類型選擇：<code>網頁應用程式</code></li>
-                    <li>說明：<code>聯絡表單 v1</code></li>
-                    <li>執行身分：<code>我</code></li>
-                    <li>存取權限：<code>所有人</code>（重要！這樣任何人都能開啟表單）</li>
-                    <li>點擊 <code>部署</code></li>
-                    <li>複製產生的部署網址</li>
-                </ol>
+                <h3>失敗時請檢查：</h3>
+                <ul>
+                    <li>Code.gs 是否有貼上完整程式碼？</li>
+                    <li>form.html 檔名是否為 <code>form</code>？</li>
+                    <li>是否有重新部署（建新版本）？</li>
+                    <li>LINE_TOKEN 是否正確？</li>
+                </ul>
             </div>
         </div>
 
-        <!-- Slide 10: 步驟 8 — 開啟表單網頁 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🌐 步驟 8：開啟表單網頁</h2>
+        <div class="box info">
+            <strong>💡 如何確認試算表資料？</strong>回到你的「表單系統」試算表，底部會出現一個新的工作表「表單回覆」（第一次提交時自動建立）。點擊它就能看到剛才送出的資料。
+        </div>
+    </div>
+</div>
 
-                <h3>打開你的表單</h3>
-                <ol>
-                    <li>開啟新的瀏覽器分頁</li>
-                    <li>貼上剛才複製的部署網址</li>
-                    <li>按 Enter，你會看到一個漂亮的聯絡表單頁面！</li>
-                </ol>
+<!-- ======================== Slide 18: 檢查 Line 通知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📱 確認 Line 通知</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">打開你的 LINE App，你應該會收到 Bot 發來的即時通知：</p>
 
-                <!-- 模擬瀏覽器窗口 + 表單網頁 -->
-                <div style="border: 1px solid #c0c0c0; border-radius: 10px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-                    <!-- 瀏覽器頂部 -->
-                    <div style="background: #dee1e6; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
-                        <div style="display: flex; gap: 6px;">
-                            <span style="width: 11px; height: 11px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 11px; height: 11px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 11px; height: 11px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
-                        </div>
-                        <!-- URL 列 -->
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 6px 14px; font-size: 12px; color: #666; font-family: 'Arial', sans-serif; display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #0f9d58;">🔒</span>
-                            <span style="color: #999;">script.google.com/macros/s/AKfyc...</span><span style="color: #333; font-weight: 600;">/exec</span>
-                        </div>
-                    </div>
-                    <!-- 頁面內容 -->
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; min-height: 320px; display: flex; align-items: center; justify-content: center;">
-                        <!-- 白色卡片表單 -->
-                        <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 30px; width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: 'Microsoft JhengHei', Arial, sans-serif;">
-                            <h3 style="text-align: center; color: #333; font-size: 22px; margin: 0 0 6px 0;">聯絡我們</h3>
-                            <p style="text-align: center; color: #888; font-size: 13px; margin: 0 0 20px 0;">請填寫以下表單，我們會盡快回覆您</p>
-                            <!-- 姓名 -->
-                            <div style="margin-bottom: 14px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">👤 您的姓名</label>
-                                <div style="background: #f7f7f7; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999;">請輸入姓名</div>
-                            </div>
-                            <!-- Email -->
-                            <div style="margin-bottom: 14px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">📧 電子郵件</label>
-                                <div style="background: #f7f7f7; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999;">example@email.com</div>
-                            </div>
-                            <!-- 訊息 -->
-                            <div style="margin-bottom: 18px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">💬 您的訊息</label>
-                                <div style="background: #f7f7f7; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #999; min-height: 60px;">請輸入訊息內容...</div>
-                            </div>
-                            <!-- 送出按鈕 -->
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(102,126,234,0.4);">送出表單</div>
-                        </div>
-                    </div>
+        <!-- 模擬手機 Line Bot 通知 -->
+        <div style="width: 280px; margin: 20px auto; background: #7494C0; border-radius: 24px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: white; font-size: 11px; font-weight: 600;">
+                <span>14:30</span>
+                <span style="display: flex; gap: 4px; align-items: center;">
+                    <span style="display: inline-block; width: 16px; height: 10px; border: 1.5px solid white; border-radius: 2px; position: relative;"><span style="position: absolute; right: 1px; top: 1px; bottom: 1px; width: 8px; background: white; border-radius: 1px;"></span></span>
+                </span>
+            </div>
+            <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+                <div style="background: #06C755; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px; color: white;">&#10094;</span>
+                    <div style="width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">🤖</div>
+                    <span style="color: white; font-weight: bold; font-size: 14px;">表單通知 Bot</span>
                 </div>
-
-                <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="concept-card">
-                        <h3>🎨 精美設計</h3>
-                        <ul>
-                            <li>漸層背景 + 毛玻璃效果</li>
-                            <li>響應式設計（手機也好看）</li>
-                            <li>輸入框聚焦動畫</li>
-                            <li>表單驗證提示</li>
-                        </ul>
+                <div style="background: #8CABD9; padding: 14px 10px; min-height: 200px;">
+                    <div style="display: flex; gap: 6px; align-items: flex-start;">
+                        <div style="width: 28px; height: 28px; background: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;">🤖</div>
+                        <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 210px; font-size: 12px; line-height: 1.8; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">📬 收到新的表單填寫！</div>
+                            <div style="color: #bbb; font-size: 10px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
+                            <div>👤 姓名：測試同學</div>
+                            <div>📧 Email：test@example.com</div>
+                            <div>💬 訊息：你好！第一次表單測試。</div>
+                            <div style="color: #bbb; font-size: 10px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
+                            <div>📅 時間：2026/3/3 14:30</div>
+                            <div>📊 累計第 1 筆</div>
+                        </div>
                     </div>
-                    <div class="concept-card">
-                        <h3>✅ 內建驗證</h3>
-                        <ul>
-                            <li>姓名：必填，至少 2 個字</li>
-                            <li>Email：必填，格式驗證</li>
-                            <li>訊息：必填，至少 5 個字</li>
-                            <li>送出前自動檢查所有欄位</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="box info">
-                    <strong>💡 小知識：</strong>這個網址可以分享給任何人！他們不需要登入 Google 帳號就能填寫表單。你可以把它放在網站上、社群媒體、或 Email 簽名檔中。
+                    <div style="text-align: right; font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px; padding-right: 4px;">已讀 14:30</div>
                 </div>
             </div>
         </div>
 
-        <!-- Slide 11: 步驟 9-10 — 填寫表單 + 確認結果 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>✍️ 步驟 9-10：填寫表單 + 確認結果</h2>
+        <div class="box success">
+            <strong>🎉 恭喜！</strong>如果你收到 LINE 通知，代表整個前後端流程已經串接成功：<br>
+            HTML 表單 → google.script.run → processForm() → 試算表 + LINE 通知，一氣呵成！
+        </div>
 
-                <h3>步驟 9：填寫測試資料</h3>
-                <table>
-                    <tr>
-                        <th>欄位</th>
-                        <th>填入內容</th>
-                    </tr>
-                    <tr>
-                        <td>👤 姓名</td>
-                        <td><code>測試同學</code></td>
-                    </tr>
-                    <tr>
-                        <td>📧 Email</td>
-                        <td><code>test@example.com</code></td>
-                    </tr>
-                    <tr>
-                        <td>💬 訊息</td>
-                        <td><code>你好！第一次表單測試。</code></td>
-                    </tr>
-                </table>
-                <p>填寫完成後，點擊 <code>送出表單</code> 按鈕。</p>
+        <div class="box info">
+            <strong>💡 實用應用場景：</strong>
+            <ul style="margin-top: 10px;">
+                <li><strong>活動報名</strong> — 參加者填表後你立刻知道</li>
+                <li><strong>客戶聯絡</strong> — 客戶留言即時通知</li>
+                <li><strong>問卷調查</strong> — 每一筆回覆都推播提醒</li>
+                <li><strong>意見回饋</strong> — 使用者反饋不漏接</li>
+            </ul>
+        </div>
+    </div>
+</div>
 
-                <h3>步驟 10：確認結果</h3>
-                <p>送出成功後，頁面會顯示綠色的成功訊息！</p>
+<!-- ======================== Slide 19: testFormSubmit 測試函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 額外測試：用 testFormSubmit() 驗證</h2>
+        <p>除了從網頁填寫表單，你也可以在 Apps Script 編輯器中直接執行測試函式：</p>
 
-                <!-- 模擬表單送出成功畫面 -->
-                <div style="border: 1px solid #c0c0c0; border-radius: 10px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-                    <!-- 瀏覽器頂部 -->
-                    <div style="background: #dee1e6; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
-                        <div style="display: flex; gap: 6px;">
-                            <span style="width: 11px; height: 11px; background: #ff5f56; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 11px; height: 11px; background: #ffbd2e; border-radius: 50%; display: inline-block;"></span>
-                            <span style="width: 11px; height: 11px; background: #27ca40; border-radius: 50%; display: inline-block;"></span>
-                        </div>
-                        <div style="flex: 1; background: #fff; border-radius: 20px; padding: 6px 14px; font-size: 12px; color: #666; font-family: 'Arial', sans-serif; display: flex; align-items: center; gap: 6px;">
-                            <span style="color: #0f9d58;">🔒</span>
-                            <span style="color: #999;">script.google.com/macros/s/AKfyc...</span><span style="color: #333; font-weight: 600;">/exec</span>
-                        </div>
-                    </div>
-                    <!-- 頁面內容 -->
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; min-height: 320px; display: flex; align-items: center; justify-content: center;">
-                        <div style="background: rgba(255,255,255,0.95); border-radius: 16px; padding: 30px; width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: 'Microsoft JhengHei', Arial, sans-serif;">
-                            <h3 style="text-align: center; color: #333; font-size: 22px; margin: 0 0 6px 0;">聯絡我們</h3>
-                            <p style="text-align: center; color: #888; font-size: 13px; margin: 0 0 20px 0;">請填寫以下表單，我們會盡快回覆您</p>
-                            <!-- 已填寫的欄位 -->
-                            <div style="margin-bottom: 14px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">👤 您的姓名</label>
-                                <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #333;">王小明</div>
-                            </div>
-                            <div style="margin-bottom: 14px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">📧 電子郵件</label>
-                                <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #333;">wang@example.com</div>
-                            </div>
-                            <div style="margin-bottom: 18px;">
-                                <label style="display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 600;">💬 您的訊息</label>
-                                <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #333; min-height: 40px;">我想了解更多課程資訊</div>
-                            </div>
-                            <!-- 按鈕（已禁用狀態） -->
-                            <div style="background: #bbb; color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold;">已送出</div>
-                            <!-- 成功提示 -->
-                            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 12px 16px; margin-top: 14px; text-align: center; color: #155724; font-size: 15px; font-weight: 600;">
-                                &#10003; 表單提交成功！感謝您的回饋。
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <h3>目的：不開網頁，直接從編輯器模擬表單提交</h3>
 
-                <p>接著回到 Google 試算表，你會看到資料已自動寫入：</p>
+<pre><code>function testFormSubmit() {
+  var testData = {
+    name: '測試同學',
+    email: 'test@example.com',
+    message: '這是一筆測試資料，用來確認系統運作正常。'
+  };
 
-                <!-- 模擬試算表：表單資料 -->
-                <div style="background: #fff; border: 1px solid #c0c0c0; border-radius: 4px; overflow: hidden; margin: 20px 0; font-family: 'Arial', sans-serif; font-size: 13px;">
-                    <!-- 試算表工具列 -->
-                    <div style="background: #f0f0f0; padding: 6px 12px; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #0f9d58; font-weight: bold; font-size: 14px;">📊</span>
-                        <span style="font-weight: 600; color: #333; font-size: 13px;">表單系統</span>
-                        <span style="color: #999; font-size: 11px; margin-left: auto;">Google 試算表</span>
-                    </div>
-                    <!-- 欄位標題 -->
-                    <div style="display: grid; grid-template-columns: 36px 1.2fr 1fr 1.3fr 1.5fr; background: #f8f8f8; border-bottom: 1px solid #e0e0e0;">
-                        <div style="padding: 3px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;"></div>
-                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">A</div>
-                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">B</div>
-                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; border-right: 1px solid #e0e0e0; font-weight: 600;">C</div>
-                        <div style="padding: 3px; text-align: center; color: #666; font-size: 11px; font-weight: 600;">D</div>
-                    </div>
-                    <!-- 標題列 -->
-                    <div style="display: grid; grid-template-columns: 36px 1.2fr 1fr 1.3fr 1.5fr; background: #e8f0fe; border-bottom: 1px solid #d0d0d0; font-weight: bold; color: #1a73e8;">
-                        <div style="padding: 6px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">1</div>
-                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">時間戳記</div>
-                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">姓名</div>
-                        <div style="padding: 6px 8px; border-right: 1px solid #e0e0e0;">Email</div>
-                        <div style="padding: 6px 8px;">訊息</div>
-                    </div>
-                    <!-- 資料列 1 -->
-                    <div style="display: grid; grid-template-columns: 36px 1.2fr 1fr 1.3fr 1.5fr; border-bottom: 1px solid #e8e8e8;">
-                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">2</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; font-size: 12px;">2026/3/3 14:28</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">王小明</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; font-size: 12px;">wang@example.com</div>
-                        <div style="padding: 5px 8px; font-size: 12px;">我想了解更多課程資訊</div>
-                    </div>
-                    <!-- 資料列 2 -->
-                    <div style="display: grid; grid-template-columns: 36px 1.2fr 1fr 1.3fr 1.5fr; background: #fafafa;">
-                        <div style="padding: 5px 4px; text-align: center; color: #999; font-size: 11px; border-right: 1px solid #e0e0e0;">3</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; font-size: 12px;">2026/3/3 14:35</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0;">李同學</div>
-                        <div style="padding: 5px 8px; border-right: 1px solid #e0e0e0; font-size: 12px;">lee@example.com</div>
-                        <div style="padding: 5px 8px; font-size: 12px;">請問有線上課程嗎？</div>
-                    </div>
-                </div>
+  var result = processForm(testData);
+  Logger.log('測試結果：' + JSON.stringify(result));
+}</code></pre>
 
-                <div class="box success">
-                    <strong>✅ 確認要點：</strong>試算表中應該會出現一列新資料，包含時間、「測試同學」、「test@example.com」、「你好！第一次表單測試。」
-                </div>
+        <ul class="explain-list">
+            <li><code>var testData = { ... }</code> — 模擬一筆表單資料（和真正填寫表單傳入的格式一模一樣）</li>
+            <li><code>processForm(testData)</code> — 直接呼叫後端函式處理這筆資料</li>
+            <li><code>Logger.log(...)</code> — 將結果印到執行記錄中</li>
+        </ul>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 上方函式下拉選單</span></p>
+            <p>👆 <span class="action">選擇 <code>testFormSubmit</code> → 點擊「▶ 執行」</span></p>
+            <p>⏱️ 等待執行完成（約 3-5 秒）</p>
+            <p>👀 <span class="result">執行記錄顯示「測試結果：{"success":true,...}」+ LINE 收到通知</span></p>
+        </div>
+
+        <div class="box info">
+            <strong>💡 什麼時候用 testFormSubmit？</strong>
+            <ul style="margin-top: 8px;">
+                <li>剛貼完程式碼，想快速確認後端邏輯是否正確（不需部署）</li>
+                <li>修改程式碼後，想測試 LINE 推播是否正常</li>
+                <li>除錯時，想看 Logger.log 的輸出訊息</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔧 常見問題排解</h2>
+        <p style="font-size: 20px; color: #555; margin-bottom: 20px;">遇到問題不要慌！以下是最常見的錯誤和解決方法：</p>
+
+        <h3>如何查看錯誤訊息？</h3>
+        <div class="micro-step">
+            <p>📍 <span class="position">Apps Script 編輯器 → 左側選單</span></p>
+            <p>👆 <span class="action">點擊「執行項目」（時鐘圖示）→ 查看最近的執行記錄</span></p>
+            <p>👀 <span class="result">看到每次執行的狀態（成功/失敗）和錯誤訊息</span></p>
+        </div>
+
+        <table>
+            <tr>
+                <th style="width: 30%;">錯誤現象</th>
+                <th style="width: 35%;">錯誤訊息</th>
+                <th style="width: 35%;">解決方法</th>
+            </tr>
+            <tr>
+                <td>開啟網址顯示空白</td>
+                <td><code>Script function not found: doGet</code></td>
+                <td>Code.gs 沒有 doGet 函式，確認程式碼已貼上且已儲存</td>
+            </tr>
+            <tr>
+                <td>開啟網址報錯</td>
+                <td><code>Cannot read file 'form'</code></td>
+                <td>HTML 檔案名稱不是 <code>form</code>，請刪除後重新建立</td>
+            </tr>
+            <tr>
+                <td>表單送出失敗</td>
+                <td><code>Script function not found: processForm</code></td>
+                <td>Code.gs 缺少 processForm 函式，確認程式碼完整</td>
+            </tr>
+            <tr>
+                <td>試算表沒資料</td>
+                <td><code>Cannot call method "appendRow" of null</code></td>
+                <td>getActiveSpreadsheet() 為 null，確認 Code.gs 綁定的是試算表</td>
+            </tr>
+            <tr>
+                <td>LINE 沒收到通知</td>
+                <td>無錯誤訊息（靜默失敗）</td>
+                <td>檢查 LINE_TOKEN 和 LINE_USER_ID 是否正確（注意前後空白）</td>
+            </tr>
+            <tr>
+                <td>LINE API 回傳 401</td>
+                <td><code>Authentication failed</code></td>
+                <td>LINE_TOKEN 不正確或已過期，重新從 LINE Developers 複製</td>
+            </tr>
+            <tr>
+                <td>修改後沒生效</td>
+                <td>（顯示舊版表單）</td>
+                <td>需要<strong>建立新版本部署</strong>：部署 → 管理部署作業 → 鉛筆圖示 → 版本選「新版本」→ 部署</td>
+            </tr>
+        </table>
+
+        <div class="box warning">
+            <strong>⚠️ 最常犯的錯誤：修改程式碼後忘記「建立新版本」！</strong>GAS 的部署是版本制的，修改程式碼後必須到「管理部署作業」建立新版本，否則使用者看到的仍是舊版。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: 總結 + 下載 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <h1>🏆 Part 4 完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">你已成功建立一個完整的前後端整合應用！</p>
+
+        <div class="concept-grid" style="text-align: center;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📄</div>
+                <h3>HtmlService</h3>
+                <p>用 GAS 建立網頁介面</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌐</div>
+                <h3>doGet()</h3>
+                <p>回傳 HTML 頁面</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔗</div>
+                <h3>google.script.run</h3>
+                <p>前端呼叫後端橋梁</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🚀</div>
+                <h3>Web App</h3>
+                <p>部署為公開網址</p>
             </div>
         </div>
 
-        <!-- Slide 12: 步驟 11 — 檢查 Line 通知 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>📱 步驟 11：檢查 Line 通知</h2>
-
-                <p style="font-size: 22px; margin-bottom: 20px;">打開你的 LINE App，你應該會收到 Bot 發來的即時通知：</p>
-
-                <!-- 模擬手機 Line Bot 表單通知 -->
-                <div style="width: 280px; margin: 20px auto; background: #7494C0; border-radius: 24px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
-                    <!-- 手機狀態列 -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; color: white; font-size: 11px; font-weight: 600;">
-                        <span>14:30</span>
-                        <span style="display: flex; gap: 4px; align-items: center;">
-                            <span style="display: inline-block; width: 16px; height: 10px; border: 1.5px solid white; border-radius: 2px; position: relative;"><span style="position: absolute; right: 1px; top: 1px; bottom: 1px; width: 8px; background: white; border-radius: 1px;"></span></span>
-                        </span>
-                    </div>
-                    <!-- LINE 聊天區 -->
-                    <div style="background: #fff; border-radius: 18px; overflow: hidden;">
-                        <div style="background: #06C755; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 14px; color: white;">&#10094;</span>
-                            <div style="width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">🤖</div>
-                            <span style="color: white; font-weight: bold; font-size: 14px;">表單通知 Bot</span>
-                        </div>
-                        <div style="background: #8CABD9; padding: 14px 10px; min-height: 220px;">
-                            <div style="display: flex; gap: 6px; align-items: flex-start;">
-                                <div style="width: 28px; height: 28px; background: #fff; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;">🤖</div>
-                                <div style="background: #fff; border-radius: 0 16px 16px 16px; padding: 12px 14px; max-width: 210px; font-size: 12px; line-height: 1.8; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                    <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">&#128236; 收到新的表單填寫！</div>
-                                    <div style="color: #bbb; font-size: 10px; letter-spacing: 2px;">━━━━━━━━━━━━</div>
-                                    <div>&#128100; 姓名：王小明</div>
-                                    <div>&#128231; Email：wang@example.com</div>
-                                    <div>&#128172; 訊息：我想了解更多課程資訊</div>
-                                    <div>&#9200; 時間：2026/3/3 14:30</div>
-                                </div>
-                            </div>
-                            <div style="text-align: right; font-size: 10px; color: rgba(255,255,255,0.8); margin-top: 4px; padding-right: 4px;">已讀 14:30</div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3>通知格式預覽</h3>
-                <div style="background: #e8f5e9; border-radius: 16px; padding: 25px; margin: 20px auto; max-width: 500px; border: 2px solid #a5d6a7;">
-<pre style="background: none; color: #333; padding: 0; margin: 0; font-size: 18px; line-height: 2;"><code style="background: none; color: #333; font-weight: normal;">📬 收到新的表單填寫！
-━━━━━━━━━━━━
-👤 姓名：測試同學
-📧 Email：test@example.com
-💬 訊息：你好！這是我的第一次表單測試。
-━━━━━━━━━━━━
-📅 時間：2026/3/3 下午1:05:00
-📊 累計第 1 筆</code></pre>
-                </div>
-
-                <div class="box info">
-                    <strong>💡 想想可以用在哪？</strong>
-                    <ul style="margin-top: 10px;">
-                        <li><strong>活動報名</strong> — 參加者填表後你立刻知道</li>
-                        <li><strong>客戶聯絡</strong> — 客戶留言即時通知</li>
-                        <li><strong>問卷調查</strong> — 每一筆回覆都推播提醒</li>
-                        <li><strong>意見回饋</strong> — 使用者反饋不漏接</li>
-                    </ul>
-                </div>
-
-                <div class="box success">
-                    <strong>🎉 恭喜！</strong>如果你收到 LINE 通知，代表整個流程已經串接成功：<br>
-                    HTML 表單 → GAS 後端 → 試算表 + LINE 通知，一氣呵成！
-                </div>
-            </div>
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 30px auto;">
+            <strong>🎯 下一站預告 — Part 5：寫入試算表</strong>
+            <ul>
+                <li>深入學習 SpreadsheetApp 的各種操作</li>
+                <li>LINE Bot 接收訊息後自動記錄到試算表</li>
+                <li>建立更完整的資料管理系統</li>
+            </ul>
         </div>
 
-        <!-- Slide 13: 實作 4 總結 -->
-        <div class="slide">
-            <div class="content-card">
-                <h2>🏆 實作 4 總結</h2>
-
-                <h3>今天學到了什麼？</h3>
-                <div class="concept-grid">
-                    <div class="concept-card">
-                        <h3>📄 HtmlService</h3>
-                        <p>用 GAS 內建服務建立完整的 HTML 網頁，包含 CSS 樣式和 JavaScript 互動</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🌐 doGet()</h3>
-                        <p>攔截 HTTP GET 請求，將 HTML 頁面回傳給瀏覽器顯示</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🔗 google.script.run</h3>
-                        <p>前端呼叫後端的橋梁，實現 HTML 與 GAS 的雙向溝通</p>
-                    </div>
-                    <div class="concept-card">
-                        <h3>🚀 Web App 部署</h3>
-                        <p>完整的部署流程，產生公開網址讓任何人都能存取</p>
-                    </div>
-                </div>
-
-                <h3>系統架構圖</h3>
-                <div style="background: #f1f8e9; border-radius: 16px; padding: 30px; margin: 20px 0; text-align: center;">
-                    <div style="font-size: 18px; line-height: 2.5;">
-                        <div style="margin-bottom: 15px;">
-                            <span style="background: #667eea; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">使用者瀏覽器</span>
-                            <span style="font-size: 24px; margin: 0 15px;">→</span>
-                            <span style="background: #1b5e20; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">doGet()</span>
-                            <span style="font-size: 24px; margin: 0 15px;">→</span>
-                            <span style="background: #e65100; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">HTML 表單</span>
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <span style="background: #e65100; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">表單送出</span>
-                            <span style="font-size: 24px; margin: 0 15px;">→</span>
-                            <span style="background: #6a1b9a; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">google.script.run</span>
-                            <span style="font-size: 24px; margin: 0 15px;">→</span>
-                            <span style="background: #1b5e20; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">processForm()</span>
-                        </div>
-                        <div>
-                            <span style="background: #1b5e20; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">processForm()</span>
-                            <span style="font-size: 24px; margin: 0 15px;">→</span>
-                            <span style="background: #4caf50; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">📊 試算表</span>
-                            <span style="font-size: 20px; margin: 0 10px;">+</span>
-                            <span style="background: #4caf50; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 18px;">📱 Line Bot</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="box success" style="text-align: center; font-size: 22px;">
-                    <strong>🎉 恭喜！實作 4 完成！</strong><br>
-                    你已經成功建立了一個完整的前後端整合應用！
-                </div>
-
-                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
-                    <a href="../GAS程式碼/04_HTML表單_主程式.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 GAS</a>
-                    <a href="../GAS程式碼/04_HTML表單_前端.html" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 HTML</a>
-                    <a href="Day1_Part5_寫入試算表.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">➡️ 下一個實作</a>
-                    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: rgba(27,94,32,0.1); color: #1b5e20; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; border: 2px solid #1b5e20;">🏠 回到總覽</a>
-                </div>
-            </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/04_HTML表單_主程式.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="Day1_Part5_寫入試算表.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進！</p>
+    </div>
+</div>
 
     </div>
 
-    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">❮</button>
-    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">❯</button>
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
     <div class="indicators" id="indicatorContainer"></div>
     <script>
         let currentSlide = 0;
