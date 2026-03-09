@@ -1190,33 +1190,29 @@ function testPdfExtraction() {
         <p>試試用自然語言讓 AI 幫你生成這整個系統！</p>
 
         <h3>Prompt 範本</h3>
-        <pre style="background: #1a1a2e; color: #e0e0e0; font-size: 16px; line-height: 1.8;"><code>請幫我寫一個 Google Apps Script 程式，功能如下：
+        <pre style="background: #1a1a2e; color: #e0e0e0; font-size: 16px; line-height: 1.8;"><code>我想用 Google Apps Script 做一個 Line Bot 自動評語系統。
 
-1. 建立一個 LINE Bot 自動化評量系統
-2. 使用者輸入「幫我評語」後，Bot 要求上傳 PDF
-3. 系統從 LINE 下載 PDF → 存到 Google Drive
-4. 用 Drive API 將 PDF 轉換為 Google Docs 提取文字
-5. 將文字送給 Gemini API (gemini-2.5-flash) 生成 100-150 字的評語
-   - 評語要溫暖正向，結構：肯定→優點→建議
-6. 評語記錄到 Google 試算表（時間、使用者ID、檔案、評語）
-7. 用 push message 將評語推送給學生
+我的需求：
+- 學生在 Line 上傳 PDF 檔案（例如作業、報告）
+- Bot 自動把 PDF 下載存到 Google Drive
+- 讀取 PDF 裡的文字內容
+- 用 AI（Gemini）自動生成一段 100-150 字的評語
+  （評語要溫暖正向，先肯定，再說優點，最後給建議）
+- 把評語透過 Line Bot 回傳給學生
+- 同時把評語記錄到 Google 試算表（時間、學生、檔案名稱、評語）
+- 如果 PDF 讀不出文字，要告訴學生可能是掃描檔或圖片
+- 我希望有測試功能，可以分別測試 Bot 連線、AI 生成、PDF 讀取
 
-技術要求：
-- 使用 PropertiesService 管理使用者對話狀態
-- 使用者 ID 存入試算表時要部分遮蔽
-- 如果 PDF 無法提取文字要回報錯誤
-- 包含 testBot、testAI、testPdfExtraction 測試函式
-
-請使用 var 宣告變數，提供完整可執行的程式碼。</code></pre>
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
 
         <div class="box success">
             <strong>VibeCoding 秘訣：</strong>
             <ul>
-                <li>把「做什麼」和「怎麼做」都寫清楚</li>
-                <li>指定技術細節（API 名稱、模型名稱）</li>
-                <li>描述錯誤處理和邊界情況</li>
-                <li>要求包含測試函式</li>
-                <li>指定變數宣告方式（GAS 建議用 <code>var</code>）</li>
+                <li>用白話文描述「你想要什麼」，不用寫技術細節</li>
+                <li>描述使用情境和預期結果</li>
+                <li>說明失敗時使用者會看到什麼</li>
+                <li>提到想要有測試功能</li>
+                <li>像跟朋友聊天一樣說出你的需求</li>
             </ul>
         </div>
     </div>

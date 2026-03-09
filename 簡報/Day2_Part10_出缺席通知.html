@@ -191,25 +191,21 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成出缺席通知系統的完整程式碼：</p>
-        <pre><code>請幫我寫一個 Google Apps Script 程式，功能如下：
+        <pre><code>我想用 Google Apps Script 做一個「出缺席自動通知」系統。
 
-1. 從試算表讀取出缺席記錄（姓名、日期、狀態、備註）
-2. 自動篩選今日缺席和請假名單
-3. 統計出席率和每人累計缺席次數
-4. 只在有缺席時才推播通知（條件式觸發）
-5. 透過 Line Bot 推播到指定群組（groupId）
-6. 可設定每天下午自動檢查
+我的需求：
+- 我有一張 Google 試算表，記錄學生的出缺席狀況（姓名、日期、出席/缺席/請假）
+- 每天下午自動檢查今天有沒有人缺席或請假
+- 如果有人缺席，就透過 Line Bot 推播通知到指定的 Line 群組
+- 通知要包含缺席名單、請假名單、以及今天的出席率
+- 如果今天全員到齊，就不用推播（不要打擾）
+- 我還想看到每個人累計缺席了幾次
+- 我希望可以先手動測試，確認沒問題後再設成每天自動執行
 
-技術要求：
-- 使用 SpreadsheetApp 讀取資料
-- 日期比對用 Utilities.formatDate
-- 群組推播用 Group ID（C 開頭）
-- 包含 testPush、testAddSampleData、testSendReport 測試函式
-
-請提供完整可執行的程式碼。</code></pre>
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 3 個設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>

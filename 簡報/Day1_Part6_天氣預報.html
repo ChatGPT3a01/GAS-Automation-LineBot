@@ -191,23 +191,21 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成天氣預報推播的完整程式碼：</p>
-        <pre><code>請幫我用 Google Apps Script 製作一個「天氣預報 + Line Bot 每日自動推播」系統。
+        <pre><code>我想用 Google Apps Script 做一個「天氣預報 Line Bot」，每天自動推播天氣。
 
-功能需求：
-1. 串接中央氣象署開放資料 API（資料集 F-C0032-001，36小時天氣預報）
-2. 使用 UrlFetchApp.fetch() 呼叫 API，中文縣市名稱要用 encodeURIComponent 編碼
-3. 取得指定縣市（預設臺北市）的天氣預報資料
-4. 解析 JSON 回傳結果，提取欄位：Wx（天氣現象）、PoP（降雨機率）、MinT（最低溫）、MaxT（最高溫）、CI（舒適度）
-5. 格式化成好看的天氣報告，包含天氣 emoji 圖示
-6. 降雨機率 >= 50% 時加上「記得帶傘」提醒
-7. 透過 Line Bot Push API 推播天氣預報
-8. 同時將天氣資料記錄到試算表的「天氣記錄」工作表
+我的需求：
+- 串接中央氣象署的公開天氣資料，可以查台灣各縣市的天氣預報
+- 查出指定縣市的天氣狀況、降雨機率、溫度範圍、舒適度
+- 把天氣資訊整理成一段好看好讀的文字，最好加上天氣相關的 emoji
+- 如果降雨機率高，要特別提醒「記得帶傘」
+- 透過 Line Bot 推播天氣預報給我
+- 同時把每次查到的天氣資料記錄到 Google 試算表，方便查看歷史
+- 我希望可以先手動測試，確認沒問題後再設成每天自動執行
 
-API 設定用變數放最上面：LINE_TOKEN、LINE_USER_ID、CWA_API_KEY、TARGET_CITY
-另外提供 testApiConnection() 測試函式，確認 API 連線是否正常。</code></pre>
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 3 個設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>

@@ -275,47 +275,41 @@
         <p>這個實作包含前端 + 後端兩個檔案，用 Vibe Coding 來一次搞定！</p>
 
         <h3>📝 提示詞範例（直接貼給 AI）</h3>
-<pre><code>請幫我用 Google Apps Script 建立一個 HTML 聯絡表單系統，
-包含後端 GAS 程式和前端 HTML 頁面，需求如下：
+<pre><code>我想用 Google Apps Script 做一個網頁版的「聯絡我們」表單。
+我需要兩個檔案 — 一個後端程式、一個前端網頁：
 
-【後端 Code.gs】
-1. doGet() 函式：用 HtmlService.createHtmlOutputFromFile('form')
-   回傳 HTML 頁面
-2. processForm(formData) 函式：
-   - 接收前端傳來的 { name, email, message } 物件
-   - 將資料寫入試算表（時間戳記、姓名、Email、訊息）
-   - 試算表「表單回覆」工作表不存在時自動建立，含格式化標題列
-   - 用 Line Bot Push Message 推播通知（含姓名、Email、訊息、時間）
-   - 回傳 { success: true/false, message: '...' } 給前端
-3. LINE_TOKEN 和 LINE_USER_ID 設定在最上方
+【後端程式】
+- 有人填完表單送出後，把資料（姓名、Email、訊息內容）存到 Google 試算表
+- 同時用 Line Bot 通知我「有人留言了」，通知裡要包含對方的姓名和訊息
+- 如果試算表裡還沒有對應的工作表，程式要自動幫我建一個
 
-【前端 form.html】
-1. 漂亮的響應式表單，紫色漸層背景
-2. 三個必填欄位：姓名、Email、訊息內容
-3. 送出按鈕有 loading 狀態和 disabled 效果
-4. 使用 google.script.run 呼叫後端 processForm
-5. 成功/失敗要顯示不同顏色的提示訊息
-6. 成功後自動清空表單
-7. 純 HTML+CSS+JS，不使用外部框架</code></pre>
+【前端網頁】
+- 漂亮的響應式表單，手機也要好看
+- 有三個欄位：姓名、Email、訊息內容，都是必填
+- 送出的時候按鈕要變成「提交中...」的等待效果
+- 成功後顯示綠色提示並清空表單，失敗顯示紅色錯誤訊息
+- 不要用外部框架（React、jQuery 等），純 HTML、CSS、JS 就好
+
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
 
         <h3>🎯 這個提示詞的關鍵技巧</h3>
         <div class="concept-grid">
             <div class="concept-card">
-                <h3>✅ 分「前後端」描述</h3>
-                <p>用【後端】【前端】分段，讓 AI 知道要生成兩個檔案，不會混在一起。</p>
+                <h3>✅ 分情境描述</h3>
+                <p>用【後端】【前端】分段描述各自的需求，AI 就知道要分開生成兩個檔案。</p>
             </div>
             <div class="concept-card">
-                <h3>✅ 指定互動細節</h3>
-                <p>「loading 狀態」「disabled 效果」「成功後清空」這些 UX 細節，不說的話 AI 通常會省略。</p>
+                <h3>✅ 描述使用者體驗</h3>
+                <p>「按鈕變成提交中...」「綠色提示」「清空表單」— 描述你希望使用者看到什麼，而非寫程式邏輯。</p>
             </div>
             <div class="concept-card">
-                <h3>✅ 指定技術限制</h3>
-                <p>「不使用外部框架」確保 AI 不會引入 React 或 jQuery，GAS 的 HtmlService 用純 HTML 最穩定。</p>
+                <h3>✅ 說明限制條件</h3>
+                <p>「不要用外部框架」這類限制很重要，確保 AI 生成的程式碼在 GAS 環境下能正常運作。</p>
             </div>
         </div>
 
         <div class="box info">
-            <strong>💡 Vibe Coding 雙檔案技巧：</strong>當你需要前後端兩個檔案時，在提示詞中用【檔案名稱】標記分段，AI 會分別生成。記得告訴 AI 前後端的溝通方式（這裡是 <code>google.script.run</code>）。
+            <strong>💡 Vibe Coding 雙檔案技巧：</strong>當你需要前後端兩個檔案時，在提示詞中用【後端】【前端】分段描述需求，AI 就會分別生成。不需要指定技術細節，AI 知道 GAS 的前後端怎麼溝通。
         </div>
     </div>
 </div>

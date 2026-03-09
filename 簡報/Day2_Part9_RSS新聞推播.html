@@ -194,18 +194,20 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成 RSS 新聞推播的完整程式碼：</p>
-        <pre><code>請幫我寫一個 Google Apps Script 程式，功能如下：
-1. 用 UrlFetchApp 抓取多個 RSS Feed（XML 格式）
-2. 用 XmlService.parse() 解析 XML
-3. 同時支援 RSS 2.0 和 Atom 兩種格式
-4. 提取每個 RSS 的前 3 則新聞（標題、連結、時間）
-5. 格式化成易讀的新聞摘要
-6. 透過 Line Bot 推播每日新聞
-7. 可設定每天上午 8 點自動執行
-台灣 RSS 來源：中央社、科技新報、數位時代</code></pre>
+        <pre><code>我想用 Google Apps Script 做一個「每日新聞摘要」的 Line Bot。
+
+我的需求：
+- 每天早上自動抓取幾個台灣新聞網站的最新新聞
+  （像中央社、科技新報、數位時代，用 RSS 訂閱源）
+- 每個來源取前幾則新聞的標題和連結
+- 把這些新聞整理成一份好讀的「今日新聞摘要」
+- 透過 Line Bot 推播給我，讓我一早就能看到重點新聞
+- 我希望可以先手動測試，確認沒問題後再設成每天定時自動執行
+
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 2 個設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>

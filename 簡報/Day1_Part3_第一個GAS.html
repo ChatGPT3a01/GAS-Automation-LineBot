@@ -191,28 +191,20 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成試算表操作 + Line Bot 報表推播的完整程式碼：</p>
-        <pre><code>請幫我用 Google Apps Script 寫一個試算表操作程式，搭配 Line Bot 推播，需求如下：
+        <pre><code>我想用 Google Apps Script 學習操作 Google 試算表，搭配 Line Bot 推播結果。
 
-1. 基本讀寫函式：
-   - readCell()：讀取 A1 儲存格的值，結果推播到 Line
-   - writeCell()：寫入值到指定儲存格（文字、日期、數字）
-   - readRange()：讀取 A1:C5 範圍的所有資料，格式化後推播到 Line
-2. 自訂函式（可在試算表中用 =函式名() 呼叫）：
-   - calcSubtotal(quantity, price)：計算小計（數量 × 單價）
-   - getLevel(amount)：根據金額判斷等級（>=1000 高額, >=500 中等, >0 一般）
-   記得加上 @customfunction JSDoc 標記
-3. 報表推播函式 sendDailyReport()：
-   - 讀取試算表中的品項、數量、單價資料
-   - 計算每個品項的小計和總金額
-   - 找出最高金額品項
-   - 格式化成漂亮的報表，用 emoji 裝飾
-   - 推播到 Line Bot
-4. createSampleData()：自動建立範例資料（5 個飲料品項），D 欄使用自訂函式
-5. LINE_TOKEN 和 LINE_USER_ID 設定在最上方
-6. 加上中文註解</code></pre>
+我的需求：
+- 我想學會怎麼用程式讀取和寫入試算表的資料
+- 做一些自訂公式，可以直接在試算表裡像 Excel 函式一樣使用
+  （例如計算小計、根據金額判斷等級）
+- 幫我做一個「每日報表」功能：自動讀取試算表裡的銷售資料，
+  算出每個品項的小計和總金額，然後用 Line Bot 推播一份漂亮的報表
+- 還要有一個功能可以自動建立範例資料，讓我馬上就能測試
+
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 2 個設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>

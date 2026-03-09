@@ -199,21 +199,20 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成訊息收集器的完整程式碼：</p>
-        <pre><code>請幫我用 Google Apps Script 建立一個 Line Bot 訊息收集器，需求如下：
+        <pre><code>我想用 Google Apps Script 做一個 Line Bot 訊息收集器。
 
-1. 實作 doPost() 接收 Line Webhook 事件
-2. 支援以下訊息類型的處理：
-   - 文字訊息：記錄到 Google 試算表
-   - 圖片/影片/音檔/檔案：下載存到 Google Drive，試算表記錄 Drive 連結
-   - 位置訊息：記錄地址和經緯度到試算表
-   - 貼圖訊息：記錄貼圖 ID 到試算表
-3. 試算表欄位：時間、群組ID、群組名稱、用戶ID、用戶名稱、訊息內容、檔案位置
-4. 使用 UrlFetchApp 呼叫 Line API 取得用戶資料和下載檔案
-5. 需要設定 4 個變數：LINE_TOKEN、LINE_USER_ID、ROOT_FOLDER_ID、SPREADSHEET_ID
-6. 加上完整中文註解和錯誤處理</code></pre>
+我的需求：
+- 我想把 Line 群組裡所有人傳的訊息都自動備份下來
+- 不管是文字、圖片、影片、音檔、檔案、位置、貼圖，通通都要記錄
+- 文字訊息記錄到 Google 試算表（包含時間、誰傳的、傳了什麼）
+- 圖片和檔案類的要下載存到 Google Drive，試算表裡放 Drive 的連結
+- 位置訊息要記錄地址和座標
+- 我希望能看到是哪個群組、哪個人傳的
+
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換 4 個設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>

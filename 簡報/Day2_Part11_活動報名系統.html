@@ -191,26 +191,20 @@
     <div class="content-card">
         <h2>🤖 Vibe Coding — AI 提示詞</h2>
         <p>用以下提示詞，讓 AI 幫你生成活動報名系統的完整程式碼：</p>
-        <pre><code>請幫我寫一個 Google Apps Script 程式，功能如下：
-1. 搭配 Google 表單收集活動報名資料
-2. 使用 onFormSubmit(e) 事件觸發
-3. 每次有人報名 → Line Bot 即時推播通知管理員
-4. 通知包含報名者資料和目前報名人數
-5. 設定人數上限 30 人，額滿自動關閉表單
-6. 額滿時推播通知「報名額滿」
-7. 提供 createRegistrationForm() 自動建立表單
-8. 提供 testPush / testCurrentCount / testSendReport 測試函式
+        <pre><code>我想用 Google Apps Script 做一個「活動報名系統」，搭配 Line Bot 通知。
 
-技術要求：
-- 使用 FormApp.openById() 控制表單開關
-- 使用 FormApp.create() 自動建立報名表單
-- 使用 setAcceptingResponses(false) 關閉表單
-- 使用 setCustomClosedFormMessage() 設定額滿訊息
-- LINE Messaging API 推播通知管理員
-- 配置常數：LINE_TOKEN、LINE_USER_ID、FORM_ID、MAX_PARTICIPANTS、EVENT_NAME</code></pre>
+我的需求：
+- 用 Google 表單讓大家填寫報名資料
+- 每次有人報名成功，Line Bot 馬上通知我（管理員），告訴我是誰報名、目前幾個人
+- 我想設一個報名人數上限（例如 30 人），額滿就自動關閉表單
+- 表單關閉時要顯示「報名額滿」的訊息
+- 額滿的時候也要用 Line Bot 通知我
+- 最好還能幫我自動建立一個報名表單，不用我自己手動做
+
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
         <div class="box info">
             <strong>💡 Vibe Coding 小提醒：</strong><br>
-            把以上文字直接貼到 ChatGPT / Gemini / Claude，AI 會幫你生成完整可用的 GAS 程式碼。你只需要替換設定值就能使用！
+            Vibe Coding 的精神是「用白話文描述你想要什麼」，讓 AI 決定怎麼實作。把以上提示詞貼到 ChatGPT / Gemini / Claude，AI 就會幫你生成完整程式碼！
         </div>
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>
