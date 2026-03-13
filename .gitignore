@@ -18,3 +18,13 @@ desktop.ini
 *~
 .vscode/
 .idea/
+
+# Claude Code 本機設定
+.claude/
+GAS程式碼/.claude/
+
+# PDF 檔案（過大）
+*.pdf
+
+# 程式碼打包 ZIP（舊版）
+GAS程式碼/*.zip

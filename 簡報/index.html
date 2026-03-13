@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAS 自動化 × Line Bot — 兩天實戰教學</title>
+    <title>GAS 自動化實戰教學 — 21 個實作帶你上手</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -57,19 +57,11 @@
             margin-top: 30px;
             flex-wrap: wrap;
         }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-number {
-            font-size: 36px;
-            font-weight: 800;
-        }
-        .stat-label {
-            font-size: 14px;
-            opacity: 0.8;
-        }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 36px; font-weight: 800; }
+        .stat-label { font-size: 14px; opacity: 0.8; }
 
-        /* === Day Section === */
+        /* === Section === */
         .day-section {
             background: rgba(255,255,255,0.98);
             border-radius: 30px;
@@ -88,16 +80,8 @@
         }
         .section-icon { font-size: 48px; }
         .section-info { flex: 1; }
-        .section-title {
-            font-size: 34px;
-            font-weight: 700;
-            color: #1b5e20;
-        }
-        .section-subtitle {
-            font-size: 18px;
-            color: #4caf50;
-            font-weight: 400;
-        }
+        .section-title { font-size: 34px; font-weight: 700; color: #1b5e20; }
+        .section-subtitle { font-size: 18px; color: #4caf50; font-weight: 400; }
         .section-description {
             background: linear-gradient(135deg, rgba(27,94,32,0.06), rgba(0,77,64,0.06));
             padding: 18px 25px;
@@ -141,17 +125,8 @@
             transform: translateY(-8px) scale(1.03);
             box-shadow: 0 15px 40px rgba(0,0,0,0.45);
         }
-        .part-number {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .part-title {
-            font-size: 16px;
-            line-height: 1.5;
-            font-weight: 500;
-        }
+        .part-number { font-size: 28px; font-weight: 800; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .part-title { font-size: 16px; line-height: 1.5; font-weight: 500; }
         .part-tag {
             display: inline-block;
             background: rgba(255,255,255,0.2);
@@ -160,25 +135,8 @@
             font-size: 12px;
             margin-top: 10px;
         }
-
-        /* Day 2 disabled cards */
-        .part-card.disabled {
-            background: linear-gradient(135deg, #78909c 0%, #546e7a 100%);
-            cursor: default;
-            opacity: 0.7;
-        }
-        .part-card.disabled:hover {
-            transform: none;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        }
-        .part-card.disabled::after {
-            content: '即將推出';
-            position: absolute;
-            top: 12px; right: 12px;
-            background: rgba(255,255,255,0.3);
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 11px;
+        .part-card.highlight-card {
+            background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
         }
 
         /* === Author Section === */
@@ -190,18 +148,7 @@
             box-shadow: 0 25px 70px rgba(0,0,0,0.35);
             text-align: center;
         }
-        .author-section h2 {
-            color: #1b5e20;
-            font-size: 30px;
-            margin-bottom: 25px;
-        }
-        .author-photo {
-            width: 100%;
-            max-width: 600px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+        .author-section h2 { color: #1b5e20; font-size: 30px; margin-bottom: 25px; }
         .author-info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -210,28 +157,10 @@
             max-width: 800px;
             margin: 0 auto 30px;
         }
-        .author-info-grid h3 {
-            color: #1b5e20;
-            font-size: 20px;
-            margin-bottom: 12px;
-        }
-        .author-info-grid ul {
-            list-style: none;
-            padding: 0;
-        }
-        .author-info-grid li {
-            padding: 5px 0;
-            font-size: 15px;
-            line-height: 1.6;
-            color: #444;
-        }
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
+        .author-info-grid h3 { color: #1b5e20; font-size: 20px; margin-bottom: 12px; }
+        .author-info-grid ul { list-style: none; padding: 0; }
+        .author-info-grid li { padding: 5px 0; font-size: 15px; line-height: 1.6; color: #444; }
+        .social-links { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
         .social-link {
             display: inline-flex;
             align-items: center;
@@ -246,10 +175,7 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .social-link:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
-        }
+        .social-link:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
         .social-link.youtube { background: linear-gradient(135deg, #c62828, #e53935); }
         .social-link.facebook { background: linear-gradient(135deg, #1565c0, #1976d2); }
         .social-link.email { background: linear-gradient(135deg, #2e7d32, #43a047); }
@@ -320,105 +246,193 @@
 
         <!-- ========== Header ========== -->
         <div class="header">
-            <div class="badge">GOOGLE APPS SCRIPT × LINE BOT 實戰教學</div>
-            <h1>GAS 自動化 × <span class="accent">Line Bot</span></h1>
-            <p>從零開始，打造自動化推播系統</p>
+            <div class="badge">GOOGLE APPS SCRIPT 多元應用實戰教學</div>
+            <h1>GAS <span class="accent">自動化</span>實戰教學</h1>
+            <p>從試算表到 AI 簡報，從 Email 到 Line Bot — 21 個實作帶你上手</p>
             <div class="course-info">
-                所有實作最終都串接 Line Bot — GAS 負責「做事」，Line Bot 負責「通知」
+                四大篇章、循序漸進：純 GAS 基礎 → Line Bot 串接 → 進階互動 → 實戰應用
             </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number">21</div>
+                    <div class="stat-label">個實作</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">大篇章</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">12+</div>
+                    <div class="stat-label">GAS 服務</div>
+                </div>
             </div>
+        </div>
 
-        <!-- ========== 課程內容 ========== -->
+        <!-- ========== 第一篇：GAS 基礎入門 ========== -->
         <div class="day-section">
+            <div class="section-header">
+                <div class="section-icon">📗</div>
+                <div class="section-info">
+                    <h2 class="section-title">第一篇：GAS 基礎入門</h2>
+                    <p class="section-subtitle">認識自動化的威力 — 100% 純 GAS，不碰 Line Bot</p>
+                </div>
+            </div>
             <div class="section-description">
-                從認識 GAS 環境開始，建立你的第一個 Line Bot，學會試算表讀寫、Web App 部署、外部 API 串接，每一步都即時推播到 Line。
+                從零開始認識 Google Apps Script 編輯器，學會試算表讀寫、自動寄信、建立表單、HTML 網頁、擴充選單。每個實作都是獨立的自動化成品。
             </div>
             <div class="parts-grid">
-                <a href="Day1_Part0_GAS環境與LineBot建立.html" class="part-card">
-                    <div class="part-number">單元 0</div>
-                    <div class="part-title">GAS 環境介紹<br>+ Line Bot 建立</div>
-                    <div class="part-tag">40 分鐘 · 環境建置</div>
+                <a href="篇1_實作00_GAS環境建立.html" class="part-card">
+                    <div class="part-number">實作 0</div>
+                    <div class="part-title">GAS 環境建立<br>與第一支程式</div>
+                    <div class="part-tag">30 分鐘 · SpreadsheetApp</div>
                 </a>
-                <a href="Day1_Part1_RAG知識庫.html" class="part-card">
+                <a href="篇1_實作01_試算表自動化報表.html" class="part-card">
                     <div class="part-number">實作 1</div>
-                    <div class="part-title">RAG 知識庫 API<br>→ Line Bot 查詢回覆</div>
-                    <div class="part-tag">50 分鐘 · doGet/doPost</div>
+                    <div class="part-title">試算表自動化報表<br>自訂函式 + 格式化</div>
+                    <div class="part-tag">35 分鐘 · Custom Function</div>
                 </a>
-                <a href="Day1_Part2_LineBot訊息收集器.html" class="part-card">
+                <a href="篇1_實作02_自動寄信通知系統.html" class="part-card">
                     <div class="part-number">實作 2</div>
-                    <div class="part-title">Line Bot 訊息收集器<br>→ 試算表 + Drive</div>
-                    <div class="part-tag">50 分鐘 · Webhook</div>
+                    <div class="part-title">自動寄信通知系統<br>MailApp + HTML Email</div>
+                    <div class="part-tag">35 分鐘 · MailApp</div>
                 </a>
-                <a href="Day1_Part3_第一個GAS.html" class="part-card">
+                <a href="篇1_實作03_一鍵建立Google表單.html" class="part-card">
                     <div class="part-number">實作 3</div>
-                    <div class="part-title">產出第一個 GAS<br>→ Line Bot 報表通知</div>
-                    <div class="part-tag">30 分鐘 · 讀寫基礎</div>
+                    <div class="part-title">一鍵自動建立<br>Google 表單</div>
+                    <div class="part-tag">35 分鐘 · FormApp</div>
                 </a>
-                <a href="Day1_Part4_HTML表單.html" class="part-card">
+                <a href="篇1_實作04_HTML網頁表單.html" class="part-card">
                     <div class="part-number">實作 4</div>
-                    <div class="part-title">HTML 表單部署<br>→ Line Bot 即時通知</div>
+                    <div class="part-title">HTML 網頁表單<br>前後端整合</div>
                     <div class="part-tag">40 分鐘 · HtmlService</div>
                 </a>
-                <a href="Day1_Part5_寫入試算表.html" class="part-card">
+                <a href="篇1_實作05_擴充選單與自訂按鈕.html" class="part-card">
                     <div class="part-number">實作 5</div>
-                    <div class="part-title">寫入試算表<br>→ Line Bot 簽到回報</div>
-                    <div class="part-tag">30 分鐘 · 格式化</div>
-                </a>
-                <a href="Day1_Part6_天氣預報.html" class="part-card">
-                    <div class="part-number">實作 6</div>
-                    <div class="part-title">天氣預報 API<br>→ Line Bot 每日推播</div>
-                    <div class="part-tag">40 分鐘 · API + 排程</div>
-                </a>
-                <a href="Day1_Part7_自動化評量.html" class="part-card">
-                    <div class="part-number">實作 7</div>
-                    <div class="part-title">自動化評量系統<br>→ AI 自動評語推送</div>
-                    <div class="part-tag">40 分鐘 · AI + Drive API</div>
+                    <div class="part-title">擴充選單與自訂按鈕<br>試算表變應用程式</div>
+                    <div class="part-tag">30 分鐘 · onOpen()</div>
                 </a>
             </div>
         </div>
 
-        <!-- ========== Day 2 ========== -->
+        <!-- ========== 第二篇：Line Bot 串接 ========== -->
         <div class="day-section">
             <div class="section-header">
                 <div class="section-icon">📘</div>
                 <div class="section-info">
-                    <h2 class="section-title">Day 2：進階應用、RSS 推播與 AI 整合</h2>
-                    <p class="section-subtitle">Advanced Applications &amp; AI Integration</p>
+                    <h2 class="section-title">第二篇：Line Bot 串接</h2>
+                    <p class="section-subtitle">GAS 結果送到手機 — 建立 Line Bot 推播系統</p>
                 </div>
             </div>
             <div class="section-description">
-                進階 Line Bot 推播技巧：圖片推播、RSS 新聞推播、群組推播、事件驅動推播，最終整合 Gemini AI 打造全自動發文系統。
+                建立 Line Bot 帳號，學會推播文字和圖片，把第一篇學的東西串上 Line Bot。穿插 AI 自動簡報生成實作，體驗 GAS + AI 的威力。
             </div>
             <div class="parts-grid">
-                <a href="Day2_Part8_早安圖推播.html" class="part-card">
+                <a href="篇2_實作06_LineBot建立與推播.html" class="part-card">
+                    <div class="part-number">實作 6</div>
+                    <div class="part-title">Line Bot 建立<br>與推播測試</div>
+                    <div class="part-tag">40 分鐘 · Messaging API</div>
+                </a>
+                <a href="篇2_實作07_天氣預報LineBot推播.html" class="part-card">
+                    <div class="part-number">實作 7</div>
+                    <div class="part-title">天氣預報<br>Line Bot 每日推播</div>
+                    <div class="part-tag">40 分鐘 · API + 排程</div>
+                </a>
+                <a href="篇2_實作08_早安圖LineBot圖片推播.html" class="part-card">
                     <div class="part-number">實作 8</div>
-                    <div class="part-title">每天來張早安圖<br>→ Line Bot 圖片推播</div>
-                    <div class="part-tag">40 分鐘 · DriveApp</div>
+                    <div class="part-title">早安圖<br>Line Bot 圖片推播</div>
+                    <div class="part-tag">35 分鐘 · DriveApp</div>
                 </a>
-                <a href="Day2_Part9_RSS新聞推播.html" class="part-card">
+                <a href="篇2_實作09_AI自動生成簡報.html" class="part-card highlight-card">
                     <div class="part-number">實作 9</div>
-                    <div class="part-title">RSS 新聞推播機器人<br>→ Line Bot 每日新聞</div>
-                    <div class="part-tag">50 分鐘 · XmlService</div>
+                    <div class="part-title">AI 自動生成簡報<br>SlidesApp + Gemini</div>
+                    <div class="part-tag">45 分鐘 · AI 參差</div>
                 </a>
-                <a href="Day2_Part10_出缺席通知.html" class="part-card">
+                <a href="篇2_實作10_RSS新聞推播機器人.html" class="part-card">
                     <div class="part-number">實作 10</div>
-                    <div class="part-title">到班出缺席通知<br>→ Line Bot 群組推播</div>
-                    <div class="part-tag">40 分鐘 · 群組推播</div>
+                    <div class="part-title">RSS 新聞推播<br>機器人</div>
+                    <div class="part-tag">40 分鐘 · XmlService</div>
                 </a>
-                <a href="Day2_Part11_活動報名系統.html" class="part-card">
+            </div>
+        </div>
+
+        <!-- ========== 第三篇：進階互動 ========== -->
+        <div class="day-section">
+            <div class="section-header">
+                <div class="section-icon">📙</div>
+                <div class="section-info">
+                    <h2 class="section-title">第三篇：進階互動</h2>
+                    <p class="section-subtitle">Webhook、表單驅動與 AI — 從單向推播到雙向互動</p>
+                </div>
+            </div>
+            <div class="section-description">
+                學會 Webhook 接收 Line 訊息、表單觸發自動通知、AI 個人化 Email。進入 doPost() 的世界，讓 Line Bot 不只會推播，還能回應。
+            </div>
+            <div class="parts-grid">
+                <a href="篇3_實作11_LineBot訊息收集器.html" class="part-card">
                     <div class="part-number">實作 11</div>
-                    <div class="part-title">自動化活動報名系統<br>→ Line Bot 即時通知</div>
-                    <div class="part-tag">50 分鐘 · FormApp</div>
+                    <div class="part-title">Line Bot 訊息收集器<br>Webhook + Drive</div>
+                    <div class="part-tag">45 分鐘 · doPost()</div>
                 </a>
-                <a href="Day2_Part12_查詢系統.html" class="part-card">
+                <a href="篇3_實作12_取得Line_User_ID.html" class="part-card">
                     <div class="part-number">實作 12</div>
-                    <div class="part-title">GAS 查詢系統<br>→ Line Bot 互動查詢</div>
-                    <div class="part-tag">50 分鐘 · Web App</div>
+                    <div class="part-title">取得 Line User ID<br>操作教學</div>
+                    <div class="part-tag">15 分鐘 · 操作指引</div>
                 </a>
-                <a href="Day2_Part13_AI自動發文.html" class="part-card">
+                <a href="篇3_實作13_活動報名即時通知.html" class="part-card">
                     <div class="part-number">實作 13</div>
-                    <div class="part-title">AI 自動發文<br>→ Line Bot AI 推播</div>
-                    <div class="part-tag">50 分鐘 · Gemini API</div>
+                    <div class="part-title">活動報名系統<br>即時通知</div>
+                    <div class="part-tag">45 分鐘 · onFormSubmit</div>
+                </a>
+                <a href="篇3_實作14_AI個人化Email通知.html" class="part-card highlight-card">
+                    <div class="part-number">實作 14</div>
+                    <div class="part-title">AI 個人化<br>Email 通知</div>
+                    <div class="part-tag">40 分鐘 · AI 參差</div>
+                </a>
+                <a href="篇3_實作15_自動化評量AI評語.html" class="part-card">
+                    <div class="part-number">實作 15</div>
+                    <div class="part-title">自動化評量<br>AI 自動評語</div>
+                    <div class="part-tag">45 分鐘 · AI + Webhook</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ========== 第四篇：實戰應用 ========== -->
+        <div class="day-section">
+            <div class="section-header">
+                <div class="section-icon">📕</div>
+                <div class="section-info">
+                    <h2 class="section-title">第四篇：實戰應用</h2>
+                    <p class="section-subtitle">校務與企業自動化 — 綜合前三篇技能解決真實問題</p>
+                </div>
+            </div>
+            <div class="section-description">
+                RAG 知識庫問答、群組推播、AI 自動發文、雙入口查詢系統、AI 審題助手。每一個都是可以直接用在工作中的完整專案。
+            </div>
+            <div class="parts-grid">
+                <a href="篇4_實作16_RAG知識庫問答機器人.html" class="part-card">
+                    <div class="part-number">實作 16</div>
+                    <div class="part-title">RAG 知識庫<br>智能問答機器人</div>
+                    <div class="part-tag">45 分鐘 · doGet/doPost</div>
+                </a>
+                <a href="篇4_實作17_出缺席通知群組推播.html" class="part-card">
+                    <div class="part-number">實作 17</div>
+                    <div class="part-title">出缺席通知<br>群組推播</div>
+                    <div class="part-tag">35 分鐘 · 群組推播</div>
+                </a>
+                <a href="篇4_實作18_AI自動發文系統.html" class="part-card">
+                    <div class="part-number">實作 18</div>
+                    <div class="part-title">AI 自動發文系統<br>Gemini + 排程</div>
+                    <div class="part-tag">40 分鐘 · Gemini API</div>
+                </a>
+                <a href="篇4_實作19_查詢系統雙入口.html" class="part-card">
+                    <div class="part-number">實作 19</div>
+                    <div class="part-title">查詢系統<br>Web App + Line Bot</div>
+                    <div class="part-tag">45 分鐘 · 雙入口</div>
+                </a>
+                <a href="篇4_實作20_AI段考審題助手.html" class="part-card highlight-card">
+                    <div class="part-number">實作 20</div>
+                    <div class="part-title">AI 段考審題助手<br>DocumentApp + AI</div>
+                    <div class="part-tag">40 分鐘 · AI 參差</div>
                 </a>
             </div>
         </div>
@@ -461,9 +475,9 @@
             </div>
         </div>
 
-        <!-- ========== Footer === ======== -->
+        <!-- ========== Footer ========== -->
         <div class="footer">
-            <h3>GAS 自動化 × Line Bot 實戰教學</h3>
+            <h3>GAS 自動化實戰教學</h3>
             <p>Made with ❤️ by 曾慶良（阿亮老師）</p>
 
             <div class="license-box">
@@ -478,7 +492,7 @@
                 如有任何授權需求，請聯繫作者。
             </div>
 
-            <p style="margin-top: 25px; opacity: 0.7; font-size: 13px;">© 2026 GAS 自動化 × Line Bot 實戰教學 | 阿亮老師</p>
+            <p style="margin-top: 25px; opacity: 0.7; font-size: 13px;">© 2026 GAS 自動化實戰教學 | 阿亮老師</p>
         </div>
 
     </div>

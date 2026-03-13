@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 實作 20 — AI 段考審題助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">📝 實作 20：AI 段考審題助手</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">📝</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">AI 段考審題助手</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            從 Google Docs 讀取試題 → Gemini AI 審查 → 結果寫入試算表
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">DocumentApp</span>
+            <span class="badge badge-blue">Gemini API</span>
+            <span class="badge badge-orange">JSON 結構化</span>
+            <span class="badge badge-green">試題分析</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📄 讀取試卷</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🤖 AI 審查</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 解析結果</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 寫入報告</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/實作20_AI段考審題助手.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">第四篇 — 實作 20 / 課程最終實作：用 AI 幫你審查段考試題品質</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">這是課程的最後一個實作，整合了多種你已經學會的技能！</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">40 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #e65100;">★★★★☆ 進階</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📁</div>
+                <h3>程式碼檔案</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">前置條件</h3>
+        <table>
+            <thead>
+                <tr><th>條件</th><th>說明</th><th>在哪裡完成的</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>GAS 基礎操作</strong></td><td>會建立專案、貼程式碼、執行函式</td><td>實作 0-5</td></tr>
+                <tr><td><strong>API 呼叫經驗</strong></td><td>會用 <code>UrlFetchApp.fetch()</code> 呼叫 Gemini API</td><td>實作 9</td></tr>
+                <tr><td><strong>Gemini API Key</strong></td><td>已在 Google AI Studio 取得 API 金鑰</td><td>實作 9</td></tr>
+                <tr><td><strong>試算表操作</strong></td><td>會用 <code>SpreadsheetApp</code> 寫入資料</td><td>實作 5</td></tr>
+            </tbody>
+        </table>
+
+        <div class="box info">
+            <strong>💡 本實作的意義：</strong>這是課程的集大成之作！你將整合 DocumentApp（讀文件）、Gemini AI（智慧審查）、SpreadsheetApp（寫報告）三大技能，打造一個「AI 段考審題助手」，自動檢查試題的品質和問題。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成本實作後，你將學會：</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                <h3>DocumentApp 讀取文件</h3>
+                <p>用 <code>DocumentApp.openById()</code> 讀取 Google Docs 的內容，取出純文字</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+                <h3>AI 審查 Prompt 設計</h3>
+                <p>設計專業的 Prompt，讓 AI 從「清晰度、難度、選項品質」等面向審查試題</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>JSON 結構化輸出</h3>
+                <p>讓 AI 回傳結構化 JSON，包含逐題評分、問題描述、改善建議</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                <h3>審查報告寫入試算表</h3>
+                <p>將 AI 的審查結果整理成表格，寫入 Google Sheets 方便查閱</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: AI 審題的價值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>💡 AI 審題的價值</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">段考出題是老師最頭痛的工作之一。AI 可以幫你快速檢查試題品質！</p>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #e53935;">😫 傳統審題</h3>
+                <ul>
+                    <li>靠自己或同事互相檢查</li>
+                    <li>容易漏看錯別字或語意不清</li>
+                    <li>難度分布不均勻卻沒發現</li>
+                    <li>選項設計不佳（有送分題或陷阱題）</li>
+                    <li>趕著出完就送印了</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #2e7d32;">🤖 AI 審題助手</h3>
+                <ul>
+                    <li>自動檢查每一題的清晰度</li>
+                    <li>分析難度分布是否合理</li>
+                    <li>檢查選項是否有明顯問題</li>
+                    <li>提供具體的修改建議</li>
+                    <li>幾秒鐘完成全卷審查</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>AI 會幫你審查哪些項目？</h3>
+        <table>
+            <thead>
+                <tr><th>審查面向</th><th>說明</th><th>評分</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>題目清晰度</strong></td><td>題意是否明確、有無歧義</td><td>1~5 分</td></tr>
+                <tr><td><strong>難度評估</strong></td><td>簡單 / 中等 / 困難</td><td>分級標示</td></tr>
+                <tr><td><strong>選項品質</strong></td><td>誘答選項是否合理、有無送分選項</td><td>1~5 分</td></tr>
+                <tr><td><strong>改善建議</strong></td><td>具體的修改方向</td><td>文字說明</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 建立範例試卷 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 建立範例試卷</h2>
+        <p>先用程式自動建立一份 Google Docs 試卷，做為審題的測試資料。</p>
+
+        <pre><code>// ===== 建立範例試卷（測試用） =====
+function createSampleExam() {
+  var doc = DocumentApp.create('段考範例試卷_數學科');
+  var body = doc.getBody();
+
+  body.appendParagraph('第一學期段考 — 數學科試題')
+      .setHeading(DocumentApp.ParagraphHeading.HEADING1);
+
+  body.appendParagraph('');
+
+  // 第 1 題
+  body.appendParagraph('1. 請問 3 + 5 = ?');
+  body.appendParagraph('(A) 7  (B) 8  (C) 9  (D) 10');
+  body.appendParagraph('');
+
+  // 第 2 題
+  body.appendParagraph('2. 下列哪一個是質數？');
+  body.appendParagraph('(A) 4  (B) 6  (C) 7  (D) 9');
+  body.appendParagraph('');
+
+  // 第 3 題
+  body.appendParagraph('3. 一個長方形的長是 8 公分，寬是 5 公分，'
+    + '請問面積是多少平方公分？');
+  body.appendParagraph('(A) 13  (B) 26  (C) 40  (D) 45');
+  body.appendParagraph('');
+
+  // 第 4 題（故意有問題的題目）
+  body.appendParagraph('4. 以下哪個答案是對的？');
+  body.appendParagraph('(A) 是  (B) 不是  (C) 也許  (D) 以上皆是');
+
+  Logger.log('✅ 範例試卷已建立！');
+  Logger.log('📄 文件 ID：' + doc.getId());
+  Logger.log('📎 開啟連結：' + doc.getUrl());
+}</code></pre>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>先執行 <code>createSampleExam</code> 建立測試試卷<br>
+            <span class="result">👀 結果：</span>Logger 會印出文件 ID，<strong>把它複製下來</strong>，等一下要用
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>第 4 題是故意設計的「有問題的題目」（題意不清、選項不合理），用來測試 AI 能不能抓到這種問題。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 讀取文件內容 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 讀取文件內容</h2>
+        <p>用 <code>DocumentApp</code> 打開 Google Docs，把整份試卷的文字取出來。</p>
+
+        <pre><code>// ===== 設定區 =====
+var GEMINI_API_KEY = '你的_API_Key_貼這裡';
+var EXAM_DOC_ID   = '你的_文件ID_貼這裡';
+
+// ===== 讀取文件內容 =====
+function readExamContent() {
+  var doc = DocumentApp.openById(EXAM_DOC_ID);
+  var text = doc.getBody().getText();
+
+  Logger.log('文件標題：' + doc.getName());
+  Logger.log('文件內容（前 200 字）：');
+  Logger.log(text.substring(0, 200));
+
+  return text;
+}</code></pre>
+
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>DocumentApp.openById(ID)</code> — 用文件 ID 打開一份 Google Docs</li>
+            <li><code>doc.getBody()</code> — 取得文件的主體（body）</li>
+            <li><code>.getText()</code> — 把文件內容轉成純文字字串</li>
+            <li><code>text.substring(0, 200)</code> — 只印前 200 個字，避免 Logger 太長</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 DocumentApp vs SpreadsheetApp：</strong><br>
+            - <code>SpreadsheetApp</code> 操作的是 Google Sheets（試算表）<br>
+            - <code>DocumentApp</code> 操作的是 Google Docs（文件）<br>
+            - 兩者都用 <code>openById()</code> 開啟，但之後的操作方法不同
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 設計審題 Prompt ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 設計審題 Prompt</h2>
+        <p>Prompt 的品質決定了 AI 審題的效果。我們要求 AI 回傳結構化 JSON。</p>
+
+        <pre><code>// ===== 建立審題 Prompt =====
+function buildReviewPrompt(examText) {
+  return '你是一位資深教師，請審查以下段考試題的品質。\n\n'
+    + '【試題內容】\n' + examText + '\n\n'
+    + '請針對每一題進行審查，回覆純 JSON 格式（不要加 markdown 標記）：\n'
+    + '{\n'
+    + '  "totalQuestions": 題目總數,\n'
+    + '  "overallScore": 整體品質分數(1-10),\n'
+    + '  "summary": "整體評語",\n'
+    + '  "questions": [\n'
+    + '    {\n'
+    + '      "number": 題號,\n'
+    + '      "clarity": 清晰度分數(1-5),\n'
+    + '      "difficulty": "簡單/中等/困難",\n'
+    + '      "optionQuality": 選項品質分數(1-5),\n'
+    + '      "issues": "發現的問題（無則填「無」）",\n'
+    + '      "suggestion": "改善建議（無則填「無」）"\n'
+    + '    }\n'
+    + '  ]\n'
+    + '}';
+}</code></pre>
+
+        <h3>Prompt 設計的 3 個關鍵</h3>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card">
+                <h3>1. 角色設定</h3>
+                <p>「你是一位資深教師」— 讓 AI 用專業的角度審查試題</p>
+            </div>
+            <div class="concept-card">
+                <h3>2. 明確任務</h3>
+                <p>「針對每一題審查」— 告訴 AI 逐題分析，不是只看整體</p>
+            </div>
+            <div class="concept-card">
+                <h3>3. 格式要求</h3>
+                <p>「回覆純 JSON 格式」— 程式才能用 <code>JSON.parse()</code> 解析</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 呼叫 Gemini AI ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 呼叫 Gemini AI 審查</h2>
+        <p>把試題內容和 Prompt 一起送給 Gemini，讓 AI 幫你審查。</p>
+
+        <pre><code>// ===== 呼叫 Gemini AI =====
+function callGemini(prompt) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+          + 'gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+
+  var payload = {
+    contents: [{ parts: [{ text: prompt }] }]
+  };
+
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  var response = UrlFetchApp.fetch(url, options);
+  var json = JSON.parse(response.getContentText());
+
+  // 檢查是否有錯誤
+  if (json.error) {
+    Logger.log('API 錯誤：' + json.error.message);
+    return null;
+  }
+
+  return json.candidates[0].content.parts[0].text;
+}</code></pre>
+
+        <div class="box info">
+            <strong>💡 跟實作 9 的 callGemini 一樣！</strong>如果你做過實作 9（AI 自動生成簡報），這個函式你已經很熟了。唯一的差別是這裡多了錯誤檢查（<code>json.error</code>）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 解析 AI 回傳 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 解析 AI 回傳結果</h2>
+        <p>AI 回傳 JSON 字串後，用 <code>JSON.parse()</code> 轉成物件，就能取出每一題的評分。</p>
+
+        <pre><code>// ===== 解析 AI 回覆 =====
+function parseReviewResult(aiReply) {
+  // 清理可能的 markdown 標記
+  var cleaned = aiReply
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  var result = JSON.parse(cleaned);
+
+  // 印出摘要
+  Logger.log('===== 審查結果摘要 =====');
+  Logger.log('題目數量：' + result.totalQuestions);
+  Logger.log('整體評分：' + result.overallScore + ' / 10');
+  Logger.log('整體評語：' + result.summary);
+  Logger.log('');
+
+  // 印出每題的審查結果
+  for (var i = 0; i &lt; result.questions.length; i++) {
+    var q = result.questions[i];
+    Logger.log('--- 第 ' + q.number + ' 題 ---');
+    Logger.log('  清晰度：' + q.clarity + '/5');
+    Logger.log('  難度：' + q.difficulty);
+    Logger.log('  選項品質：' + q.optionQuality + '/5');
+    Logger.log('  問題：' + q.issues);
+    Logger.log('  建議：' + q.suggestion);
+  }
+
+  return result;
+}</code></pre>
+
+        <div class="box warning">
+            <strong>⚠️ JSON.parse() 可能失敗：</strong>如果 AI 回覆的格式不正確，<code>JSON.parse()</code> 會拋出錯誤。程式碼中的 <code>.replace()</code> 已處理常見的 markdown 標記問題。如果還是失敗，再執行一次即可（AI 每次回覆可能略有不同）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 寫入審查報告 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 寫入審查報告到試算表</h2>
+        <p>把 AI 的審查結果整理成表格，寫入 Google Sheets，方便後續查閱和分享。</p>
+
+        <pre><code>// ===== 寫入審查報告 =====
+function writeReportToSheet(result) {
+  var ss = SpreadsheetApp.create('段考審查報告_' + new Date().toLocaleDateString());
+  var sheet = ss.getActiveSheet();
+  sheet.setName('審查結果');
+
+  // 寫入標題列
+  var headers = ['題號', '清晰度(1-5)', '難度', '選項品質(1-5)',
+                 '發現問題', '改善建議'];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  // 設定標題列樣式
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground('#1b5e20')
+             .setFontColor('#ffffff')
+             .setFontWeight('bold');
+
+  // 寫入每題的審查結果
+  for (var i = 0; i &lt; result.questions.length; i++) {
+    var q = result.questions[i];
+    var row = [q.number, q.clarity, q.difficulty,
+               q.optionQuality, q.issues, q.suggestion];
+    sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
+  }
+
+  // 寫入整體評語
+  var summaryRow = result.questions.length + 3;
+  sheet.getRange(summaryRow, 1).setValue('整體評分');
+  sheet.getRange(summaryRow, 2).setValue(result.overallScore + ' / 10');
+  sheet.getRange(summaryRow + 1, 1).setValue('整體評語');
+  sheet.getRange(summaryRow + 1, 2).setValue(result.summary);
+
+  // 自動調整欄寬
+  sheet.autoResizeColumns(1, headers.length);
+
+  Logger.log('📊 審查報告已寫入：' + ss.getUrl());
+  return ss;
+}</code></pre>
+
+        <div class="box info">
+            <strong>💡 重點：</strong>用 <code>SpreadsheetApp.create()</code> 建立全新的試算表，而不是覆蓋原有的。報告名稱包含日期，方便辨識是哪次審查的結果。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 完整流程測試 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 完整流程測試</h2>
+        <p>把所有步驟串起來，一個函式搞定！</p>
+
+        <pre><code>// ===== 主函式：一鍵審題 =====
+function reviewExamQuestions() {
+  Logger.log('📝 開始審查段考試題...');
+
+  // Step 1：讀取試卷內容
+  var examText = readExamContent();
+  Logger.log('✅ 已讀取試卷，共 ' + examText.length + ' 個字');
+
+  // Step 2：建立審題 Prompt
+  var prompt = buildReviewPrompt(examText);
+
+  // Step 3：呼叫 AI 審查
+  Logger.log('🤖 正在請 AI 審查...');
+  var aiReply = callGemini(prompt);
+  if (!aiReply) {
+    Logger.log('❌ AI 回覆失敗，請檢查 API Key');
+    return;
+  }
+
+  // Step 4：解析結果
+  var result = parseReviewResult(aiReply);
+
+  // Step 5：寫入報告
+  var report = writeReportToSheet(result);
+
+  // 完成！
+  Logger.log('');
+  Logger.log('🎉 審查完成！');
+  Logger.log('📊 報告連結：' + report.getUrl());
+}</code></pre>
+
+        <h3>測試方式</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>確認 <code>GEMINI_API_KEY</code> 和 <code>EXAM_DOC_ID</code> 已正確設定<br>
+            <span class="action">👆 動作：</span>在函式下拉選單中選擇 <code>reviewExamQuestions</code>，然後點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 15~30 秒（讀文件 + AI 分析 + 寫報告）<br>
+            <span class="result">👀 結果：</span>Logger 會印出審查摘要和試算表連結
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>Logger 印出「審查完成！」</li>
+                    <li>每一題都有清晰度、難度、選項品質的評分</li>
+                    <li>第 4 題（故意有問題的）應該被 AI 標註「題意不清」</li>
+                    <li>Google Drive 中多了一份「段考審查報告」試算表</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的樣子</h3>
+                <ul>
+                    <li>出現紅色錯誤文字</li>
+                    <li>「API 回覆失敗」→ 檢查 API Key</li>
+                    <li>「SyntaxError」→ AI 回覆格式有誤，再執行一次</li>
+                    <li>「文件找不到」→ 檢查 EXAM_DOC_ID 是否正確</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ DocumentApp 權限錯誤</h3>
+                <p><strong>錯誤訊息：</strong><code>You do not have permission to call DocumentApp.openById</code></p>
+                <ul style="font-size: 16px;">
+                    <li>確認文件 ID 正確（從文件網址中擷取）</li>
+                    <li>確認你有該文件的存取權限</li>
+                    <li>第一次執行需要授權，按照授權流程操作</li>
+                </ul>
+                <p><strong>解法：</strong>先執行 <code>createSampleExam</code> 建立自己的測試文件。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ JSON.parse 失敗</h3>
+                <p><strong>錯誤訊息：</strong><code>SyntaxError: Unexpected token</code></p>
+                <ul style="font-size: 16px;">
+                    <li>AI 回覆可能包含 markdown 標記或多餘文字</li>
+                    <li>程式的 <code>.replace()</code> 已處理常見狀況</li>
+                </ul>
+                <p><strong>解法：</strong>再執行一次。如果多次失敗，在 Prompt 中加強「只回傳純 JSON」的要求。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ API Key 錯誤（403）</h3>
+                <p><strong>錯誤訊息：</strong><code>API 錯誤：API key not valid</code></p>
+                <ul style="font-size: 16px;">
+                    <li>API Key 前後不能有空格</li>
+                    <li>確認是在 aistudio.google.com 取得的</li>
+                    <li>確認沒有超過免費額度</li>
+                </ul>
+                <p><strong>解法：</strong>重新複製 API Key，注意不要複製到空格。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ AI 審查結果不準確</h3>
+                <p><strong>現象：</strong>AI 的評分或建議與預期不符</p>
+                <ul style="font-size: 16px;">
+                    <li>AI 不是完美的，每次結果可能略有不同</li>
+                    <li>審查結果應做為「參考」，不是最終判定</li>
+                </ul>
+                <p><strong>解法：</strong>調整 Prompt 中的評分標準，或多次執行取平均。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">實作 20 整合了整個課程學到的多項技能：</p>
+
+        <table>
+            <thead>
+                <tr><th>技能</th><th>在哪學的</th><th>本實作的應用</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>API 呼叫</strong></td>
+                    <td>實作 7-8</td>
+                    <td>呼叫 Gemini AI 審查試題</td>
+                </tr>
+                <tr>
+                    <td><strong>JSON 處理</strong></td>
+                    <td>實作 9</td>
+                    <td>設計 JSON 格式讓 AI 結構化回覆</td>
+                </tr>
+                <tr>
+                    <td><strong>試算表操作</strong></td>
+                    <td>實作 5</td>
+                    <td>寫入審查報告到 Google Sheets</td>
+                </tr>
+                <tr>
+                    <td><strong>文件操作</strong></td>
+                    <td>本實作新學</td>
+                    <td><code>DocumentApp</code> 讀取 Google Docs</td>
+                </tr>
+                <tr>
+                    <td><strong>Prompt 設計</strong></td>
+                    <td>實作 9</td>
+                    <td>專業的審題 Prompt 設計</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin-top: 30px;">本實作使用的函式一覽</h3>
+        <table>
+            <thead>
+                <tr><th>函式名稱</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>createSampleExam()</code></td><td>建立範例試卷（Google Docs）</td></tr>
+                <tr><td><code>readExamContent()</code></td><td>讀取試卷文件的純文字內容</td></tr>
+                <tr><td><code>buildReviewPrompt(examText)</code></td><td>組合審題 Prompt</td></tr>
+                <tr><td><code>callGemini(prompt)</code></td><td>呼叫 Gemini API</td></tr>
+                <tr><td><code>parseReviewResult(aiReply)</code></td><td>解析 AI 回傳的 JSON 結果</td></tr>
+                <tr><td><code>writeReportToSheet(result)</code></td><td>將審查結果寫入試算表</td></tr>
+                <tr><td><code>reviewExamQuestions()</code></td><td>主函式 — 一鍵完成審題流程</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 完成頁（最後一個實作） ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <h1 style="font-size: 42px;">恭喜！全部課程完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經完成了所有 21 個實作，從 GAS 入門到 AI 應用，你做到了！</p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📄</div>
+                <h3>DocumentApp</h3>
+                <p>讀取 Google Docs</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🤖</div>
+                <h3>Gemini AI</h3>
+                <p>智慧審查分析</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>JSON 結構化</h3>
+                <p>精確解析 AI 回覆</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📋</div>
+                <h3>自動報告</h3>
+                <p>結果寫入試算表</p>
+            </div>
+        </div>
+
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🏆 你在這門課程中學會了：</strong>
+            <ul>
+                <li><strong>第一篇：</strong>GAS 基礎 — 函式、試算表、表單、HTML</li>
+                <li><strong>第二篇：</strong>Line Bot + AI — 天氣推播、圖片推播、AI 簡報、RSS 新聞</li>
+                <li><strong>第三篇：</strong>進階互動 — 訊息收集、Webhook、活動報名、自動化評量</li>
+                <li><strong>第四篇：</strong>實戰應用 — RAG 知識庫、群組推播、AI 系統、段考審題</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作20_AI段考審題助手.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #e65100; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🎉 完成全部課程</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">感謝你的學習！期待你用 GAS 和 AI 創造更多自動化工具！</p>
+    </div>
+</div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

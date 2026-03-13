@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實作 0：GAS 環境建立與第一支程式</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+
+<!-- ==================== NAV BAR ==================== -->
+<nav class="nav-bar">
+    <div class="nav-title">實作 0：GAS 環境建立</div>
+    <div class="nav-buttons">
+        <a class="nav-btn" href="../GAS程式碼/實作00_GAS環境建立.gs" download>&#11015; 下載程式碼</a>
+        <button class="nav-btn" onclick="toggleFullscreen()">&#9974; 全螢幕</button>
+        <a class="nav-btn" href="index.html">&#127968; 總覽</a>
+    </div>
+</nav>
+
+<!-- ==================== SLIDES ==================== -->
+<div class="slide-container">
+
+<!-- ========== Slide 1: 封面 ========== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">&#128640;</div>
+        <h1>GAS 環境建立與第一支程式</h1>
+        <p style="font-size: 24px; color: #666; margin-bottom: 30px;">第一篇 &#8250; 實作 0｜從零開始認識 Google Apps Script</p>
+        <div style="margin: 25px 0;">
+            <span class="badge badge-green">SpreadsheetApp</span>
+            <span class="badge badge-blue">Logger.log</span>
+            <span class="badge badge-orange">編輯器操作</span>
+            <span class="badge badge-green">讀取儲存格</span>
+            <span class="badge badge-blue">寫入儲存格</span>
+        </div>
+        <div style="margin-top: 30px;">
+            <a class="nav-btn" href="../GAS程式碼/實作00_GAS環境建立.gs" download style="display: inline-flex; background: #1b5e20; border-color: #1b5e20; font-size: 18px; padding: 12px 28px;">&#11015; 下載本單元程式碼（.gs）</a>
+        </div>
+        <p style="margin-top: 20px; font-size: 16px; color: #999;">使用鍵盤 &#8592; &#8594; 或點擊左右箭頭切換投影片</p>
+    </div>
+</div>
+
+<!-- ========== Slide 2: 前置須知 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128203; 前置須知</h2>
+        <div class="two-col">
+            <div class="col">
+                <h3>&#9201; 基本資訊</h3>
+                <table>
+                    <tr><td><strong>預估時間</strong></td><td>30 分鐘</td></tr>
+                    <tr><td><strong>難度等級</strong></td><td>&#9733;&#9734;&#9734;&#9734;&#9734; 入門</td></tr>
+                    <tr><td><strong>檔案數量</strong></td><td>1 個（實作00_GAS環境建立.gs）</td></tr>
+                    <tr><td><strong>包含函式</strong></td><td>6 個</td></tr>
+                </table>
+            </div>
+            <div class="col">
+                <h3>&#9989; 前置條件核對</h3>
+                <ul>
+                    <li>&#9745; 擁有 Google 帳號（Gmail）</li>
+                    <li>&#9745; 已登入 Google 帳號</li>
+                    <li>&#9745; 使用 Chrome 瀏覽器（建議）</li>
+                    <li>&#9745; 穩定的網路連線</li>
+                </ul>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>&#128161; 本單元不需要安裝任何軟體！</strong><br>
+            Google Apps Script 是 Google 內建的雲端程式編輯器，只要有瀏覽器和 Google 帳號就可以開始寫程式。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 3: 學習目標 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#127919; 學習目標</h2>
+        <p>完成本單元後，你將學會以下 4 項技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h3>&#128187; 認識 GAS 編輯器</h3>
+                <p>學會從 Google 試算表開啟 Apps Script 編輯器，了解介面各區域的功能。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#128221; Logger.log() 輸出</h3>
+                <p>使用 <code>Logger.log()</code> 把文字和數字印出來，就像程式的「印表機」。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#128214; 讀取儲存格</h3>
+                <p>用 <code>getValue()</code> 和 <code>getValues()</code> 讀取單一儲存格和整個範圍的資料。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9999;&#65039; 寫入儲存格</h3>
+                <p>用 <code>setValue()</code> 和 <code>setValues()</code> 把程式計算的結果寫回試算表。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 4: Vibe Coding 提示詞 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#129302; Vibe Coding — AI 提示詞</h2>
+        <p>用以下提示詞，讓 AI 幫你生成完整程式碼：</p>
+        <pre><code>我想學 Google Apps Script 的基礎操作。
+我有一個 Google 試算表，裡面有一些資料。
+我想寫程式做這幾件事：
+1. 在執行記錄印出 Hello World 和現在的時間
+2. 讀取試算表 A1 儲存格的值，印出來
+3. 讀取 A1 到 C3 的整個範圍，一列一列印出來
+4. 把文字、日期、數字分別寫到 E1、E2、E3
+5. 把一個「姓名/分數/等級」的表格寫到 G 到 I 欄
+6. 讀取 A1 到 A5 的數字，算出總和跟平均，然後寫回 C 和 D 欄
+
+每個功能寫成一個獨立的 function，讓我可以分別執行。
+請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。</code></pre>
+        <div class="box warning">
+            <strong>&#9888;&#65039; 重要：以課程 .gs 檔案為準！</strong><br>
+            AI 生成的程式碼可能與課程版本不同。本課程所有步驟都是依照 <code>實作00_GAS環境建立.gs</code> 來教學。<br>
+            <strong>建議：直接使用課程提供的 .gs 檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 5: 成果預覽 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128064; 成果預覽</h2>
+        <p>完成本單元後，你的試算表和執行記錄會長這樣：</p>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">&#128202; 試算表寫入結果</h3>
+                <table>
+                    <tr><th>欄位</th><th>內容</th></tr>
+                    <tr><td>E1</td><td>這是 GAS 寫入的文字</td></tr>
+                    <tr><td>E2</td><td>2026/3/13 下午 2:30:00</td></tr>
+                    <tr><td>E3</td><td>12345</td></tr>
+                    <tr><td>G1:I1</td><td>姓名 | 分數 | 等級</td></tr>
+                    <tr><td>G2:I2</td><td>王小明 | 92 | 優</td></tr>
+                    <tr><td>G3:I3</td><td>林小美 | 85 | 甲</td></tr>
+                    <tr><td>G4:I4</td><td>張大衛 | 78 | 乙</td></tr>
+                </table>
+            </div>
+            <div class="col">
+                <h3 style="color: #2e7d32;">&#128196; 執行記錄輸出</h3>
+                <pre><code>Hello World！這是我的第一支 GAS 程式！
+目前時間：2026/3/13 下午 2:30:00
+
+A1 的值是：Hello
+
+共讀取 3 列資料
+第 1 列：蘋果 | 10 | 紅
+第 2 列：香蕉 | 20 | 黃
+第 3 列：芭樂 | 15 | 綠
+
+已成功寫入 E1~E3！
+已寫入 4 列資料到 G~I 欄！
+
+總和：100
+平均：20
+計算結果已寫入 C1:D2！</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 6: 什麼是 GAS ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128218; 什麼是 Google Apps Script？</h2>
+        <p>Google Apps Script（簡稱 GAS）是 Google 提供的<span class="highlight">免費雲端程式平台</span>，讓你可以用 JavaScript 語法操控 Google 的各種服務。</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h3>&#128202; 試算表自動化</h3>
+                <p>自動整理資料、產生報表、計算統計數字，取代重複的手動操作。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#128231; 自動寄信</h3>
+                <p>根據試算表資料自動發送 Email，例如成績通知、活動提醒。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#129302; Line Bot 聊天機器人</h3>
+                <p>串接 Line Messaging API，打造自己的聊天機器人。</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#127760; Web App 網頁應用</h3>
+                <p>建立 HTML 表單、網頁介面，讓別人透過網址填寫資料。</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>&#128161; 為什麼選 GAS？</strong><br>
+            不用安裝軟體、不用租伺服器、不用花錢，只要有 Google 帳號就能開始。寫好的程式直接在 Google 雲端執行，24 小時不斷線。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 7: 步驟1 — 建立新試算表 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 建立新的 Google 試算表</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Chrome 瀏覽器的網址列</span></p>
+            <p>&#128070; <span class="action">動作：在網址列直接輸入 <code>sheets.new</code> 然後按 Enter</span></p>
+            <p>&#9201;&#65039; 等待 2~3 秒，瀏覽器會自動開啟一個全新的 Google 試算表</p>
+            <p>&#128064; <span class="result">結果：你會看到一個空白的試算表，左上角顯示「未命名的試算表」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：試算表左上角「未命名的試算表」文字</span></p>
+            <p>&#128070; <span class="action">動作：點擊「未命名的試算表」，把文字改成 <code>GAS 練習</code>，然後按 Enter</span></p>
+            <p>&#9201;&#65039; 名稱會自動儲存，不需要手動按儲存</p>
+            <p>&#128064; <span class="result">結果：左上角顯示「GAS 練習」，這就是你的練習用試算表</span></p>
+        </div>
+        <div class="box info">
+            <strong>&#128161; 小技巧：</strong><code>sheets.new</code> 是 Google 的快捷網址。同理，<code>docs.new</code> 可以建立新文件，<code>slides.new</code> 可以建立新簡報。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 8: 步驟2 — 開啟 Apps Script 編輯器 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 開啟 Apps Script 編輯器</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：試算表上方選單列 &#8594; 最右邊的「擴充功能」</span></p>
+            <p>&#128070; <span class="action">動作：點擊「擴充功能」&#8594; 在下拉選單中點擊「Apps Script」</span></p>
+            <p>&#9201;&#65039; 等待 3~5 秒，瀏覽器會開啟新分頁</p>
+            <p>&#128064; <span class="result">結果：你會看到 Apps Script 編輯器，左邊有個「程式碼.gs」的檔案</span></p>
+        </div>
+        <div class="box warning">
+            <strong>&#9888;&#65039; 找不到「擴充功能」？</strong><br>
+            選單列的順序是：檔案 &#8594; 編輯 &#8594; 檢視 &#8594; 插入 &#8594; 格式 &#8594; 資料 &#8594; 工具 &#8594; <strong>擴充功能</strong> &#8594; 說明。<br>
+            如果看不到，試著把瀏覽器視窗拉寬，或按 <code>F11</code> 進入全螢幕模式。
+        </div>
+        <h3>編輯器介面認識</h3>
+        <ul>
+            <li><strong>左側面板</strong> &#8212; 檔案列表，目前有一個「程式碼.gs」</li>
+            <li><strong>中間區域</strong> &#8212; 程式碼編輯區，預設有一個空的 <code>function myFunction() { }</code></li>
+            <li><strong>上方工具列</strong> &#8212; 有「執行」按鈕（&#9654;）和「儲存」按鈕（磁碟圖示）</li>
+            <li><strong>下方面板</strong> &#8212; 執行記錄（Log），程式輸出的文字會顯示在這裡</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ========== Slide 9: 步驟3 — Hello World ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 寫出你的第一支程式：Hello World</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器 &#8594; 中間的程式碼編輯區</span></p>
+            <p>&#128070; <span class="action">動作：用滑鼠全選編輯區中的所有文字（Ctrl+A），然後按 Delete 刪除</span></p>
+            <p>&#128064; <span class="result">結果：編輯區變成完全空白</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：空白的程式碼編輯區</span></p>
+            <p>&#128070; <span class="action">動作：貼上以下程式碼（Ctrl+V）</span></p>
+        </div>
+<pre><code>function helloWorld() {
+  Logger.log('Hello World！這是我的第一支 GAS 程式！');
+  Logger.log('目前時間：' + new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }));
+}</code></pre>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：鍵盤</span></p>
+            <p>&#128070; <span class="action">動作：按 <code>Ctrl + S</code> 儲存程式碼</span></p>
+            <p>&#9201;&#65039; 等待 1~2 秒，上方標題旁的圓點會消失（表示已儲存）</p>
+            <p>&#128064; <span class="result">結果：程式碼已儲存到雲端</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 10: 步驟4 — 第一次執行 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 第一次執行程式</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器上方工具列 &#8594; 函式選擇下拉選單</span></p>
+            <p>&#128070; <span class="action">動作：確認下拉選單顯示的是 <code>helloWorld</code>（如果不是，點下拉選單選擇它）</span></p>
+            <p>&#128064; <span class="result">結果：下拉選單顯示「helloWorld」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：函式下拉選單左邊的「&#9654; 執行」按鈕</span></p>
+            <p>&#128070; <span class="action">動作：點擊「&#9654; 執行」按鈕</span></p>
+            <p>&#9201;&#65039; 第一次執行會跳出授權視窗，請繼續下一步</p>
+        </div>
+        <h3>&#128272; 首次授權流程（每個專案只需一次）</h3>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作 A：彈出「需要授權」對話框 &#8594; 點擊「審查權限」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作 B：選擇你的 Google 帳號（點擊你的帳號名稱）</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作 C：出現「Google hasn't verified this app」&#8594; 點擊左下角「Advanced」（進階）</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作 D：點擊「Go to GAS 練習 (unsafe)」（前往 GAS 練習）</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作 E：點擊「Allow」（允許）&#8594; 授權完成，程式開始執行</span></p>
+        </div>
+        <div class="box warning">
+            <strong>&#9888;&#65039; 別被 unsafe 嚇到！</strong>這是因為你自己寫的程式還沒經過 Google 驗證，這是正常的。只有你自己的帳號會受影響，放心點「Allow」。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 11: 步驟5 — 查看執行記錄 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 查看執行記錄</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器下方 &#8594; 「執行記錄」面板</span></p>
+            <p>&#128070; <span class="action">動作：授權完成後程式會自動執行。看編輯器下方的「執行記錄」區域</span></p>
+            <p>&#9201;&#65039; 等待 2~3 秒，執行記錄會顯示輸出結果</p>
+            <p>&#128064; <span class="result">結果：你會看到「Hello World！這是我的第一支 GAS 程式！」和目前的時間</span></p>
+        </div>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">&#9989; 成功畫面</h3>
+                <p>執行記錄顯示：</p>
+<pre><code>資訊  Hello World！這是我的第一支 GAS 程式！
+資訊  目前時間：2026/3/13 下午 2:30:00</code></pre>
+                <p>上方顯示<span class="highlight">「執行完畢」</span>綠色文字</p>
+            </div>
+            <div class="col">
+                <h3 style="color: #c62828;">&#10060; 常見失敗</h3>
+                <p><strong>狀況 1：</strong>看不到執行記錄面板</p>
+                <p><strong>解法：</strong>點左側選單的「執行項目」圖示（時鐘圖案），或按 <code>Ctrl+Enter</code></p>
+                <p style="margin-top: 12px;"><strong>狀況 2：</strong>顯示紅色錯誤文字</p>
+                <p><strong>解法：</strong>檢查程式碼有沒有少打括號或引號，重新複製貼上</p>
+            </div>
+        </div>
+        <div class="box success">
+            <strong>&#127881; 恭喜！</strong>你已經成功執行了第一支 Google Apps Script 程式！接下來我們來學更多功能。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 12: 程式碼解析 — helloWorld ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128270; 程式碼解析：helloWorld()</h2>
+<pre><code>function helloWorld() {
+  Logger.log('Hello World！這是我的第一支 GAS 程式！');
+  Logger.log('目前時間：' + new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }));
+}</code></pre>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>function helloWorld() {</code> &#8212; 定義一個叫做 <code>helloWorld</code> 的函式（function），大括號 <code>{</code> 表示函式的開始</li>
+            <li><code>Logger.log('Hello World！...');</code> &#8212; <code>Logger.log()</code> 是 GAS 的「印出來」指令，括號裡的文字會顯示在執行記錄中</li>
+            <li><code>new Date()</code> &#8212; 建立一個「現在時間」的物件</li>
+            <li><code>.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })</code> &#8212; 把時間轉換成台灣格式的文字（例如：2026/3/13 下午 2:30:00）</li>
+            <li><code>'目前時間：' + ...</code> &#8212; 用 <code>+</code> 號把文字和時間「串接」在一起</li>
+            <li><code>}</code> &#8212; 大括號表示函式的結束</li>
+        </ul>
+        <div class="box info">
+            <strong>&#128161; 重要觀念：</strong><code>Logger.log()</code> 是學 GAS 最常用的除錯工具。任何時候你想知道某個變數的值是什麼，就用 <code>Logger.log()</code> 印出來看。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 13: 步驟6 — 讀取儲存格 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 讀取儲存格的值</h2>
+        <h3>6-A：先在試算表輸入測試資料</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：切回「GAS 練習」試算表分頁（瀏覽器上方的分頁標籤）</span></p>
+            <p>&#128070; <span class="action">動作：點擊 A1 儲存格，輸入 <code>Hello</code>，然後按 Enter</span></p>
+            <p>&#128064; <span class="result">結果：A1 儲存格顯示「Hello」</span></p>
+        </div>
+        <h3>6-B：加入 readCell 函式</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：切回 Apps Script 編輯器分頁</span></p>
+            <p>&#128070; <span class="action">動作：在 helloWorld 函式的<strong>下方</strong>（大括號之後），貼上以下程式碼</span></p>
+        </div>
+<pre><code>function readCell() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var value = sheet.getRange('A1').getValue();
+  Logger.log('A1 的值是：' + value);
+}</code></pre>
+        <h3>6-C：執行 readCell</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：上方工具列 &#8594; 函式下拉選單</span></p>
+            <p>&#128070; <span class="action">動作：下拉選單選擇 <code>readCell</code> &#8594; 點擊「&#9654; 執行」</span></p>
+            <p>&#9201;&#65039; 等待 2~3 秒</p>
+            <p>&#128064; <span class="result">結果：執行記錄顯示「A1 的值是：Hello」</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 14: 程式碼解析 — readCell ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128270; 程式碼解析：readCell()</h2>
+<pre><code>function readCell() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var value = sheet.getRange('A1').getValue();
+  Logger.log('A1 的值是：' + value);
+}</code></pre>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>var sheet = SpreadsheetApp.getActiveSheet();</code> &#8212; <code>SpreadsheetApp</code> 是 GAS 操控試算表的工具。<code>getActiveSheet()</code> 取得「目前正在使用的工作表」，存到變數 <code>sheet</code> 裡</li>
+            <li><code>sheet.getRange('A1')</code> &#8212; 指定要操作的儲存格位置，這裡是 A1</li>
+            <li><code>.getValue()</code> &#8212; 讀取那個儲存格的值（注意：只能讀取<strong>單一</strong>儲存格）</li>
+            <li><code>var value = ...</code> &#8212; 把讀取到的值存到變數 <code>value</code> 裡</li>
+            <li><code>Logger.log('A1 的值是：' + value);</code> &#8212; 把結果印到執行記錄</li>
+        </ul>
+        <div class="box info">
+            <strong>&#128161; SpreadsheetApp 是什麼？</strong><br>
+            它是 GAS 內建的「試算表操控工具」。就像遙控器可以控制電視一樣，<code>SpreadsheetApp</code> 可以控制 Google 試算表：讀取資料、寫入資料、新增工作表等等。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 15: 步驟7 — 寫入儲存格 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 寫入儲存格</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器 &#8594; readCell 函式的下方</span></p>
+            <p>&#128070; <span class="action">動作：在 readCell 函式的大括號之後，貼上以下程式碼</span></p>
+        </div>
+<pre><code>function writeCell() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  sheet.getRange('E1').setValue('這是 GAS 寫入的文字');
+  sheet.getRange('E2').setValue(new Date());
+  sheet.getRange('E3').setValue(12345);
+  Logger.log('已成功寫入 E1~E3！');
+}</code></pre>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：上方工具列</span></p>
+            <p>&#128070; <span class="action">動作：按 <code>Ctrl+S</code> 儲存 &#8594; 下拉選單選擇 <code>writeCell</code> &#8594; 點擊「&#9654; 執行」</span></p>
+            <p>&#9201;&#65039; 等待 2~3 秒</p>
+            <p>&#128064; <span class="result">結果：執行記錄顯示「已成功寫入 E1~E3！」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：切回「GAS 練習」試算表分頁</span></p>
+            <p>&#128070; <span class="action">動作：捲動到 E 欄查看結果</span></p>
+            <p>&#128064; <span class="result">結果：E1 顯示文字、E2 顯示日期時間、E3 顯示數字 12345</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 16: 成功/失敗對照 — 讀寫操作 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#9989;&#10060; 成功/失敗對照：讀寫操作</h2>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">&#9989; 成功畫面</h3>
+                <p><strong>readCell 執行後：</strong></p>
+<pre><code>資訊  A1 的值是：Hello</code></pre>
+                <p><strong>writeCell 執行後：</strong></p>
+<pre><code>資訊  已成功寫入 E1~E3！</code></pre>
+                <p>切回試算表，E 欄出現三筆資料：</p>
+                <ul>
+                    <li>E1：這是 GAS 寫入的文字</li>
+                    <li>E2：日期時間</li>
+                    <li>E3：12345</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #c62828;">&#10060; 常見失敗</h3>
+                <p><strong>錯誤 1：</strong><code>TypeError: Cannot call method "getValue" of null</code></p>
+                <p><strong>原因：</strong>沒有從試算表開啟 Apps Script。請回到步驟 2，從「擴充功能 &#8594; Apps Script」開啟。</p>
+                <hr style="margin: 12px 0;">
+                <p><strong>錯誤 2：</strong><code>Exception: You do not have permission</code></p>
+                <p><strong>原因：</strong>授權沒有完成。請重新執行一次，完成授權流程。</p>
+                <hr style="margin: 12px 0;">
+                <p><strong>錯誤 3：</strong>A1 的值是空的</p>
+                <p><strong>原因：</strong>忘記先在試算表 A1 輸入資料。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 17: 步驟8 — 讀取範圍 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">8</span> 讀取一整個範圍的資料</h2>
+        <h3>8-A：先在試算表輸入測試資料</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：「GAS 練習」試算表</span></p>
+            <p>&#128070; <span class="action">動作：在 A1:C3 範圍輸入以下資料（每格輸入後按 Tab 跳到下一格）</span></p>
+        </div>
+        <table>
+            <tr><th></th><th>A 欄</th><th>B 欄</th><th>C 欄</th></tr>
+            <tr><td><strong>第 1 列</strong></td><td>蘋果</td><td>10</td><td>紅</td></tr>
+            <tr><td><strong>第 2 列</strong></td><td>香蕉</td><td>20</td><td>黃</td></tr>
+            <tr><td><strong>第 3 列</strong></td><td>芭樂</td><td>15</td><td>綠</td></tr>
+        </table>
+        <h3>8-B：加入 readRange 函式</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器 &#8594; writeCell 函式下方</span></p>
+            <p>&#128070; <span class="action">動作：貼上以下程式碼，按 <code>Ctrl+S</code> 儲存</span></p>
+        </div>
+<pre><code>function readRange() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var data = sheet.getRange('A1:C3').getValues();
+  Logger.log('共讀取 ' + data.length + ' 列資料');
+  for (var i = 0; i < data.length; i++) {
+    Logger.log('第 ' + (i + 1) + ' 列：' + data[i].join(' | '));
+  }
+}</code></pre>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作：下拉選單選擇 <code>readRange</code> &#8594; 點擊「&#9654; 執行」</span></p>
+            <p>&#128064; <span class="result">結果：執行記錄顯示 3 列資料，每列用「|」分隔</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 18: 程式碼解析 — readRange ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128270; 程式碼解析：readRange()</h2>
+<pre><code>function readRange() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var data = sheet.getRange('A1:C3').getValues();
+  Logger.log('共讀取 ' + data.length + ' 列資料');
+  for (var i = 0; i < data.length; i++) {
+    Logger.log('第 ' + (i + 1) + ' 列：' + data[i].join(' | '));
+  }
+}</code></pre>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>sheet.getRange('A1:C3')</code> &#8212; 指定一個「範圍」，從 A1 到 C3（3 列 x 3 欄 = 9 格）</li>
+            <li><code>.getValues()</code> &#8212; 注意是 getValue<strong>s</strong>（有 s），讀取整個範圍，回傳一個「二維陣列」</li>
+            <li><code>data.length</code> &#8212; 陣列的長度，也就是有幾列（這裡是 3）</li>
+            <li><code>for (var i = 0; i &lt; data.length; i++)</code> &#8212; for 迴圈，從第 0 列跑到最後一列</li>
+            <li><code>data[i]</code> &#8212; 取得第 i 列的資料，例如 <code>data[0]</code> 是 <code>['蘋果', 10, '紅']</code></li>
+            <li><code>.join(' | ')</code> &#8212; 把陣列用「 | 」串成一個字串，方便閱讀</li>
+        </ul>
+        <div class="box info">
+            <strong>&#128161; getValue() vs getValues() 差在哪？</strong><br>
+            <code>getValue()</code>（沒有 s）&#8594; 讀取<strong>單一</strong>儲存格，回傳一個值<br>
+            <code>getValues()</code>（有 s）&#8594; 讀取<strong>整個範圍</strong>，回傳二維陣列 <code>[[第1列], [第2列], ...]</code>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 19: 步驟9 — 批次寫入 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">9</span> 批次寫入：一次寫入整個表格</h2>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器 &#8594; readRange 函式下方</span></p>
+            <p>&#128070; <span class="action">動作：貼上以下程式碼，按 <code>Ctrl+S</code> 儲存</span></p>
+        </div>
+<pre><code>function writeRange() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var data = [
+    ['姓名', '分數', '等級'],
+    ['王小明', 92, '優'],
+    ['林小美', 85, '甲'],
+    ['張大衛', 78, '乙']
+  ];
+  sheet.getRange(1, 7, data.length, data[0].length).setValues(data);
+  Logger.log('已寫入 ' + data.length + ' 列資料到 G~I 欄！');
+}</code></pre>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作：下拉選單選擇 <code>writeRange</code> &#8594; 點擊「&#9654; 執行」</span></p>
+            <p>&#128064; <span class="result">結果：切回試算表，G~I 欄出現「姓名/分數/等級」的表格</span></p>
+        </div>
+        <h3>setValue() vs setValues() 比較</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3>setValue() — 寫入單格</h3>
+<pre><code>sheet.getRange('E1').setValue('文字');</code></pre>
+                <p>一次只寫一個儲存格，用儲存格地址（如 'E1'）</p>
+            </div>
+            <div class="col">
+                <h3>setValues() — 批次寫入</h3>
+<pre><code>sheet.getRange(1, 7, 4, 3).setValues(data);</code></pre>
+                <p>一次寫入整個範圍，用 (列, 欄, 列數, 欄數) 指定位置</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>&#128161; getRange(1, 7, 4, 3) 怎麼看？</strong><br>
+            四個數字分別是：<strong>起始列=1</strong>、<strong>起始欄=7(G)</strong>、<strong>共幾列=4</strong>、<strong>共幾欄=3</strong>。所以就是 G1:I4 的範圍。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 20: 步驟10 — 綜合練習 calculateSum ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">10</span> 綜合練習：計算總和與平均</h2>
+        <h3>10-A：先在試算表輸入測試資料</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：「GAS 練習」試算表</span></p>
+            <p>&#128070; <span class="action">動作：在 A1~A5 輸入 5 個數字，例如：10、20、30、40、50（每格一個數字）</span></p>
+            <p>&#128064; <span class="result">結果：A1=10、A2=20、A3=30、A4=40、A5=50</span></p>
+        </div>
+        <div class="box warning">
+            <strong>&#9888;&#65039; 注意：</strong>這會覆蓋掉之前 A1 的「Hello」和 A1:C3 的水果資料。如果想保留，可以切換到「工作表2」再輸入。
+        </div>
+        <h3>10-B：加入 calculateSum 函式</h3>
+        <div class="micro-step">
+            <p>&#128205; <span class="position">位置：Apps Script 編輯器 &#8594; writeRange 函式下方</span></p>
+            <p>&#128070; <span class="action">動作：貼上以下程式碼，按 <code>Ctrl+S</code> 儲存</span></p>
+        </div>
+<pre><code>function calculateSum() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var data = sheet.getRange('A1:A5').getValues();
+  var sum = 0;
+  var count = 0;
+  for (var i = 0; i &lt; data.length; i++) {
+    if (typeof data[i][0] === 'number') {
+      sum += data[i][0];
+      count++;
+    }
+  }
+  var avg = count > 0 ? Math.round(sum / count * 10) / 10 : 0;
+  Logger.log('總和：' + sum);
+  Logger.log('平均：' + avg);
+  sheet.getRange('C1').setValue('總和');
+  sheet.getRange('D1').setValue(sum);
+  sheet.getRange('C2').setValue('平均');
+  sheet.getRange('D2').setValue(avg);
+  Logger.log('計算結果已寫入 C1:D2！');
+}</code></pre>
+        <div class="micro-step">
+            <p>&#128070; <span class="action">動作：下拉選單選擇 <code>calculateSum</code> &#8594; 點擊「&#9654; 執行」</span></p>
+            <p>&#128064; <span class="result">結果：執行記錄顯示總和 150、平均 30，試算表 C1:D2 也出現計算結果</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 21: 程式碼解析 — calculateSum ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128270; 程式碼解析：calculateSum()</h2>
+<pre><code>var data = sheet.getRange('A1:A5').getValues();
+var sum = 0;
+var count = 0;
+for (var i = 0; i &lt; data.length; i++) {
+  if (typeof data[i][0] === 'number') {
+    sum += data[i][0];
+    count++;
+  }
+}
+var avg = count > 0 ? Math.round(sum / count * 10) / 10 : 0;</code></pre>
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>sheet.getRange('A1:A5').getValues()</code> &#8212; 讀取 A1 到 A5 的值，得到 <code>[[10], [20], [30], [40], [50]]</code>（注意：每個值都被包在一個小陣列裡）</li>
+            <li><code>var sum = 0; var count = 0;</code> &#8212; 建立兩個變數：<code>sum</code> 放總和、<code>count</code> 放「有幾個數字」</li>
+            <li><code>typeof data[i][0] === 'number'</code> &#8212; 檢查這格是不是數字（如果有人填了文字就跳過）</li>
+            <li><code>sum += data[i][0]</code> &#8212; 把這格的數字加進總和（<code>+=</code> 是「加上去」的意思）</li>
+            <li><code>count++</code> &#8212; 計數器加 1，記錄找到了幾個數字</li>
+            <li><code>count > 0 ? ... : 0</code> &#8212; 三元運算子：如果 count 大於 0 就算平均，否則回傳 0（避免除以零錯誤）</li>
+            <li><code>Math.round(sum / count * 10) / 10</code> &#8212; 算平均值並四捨五入到小數點第一位</li>
+        </ul>
+        <div class="box info">
+            <strong>&#128161; data[i][0] 的 [0] 是什麼？</strong><br>
+            因為 <code>getValues()</code> 回傳的是二維陣列，即使只有一欄，每列的資料也會被包成 <code>[值]</code>。所以 <code>data[0]</code> 是 <code>[10]</code>，要取得數字 10 就要寫 <code>data[0][0]</code>。
+        </div>
+    </div>
+</div>
+
+<!-- ========== Slide 22: 常見問題排解 ========== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>&#128679; 常見問題排解</h2>
+        <table>
+            <tr>
+                <th style="width: 30%;">錯誤訊息 / 狀況</th>
+                <th style="width: 30%;">原因</th>
+                <th style="width: 40%;">解決方法</th>
+            </tr>
+            <tr>
+                <td><code>TypeError: Cannot call method "getValue" of null</code></td>
+                <td>沒有從試算表開啟 GAS</td>
+                <td>回到試算表 &#8594; 擴充功能 &#8594; Apps Script 開啟</td>
+            </tr>
+            <tr>
+                <td><code>Exception: You do not have permission</code></td>
+                <td>授權未完成或被取消</td>
+                <td>重新點「執行」，完成授權流程（步驟 4）</td>
+            </tr>
+            <tr>
+                <td>下拉選單看不到我的函式</td>
+                <td>程式碼有語法錯誤</td>
+                <td>檢查大括號 <code>{}</code>、小括號 <code>()</code> 有沒有成對，重新儲存</td>
+            </tr>
+            <tr>
+                <td><code>ReferenceError: xxx is not defined</code></td>
+                <td>變數名稱打錯</td>
+                <td>仔細比對程式碼，注意大小寫（例如 <code>Logger</code> 的 L 是大寫）</td>
+            </tr>
+            <tr>
+                <td>執行成功但試算表沒變化</td>
+                <td>操作的是不同的工作表</td>
+                <td>確認試算表底部選的是正確的工作表（工作表1）</td>
+            </tr>
+            <tr>
+                <td><code>SyntaxError: Missing ; before statement</code></td>
+                <td>少了分號或括號</td>
+                <td>每行結尾要有 <code>;</code>，字串要用引號包起來</td>
+            </tr>
+            <tr>
+                <td>getValues() 回傳空陣列</td>
+                <td>指定的範圍沒有資料</td>
+                <td>確認範圍地址正確，例如 'A1:C3' 而不是 'a1:c3'</td>
+            </tr>
+            <tr>
+                <td><code>Exception: The number of columns in the data does not match</code></td>
+                <td>setValues() 的資料欄數與 getRange 不符</td>
+                <td>確認 getRange 的欄數與二維陣列每列的長度一致</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- ========== Slide 23: 總結 ========== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <h2>&#127942; 恭喜完成實作 0！</h2>
+        <p style="font-size: 22px; margin-bottom: 30px;">你已經學會 Google Apps Script 的基礎操作！</p>
+        <div class="concept-grid" style="text-align: left;">
+            <div class="concept-card">
+                <h3>&#9989; 開啟 GAS 編輯器</h3>
+                <p>從試算表的「擴充功能 &#8594; Apps Script」開啟</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9989; Logger.log() 輸出</h3>
+                <p>用 <code>Logger.log()</code> 印出文字到執行記錄</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9989; 讀取儲存格</h3>
+                <p><code>getValue()</code> 讀單格、<code>getValues()</code> 讀範圍</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9989; 寫入儲存格</h3>
+                <p><code>setValue()</code> 寫單格、<code>setValues()</code> 批次寫入</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9989; 授權流程</h3>
+                <p>第一次執行需要授權，審查權限 &#8594; Advanced &#8594; Go to</p>
+            </div>
+            <div class="concept-card">
+                <h3>&#9989; 計算與迴圈</h3>
+                <p>用 <code>for</code> 迴圈遍歷資料，進行加總與平均計算</p>
+            </div>
+        </div>
+        <div class="box success" style="text-align: left; margin-top: 30px;">
+            <strong>&#128640; 下一站：實作 1 — 試算表自動化報表</strong><br>
+            學會基礎操作後，下一個實作將帶你自動產生格式化報表！
+        </div>
+        <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <a class="nav-btn" href="../GAS程式碼/實作00_GAS環境建立.gs" download style="background: #1b5e20; border-color: #1b5e20; font-size: 16px; padding: 10px 24px;">&#11015; 下載程式碼</a>
+            <a class="nav-btn" href="篇1_實作01_試算表自動化報表.html" style="background: #0d47a1; border-color: #0d47a1; font-size: 16px; padding: 10px 24px;">&#9654; 下一個實作</a>
+            <a class="nav-btn" href="index.html" style="background: #e65100; border-color: #e65100; font-size: 16px; padding: 10px 24px;">&#127968; 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+</div><!-- end slide-container -->
+
+<!-- ==================== NAVIGATION ==================== -->
+<button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+<button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+<div class="indicators" id="indicatorContainer"></div>
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+    function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+    function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+    function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+    function changeSlide(dir) { showSlide(currentSlide + dir); }
+    function goToSlide(i) { showSlide(i); }
+    function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+    function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    init();
+</script>
+</body>
+</html>

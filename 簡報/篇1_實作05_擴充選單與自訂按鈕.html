@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實作 5：擴充選單與自訂按鈕</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">實作 5：擴充選單與自訂按鈕</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🔘</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">擴充選單與自訂按鈕</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            用 onOpen() 建立自訂選單 → 將試算表變成有按鈕的應用程式
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">onOpen()</span>
+            <span class="badge badge-blue">createMenu()</span>
+            <span class="badge badge-orange">ui.alert()</span>
+            <span class="badge badge-green">ui.prompt()</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📄 開啟試算表</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">⚙️ onOpen() 觸發</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 自訂選單出現</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🖱️ 點擊執行功能</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/實作05_擴充選單與自訂按鈕.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 18px; color: #999; margin-top: 30px;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 前置須知</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">30 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">★★☆☆☆ 初級</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>檔案數</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+        <h3>前置條件</h3>
+        <table>
+            <tr><th>條件</th><th>說明</th></tr>
+            <tr><td>✅ 已完成實作 0</td><td>知道如何建立 GAS 專案、執行函式</td></tr>
+            <tr><td>✅ 已完成實作 1-4</td><td>熟悉試算表操作、函式撰寫基礎</td></tr>
+            <tr><td>✅ Google 試算表</td><td>需要一個現有的試算表（任一份皆可）</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">⚡</div>
+                <h3>onOpen() 觸發函式</h3>
+                <p>試算表開啟時自動執行程式碼，不需手動按任何按鈕</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📋</div>
+                <h3>createMenu() 建立選單</h3>
+                <p>在試算表上方加入自己的選單，就像內建功能一樣</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">💬</div>
+                <h3>alert 對話框</h3>
+                <p>彈出確認對話框，讓使用者點「是」或「否」再執行</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">✏️</div>
+                <h3>prompt 輸入框</h3>
+                <p>彈出輸入框讓使用者輸入文字，程式取得輸入值繼續處理</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: 什麼是擴充選單 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 什麼是擴充選單？</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            Google 試算表上方有「檔案、編輯、檢視...」等選單。<br>
+            GAS 可以讓你<strong>新增自己的選單</strong>，放上你寫好的功能按鈕！
+        </p>
+        <div class="two-col">
+            <div class="col">
+                <h3>🖱️ 沒有擴充選單</h3>
+                <ul>
+                    <li>每次要用功能，得打開 GAS 編輯器</li>
+                    <li>選擇函式 → 按執行</li>
+                    <li>同事不會用 GAS 編輯器</li>
+                    <li>操作麻煩，容易出錯</li>
+                </ul>
+                <div class="box warning">非技術人員無法使用你寫的功能！</div>
+            </div>
+            <div class="col">
+                <h3>🔘 有擴充選單</h3>
+                <ul>
+                    <li>試算表上方出現自訂選單</li>
+                    <li>點一下就執行功能</li>
+                    <li>同事也能輕鬆使用</li>
+                    <li>還能加上確認對話框防誤操作</li>
+                </ul>
+                <div class="box success">任何人打開試算表就能用！</div>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>重點觀念：</strong>擴充選單讓你把試算表從「資料表格」升級成「簡易應用程式」，不需要寫前端網頁！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: onOpen() 觸發函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>⚡ 步驟一：onOpen() 觸發函式</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            <code>onOpen()</code> 是 GAS 的「簡單觸發函式」，試算表每次被開啟時會自動執行。
+        </p>
+<pre><code>// ===== onOpen() — 試算表開啟時自動執行 =====
+function onOpen() {
+  // 取得試算表的 UI 介面
+  var ui = SpreadsheetApp.getUi();
+
+  // 建立自訂選單
+  ui.createMenu('🔧 我的工具箱')       // 選單名稱
+    .addItem('📊 產生報表', 'generateReport')   // 選單項目
+    .addItem('➕ 新增資料', 'addNewData')
+    .addSeparator()                              // 分隔線
+    .addItem('🗑️ 清除資料', 'clearData')
+    .addToUi();                                  // 加到介面上
+}</code></pre>
+        <h3>程式碼解說</h3>
+        <ul class="explain-list">
+            <li><code>function onOpen()</code> — 函式名稱必須叫 <code>onOpen</code>，GAS 才會自動觸發</li>
+            <li><code>SpreadsheetApp.getUi()</code> — 取得試算表的使用者介面物件</li>
+            <li><code>ui.createMenu('名稱')</code> — 建立一個新選單，參數是選單標題</li>
+            <li><code>.addItem('顯示文字', '函式名')</code> — 新增一個選單項目，點擊時執行指定函式</li>
+            <li><code>.addSeparator()</code> — 加一條分隔線，讓選單更有組織</li>
+            <li><code>.addToUi()</code> — 最後一定要呼叫，才會把選單加到介面上</li>
+        </ul>
+        <div class="box warning">
+            <strong>注意：</strong>函式名稱必須精確叫 <code>onOpen</code>（大小寫要對），否則不會自動觸發！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: createMenu 詳解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 步驟二：createMenu() 建立選單項目</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            選單可以有多層結構，用子選單把功能分類管理。
+        </p>
+<pre><code>// ===== 進階選單：加入子選單 =====
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+
+  // 建立子選單
+  var subMenu = ui.createMenu('📂 進階功能')
+    .addItem('🔄 排序資料', 'sortData')
+    .addItem('📧 寄送 Email', 'sendEmail');
+
+  // 主選單
+  ui.createMenu('🔧 我的工具箱')
+    .addItem('📊 產生報表', 'generateReport')
+    .addItem('➕ 新增資料', 'addNewData')
+    .addSeparator()
+    .addSubMenu(subMenu)         // 加入子選單
+    .addSeparator()
+    .addItem('🗑️ 清除資料', 'clearData')
+    .addToUi();
+}</code></pre>
+        <table>
+            <tr><th>方法</th><th>功能</th><th>說明</th></tr>
+            <tr><td><code>createMenu('名稱')</code></td><td>建立選單</td><td>名稱會顯示在選單列</td></tr>
+            <tr><td><code>addItem('文字', '函式')</code></td><td>新增項目</td><td>點擊時執行指定函式</td></tr>
+            <tr><td><code>addSeparator()</code></td><td>分隔線</td><td>視覺上區隔不同功能群組</td></tr>
+            <tr><td><code>addSubMenu(子選單)</code></td><td>子選單</td><td>展開後顯示更多項目</td></tr>
+            <tr><td><code>addToUi()</code></td><td>套用到介面</td><td>最後必須呼叫</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: ui.alert() ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>💬 步驟三：ui.alert() 確認對話框</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            執行重要操作前，先彈出確認對話框，避免使用者誤操作。
+        </p>
+<pre><code>// ===== 簡單的提示訊息 =====
+function showMessage() {
+  var ui = SpreadsheetApp.getUi();
+  ui.alert('提示', '報表已經產生完成！', ui.ButtonSet.OK);
+}
+
+// ===== 確認對話框（是/否） =====
+function clearData() {
+  var ui = SpreadsheetApp.getUi();
+
+  // 彈出確認對話框
+  var response = ui.alert(
+    '⚠️ 確認清除',                    // 標題
+    '確定要清除所有資料嗎？此操作無法復原！',  // 內容
+    ui.ButtonSet.YES_NO               // 按鈕：是 / 否
+  );
+
+  // 判斷使用者按了哪個按鈕
+  if (response === ui.Button.YES) {
+    // 使用者按了「是」→ 執行清除
+    var sheet = SpreadsheetApp.getActiveSheet();
+    sheet.getRange('A2:Z').clearContent();
+    ui.alert('✅ 資料已清除完成！');
+  } else {
+    // 使用者按了「否」→ 取消操作
+    ui.alert('已取消，資料沒有變動。');
+  }
+}</code></pre>
+        <div class="two-col">
+            <div class="col">
+                <h3>ButtonSet 按鈕類型</h3>
+                <ul>
+                    <li><code>ui.ButtonSet.OK</code> — 只有「確定」</li>
+                    <li><code>ui.ButtonSet.OK_CANCEL</code> — 確定 / 取消</li>
+                    <li><code>ui.ButtonSet.YES_NO</code> — 是 / 否</li>
+                    <li><code>ui.ButtonSet.YES_NO_CANCEL</code> — 是 / 否 / 取消</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3>Button 回傳值</h3>
+                <ul>
+                    <li><code>ui.Button.OK</code> — 按了確定</li>
+                    <li><code>ui.Button.CANCEL</code> — 按了取消</li>
+                    <li><code>ui.Button.YES</code> — 按了是</li>
+                    <li><code>ui.Button.NO</code> — 按了否</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: ui.prompt() ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✏️ 步驟四：ui.prompt() 輸入對話框</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            讓使用者在對話框中輸入文字，程式取得輸入值後繼續處理。
+        </p>
+<pre><code>// ===== 輸入對話框 =====
+function addNewData() {
+  var ui = SpreadsheetApp.getUi();
+
+  // 彈出輸入對話框
+  var response = ui.prompt(
+    '➕ 新增資料',               // 標題
+    '請輸入要新增的項目名稱：',    // 提示文字
+    ui.ButtonSet.OK_CANCEL       // 按鈕
+  );
+
+  // 檢查使用者是否按了「確定」
+  if (response.getSelectedButton() === ui.Button.OK) {
+    // 取得使用者輸入的文字
+    var inputText = response.getResponseText();
+
+    if (inputText.trim() === '') {
+      ui.alert('⚠️ 請輸入內容，不能為空！');
+      return;
+    }
+
+    // 寫入試算表的最後一列
+    var sheet = SpreadsheetApp.getActiveSheet();
+    var lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow + 1, 1).setValue(inputText);
+    sheet.getRange(lastRow + 1, 2).setValue(new Date());
+
+    ui.alert('✅ 已新增：' + inputText);
+  } else {
+    ui.alert('已取消新增。');
+  }
+}</code></pre>
+        <h3>prompt 回傳物件的方法</h3>
+        <ul class="explain-list">
+            <li><code>response.getSelectedButton()</code> — 取得使用者按了哪個按鈕</li>
+            <li><code>response.getResponseText()</code> — 取得使用者輸入的文字內容</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 完整應用 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔧 步驟五：完整應用範例</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            結合選單、對話框、輸入框，做一個完整的「資料管理工具」。
+        </p>
+<pre><code>// ===== 產生報表功能 =====
+function generateReport() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow &lt; 2) {
+    ui.alert('⚠️ 目前沒有資料，無法產生報表！');
+    return;
+  }
+
+  // 計算統計數據
+  var dataCount = lastRow - 1;  // 扣掉標題列
+  var now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd HH:mm');
+
+  // 在新工作表顯示報表
+  var reportSheet = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName('報表');
+  if (!reportSheet) {
+    reportSheet = SpreadsheetApp.getActiveSpreadsheet()
+      .insertSheet('報表');
+  }
+
+  reportSheet.getRange('A1').setValue('📊 資料統計報表');
+  reportSheet.getRange('A2').setValue('產生時間：' + now);
+  reportSheet.getRange('A3').setValue('資料筆數：' + dataCount + ' 筆');
+
+  ui.alert('✅ 報表已產生！請切換到「報表」工作表查看。');
+}
+
+// ===== 雙重確認的清除功能 =====
+function clearDataSafe() {
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.alert('⚠️ 第一次確認',
+    '要清除所有資料嗎？', ui.ButtonSet.YES_NO);
+  if (r1 !== ui.Button.YES) return;
+
+  var r2 = ui.prompt('⚠️ 第二次確認',
+    '請輸入「確認清除」四個字：', ui.ButtonSet.OK_CANCEL);
+  if (r2.getResponseText() !== '確認清除') {
+    ui.alert('輸入不正確，已取消操作。');
+    return;
+  }
+
+  SpreadsheetApp.getActiveSheet().getRange('A2:Z').clearContent();
+  ui.alert('✅ 資料已全部清除！');
+}</code></pre>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 測試方式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 測試方式</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            依照以下步驟測試你的擴充選單。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>貼上程式碼</strong><br>
+            在 GAS 編輯器中貼上所有程式碼（含 onOpen 和各功能函式）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>儲存專案</strong><br>
+            按 <code>Ctrl + S</code> 儲存 → 確認沒有紅色錯誤
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>重新整理試算表頁面</strong><br>
+            切到試算表 → 按 <code>F5</code> 或 <code>Ctrl + R</code> 重新整理頁面<br>
+            等待幾秒鐘 → 上方選單列出現「🔧 我的工具箱」
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>測試各項功能</strong><br>
+            點擊「🔧 我的工具箱」→ 逐一測試每個選單項目<br>
+            第一次執行會需要授權（選擇帳號 → 進階 → 前往）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">5</span>
+            <strong>驗證結果</strong><br>
+            ✅ 新增資料：最後一列出現新資料<br>
+            ✅ 產生報表：出現「報表」工作表<br>
+            ✅ 清除資料：需要雙重確認後才清除
+        </div>
+        <div class="box success">
+            <strong>成功畫面：</strong>重新整理試算表後，上方選單列出現「🔧 我的工具箱」選單，點擊後能看到所有功能項目，執行時會彈出對話框。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 應用場景 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>💡 應用場景：把試算表變成應用程式</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            擴充選單讓你的試算表從「存資料的表格」變成「有按鈕的工具」！
+        </p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📚</div>
+                <h3>教務管理</h3>
+                <p>一鍵產生成績單、自動計算排名、匯出 PDF 報表</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📦</div>
+                <h3>庫存管理</h3>
+                <p>新增進貨/出貨、自動扣庫存、低於安全量時提醒</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📧</div>
+                <h3>郵件工具</h3>
+                <p>從試算表選取收件人、一鍵群發 Email、記錄寄送狀態</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                <h3>資料清理</h3>
+                <p>一鍵去除重複、格式標準化、自動分類標籤</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>進階提示：</strong>擴充選單搭配之前學過的試算表讀寫、Email 寄送、表單建立，可以做出功能非常豐富的自動化工具，而且完全不需要寫前端網頁！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+        <table>
+            <tr><th>問題</th><th>原因</th><th>解決方法</th></tr>
+            <tr>
+                <td>❌ 選單沒出現</td>
+                <td>沒有重新整理頁面</td>
+                <td>按 F5 重新整理試算表，等幾秒讓 onOpen 執行</td>
+            </tr>
+            <tr>
+                <td>❌ 函式名稱不對</td>
+                <td>onOpen 拼錯或大小寫錯</td>
+                <td>確認函式名稱精確為 <code>onOpen</code>（O 大寫）</td>
+            </tr>
+            <tr>
+                <td>❌ 點選單項目沒反應</td>
+                <td>addItem 的函式名稱字串打錯</td>
+                <td>確認 addItem 第二個參數與實際函式名稱完全一致</td>
+            </tr>
+            <tr>
+                <td>❌ 對話框沒出現</td>
+                <td>用 GAS 編輯器直接執行</td>
+                <td>getUi() 只在試算表介面有效，需從選單觸發</td>
+            </tr>
+            <tr>
+                <td>❌ 權限不足</td>
+                <td>第一次執行需授權</td>
+                <td>依序操作：繼續 → 選帳號 → 進階 → 前往專案 → 允許</td>
+            </tr>
+        </table>
+        <div class="box warning">
+            <strong>重要提醒：</strong><code>SpreadsheetApp.getUi()</code> 只能在試算表介面中使用。如果你從 GAS 編輯器直接執行含有 <code>getUi()</code> 的函式，會出現錯誤訊息。請一定要從試算表的選單觸發！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 總結 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <h1>實作 5 完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">你已經學會用 GAS 為試算表加上自訂選單了！</p>
+        <div class="concept-grid" style="max-width: 900px; margin: 0 auto;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⚡</div>
+                <h3>onOpen()</h3>
+                <p>開啟自動觸發</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📋</div>
+                <h3>createMenu()</h3>
+                <p>自訂選單項目</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">💬</div>
+                <h3>alert()</h3>
+                <p>確認對話框</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">✏️</div>
+                <h3>prompt()</h3>
+                <p>輸入對話框</p>
+            </div>
+        </div>
+        <div class="box info" style="text-align: left; max-width: 700px; margin: 30px auto;">
+            <strong>🎊 第一篇全部完成！</strong><br>
+            恭喜你完成了第一篇 GAS 基礎入門的所有實作！<br>
+            下一步進入第二篇 — 實作 6：Line Bot 建立與推播，學習串接 LINE Messaging API！
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作05_擴充選單與自訂按鈕.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇2_實作06_LineBot建立與推播.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+    </div><!-- end slide-container -->
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

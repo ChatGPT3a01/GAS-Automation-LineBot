@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實作 6：Line Bot 建立與推播</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">實作 6：Line Bot 建立與推播</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🤖</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">Line Bot 建立與推播測試</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            建立 Line Bot 帳號 → 設定 Token → 推播文字和圖片到手機
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">Line Messaging API</span>
+            <span class="badge badge-blue">UrlFetchApp</span>
+            <span class="badge badge-orange">pushText</span>
+            <span class="badge badge-green">pushImage</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">🔑 申請 Line Bot</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">⚙️ 設定 Token</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📤 推播訊息</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📱 手機收到！</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/實作06_LineBot建立與推播.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 18px; color: #999; margin-top: 30px;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 前置須知</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">40 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">★★★☆☆ 中等</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>檔案數</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+        <h3>前置條件</h3>
+        <table>
+            <tr><th>條件</th><th>說明</th></tr>
+            <tr><td>✅ 已完成第一篇（實作 0-5）</td><td>熟悉 GAS 基本操作、函式撰寫</td></tr>
+            <tr><td>✅ LINE 帳號</td><td>需要一個 LINE 帳號來建立 Bot</td></tr>
+            <tr><td>✅ 手機安裝 LINE App</td><td>用來接收推播測試訊息</td></tr>
+            <tr><td>✅ Email 帳號</td><td>LINE Developers 註冊需要 Email</td></tr>
+        </table>
+        <div class="box warning">
+            <strong>重要：</strong>本實作需要在 LINE Developers 網站操作，建議使用電腦的瀏覽器開啟，方便複製 Token。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">🔑</div>
+                <h3>LINE Developers 操作</h3>
+                <p>在 LINE Developers Console 建立 Provider 和 Messaging API Channel</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">🎫</div>
+                <h3>Token 與 User ID</h3>
+                <p>取得 Channel Access Token 和 User ID，這是程式與 LINE 溝通的鑰匙</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📤</div>
+                <h3>推播文字與圖片</h3>
+                <p>用 pushText()、pushImage() 從 GAS 推播訊息到手機 LINE</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">💬</div>
+                <h3>回覆函式</h3>
+                <p>理解 replyText()、replyLine() 的用途，為後續 Webhook 做準備</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Line Bot 是什麼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Line Bot 是什麼？</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            Line Bot 是一個「自動回應的 LINE 帳號」，可以主動推播訊息，也可以被動回覆使用者。
+        </p>
+        <h3>運作原理</h3>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 30px 0; align-items: center;">
+            <div class="flow-step" style="font-size: 18px;">👤 使用者手機</div>
+            <span class="flow-arrow" style="font-size: 28px;">⇄</span>
+            <div class="flow-step" style="font-size: 18px; background: #e3f2fd; border-color: #90caf9;">☁️ LINE 平台</div>
+            <span class="flow-arrow" style="font-size: 28px;">⇄</span>
+            <div class="flow-step" style="font-size: 18px; background: #fff3e0; border-color: #ffcc80;">⚙️ GAS 程式</div>
+        </div>
+        <div class="two-col">
+            <div class="col">
+                <h3>📤 推播（Push）</h3>
+                <p>由<strong>程式主動</strong>發訊息給使用者</p>
+                <ul>
+                    <li>GAS 呼叫 LINE API</li>
+                    <li>LINE 平台轉送到手機</li>
+                    <li>使用者不需要先傳訊息</li>
+                    <li>適合：通知、提醒、報表</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3>💬 回覆（Reply）</h3>
+                <p>使用者傳訊息後，程式<strong>自動回覆</strong></p>
+                <ul>
+                    <li>使用者傳訊息到 LINE Bot</li>
+                    <li>LINE 轉送到 GAS（Webhook）</li>
+                    <li>GAS 處理後回覆</li>
+                    <li>適合：問答、查詢、互動</li>
+                </ul>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>本實作重點：</strong>先學「推播」（Push），下一個實作再學「回覆」（Reply + Webhook）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 建立 LINE Developers 帳號 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔑 步驟一：建立 LINE Developers 帳號</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            到 LINE Developers 網站註冊開發者帳號。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>開啟瀏覽器</strong><br>
+            前往 <code>https://developers.line.biz/</code>
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>登入 LINE 帳號</strong><br>
+            點右上角「Log in」→ 選擇「以 LINE 帳號登入」→ 輸入 Email 和密碼（或掃 QR Code）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>填寫開發者資料</strong><br>
+            第一次登入會要求填寫：姓名、Email → 勾選同意條款 → 點「Create my account」
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>進入 Console 頁面</strong><br>
+            看到 LINE Developers Console 的主畫面 → 恭喜，開發者帳號建立完成！
+        </div>
+        <div class="box warning">
+            <strong>注意：</strong>如果你已經有 LINE Developers 帳號，直接登入即可，不需要重新建立。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 建立 Provider 和 Channel ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📦 步驟二：建立 Provider 和 Channel</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            Provider 是「開發者/公司」，Channel 是「一個 Bot 應用」。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>建立 Provider</strong><br>
+            在 Console 首頁 → 點「Create」（或「Create a new provider」）→ 輸入名稱（例如：GAS教學）→ 點「Create」
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>建立 Messaging API Channel</strong><br>
+            進入 Provider 頁面 → 點「Create a Messaging API channel」
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>填寫 Channel 資料</strong><br>
+            <table>
+                <tr><td><strong>Channel type</strong></td><td>Messaging API（自動帶入）</td></tr>
+                <tr><td><strong>Provider</strong></td><td>選擇剛建立的 Provider</td></tr>
+                <tr><td><strong>Channel name</strong></td><td>輸入 Bot 名稱（例如：我的第一個Bot）</td></tr>
+                <tr><td><strong>Channel description</strong></td><td>輸入描述（例如：GAS 自動化教學用）</td></tr>
+                <tr><td><strong>Category</strong></td><td>選擇分類（例如：Education）</td></tr>
+                <tr><td><strong>Subcategory</strong></td><td>選擇子分類（例如：School）</td></tr>
+            </table>
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>同意條款並建立</strong><br>
+            勾選兩個同意條款 → 點「Create」→ 確認彈窗 → Channel 建立完成！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 取得 Channel Access Token ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎫 步驟三：取得 Channel Access Token</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            Token 就是「通行證」，你的程式需要它才能呼叫 LINE API。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>進入 Channel 設定頁</strong><br>
+            點擊剛建立的 Channel 名稱 → 進入 Channel 設定頁面
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>切換到 Messaging API 分頁</strong><br>
+            頁面上方有多個分頁 → 點「Messaging API」分頁
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>發行 Token</strong><br>
+            滑到最下方 → 找到「Channel access token」區塊 → 點「Issue」按鈕 → 產生一串很長的英數字
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>複製 Token</strong><br>
+            點 Token 旁邊的「複製」按鈕 → 先貼到記事本備用
+        </div>
+        <div class="box warning">
+            <strong>重要：</strong>Token 非常長（約 170 個字元），複製時請確認有複製完整，不要缺字！這是最容易出錯的地方。
+        </div>
+        <div class="box info">
+            <strong>安全提醒：</strong>Token 等同密碼，不要公開分享或上傳到 GitHub！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 取得 User ID ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>👤 步驟四：取得 User ID</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            User ID 是你的 LINE 帳號的唯一識別碼，推播訊息需要知道「傳給誰」。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>切換到 Basic settings 分頁</strong><br>
+            在 Channel 設定頁面 → 點上方「Basic settings」分頁
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>找到 Your user ID</strong><br>
+            滑到最下方 → 找到「Your user ID」欄位 → 以 <code>U</code> 開頭的一串字（約 33 個字元）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>複製 User ID</strong><br>
+            點複製按鈕 → 貼到記事本備用
+        </div>
+        <div class="box info">
+            <strong>小知識：</strong>User ID 格式為 <code>U</code> + 32 個十六進位字元，例如 <code>U1234567890abcdef1234567890abcdef</code>。
+            這個 ID 是你自己的，推播時就是傳訊息給你自己的 LINE。
+        </div>
+        <h3>目前你應該有兩個值</h3>
+        <table>
+            <tr><th>名稱</th><th>長度</th><th>用途</th></tr>
+            <tr><td>Channel Access Token</td><td>約 170 字元</td><td>程式的「通行證」，證明有權呼叫 API</td></tr>
+            <tr><td>Your user ID</td><td>33 字元（U 開頭）</td><td>指定推播的「收件人」</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 設定程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>⚙️ 步驟五：設定程式碼</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            把 Token 和 User ID 填入程式碼的設定區。
+        </p>
+<pre><code>// ============================================================
+// 實作 06：Line Bot 建立與推播
+// 功能：推播文字、圖片、多則訊息到 LINE
+// ============================================================
+
+// ===== 設定區（請填入你自己的值） =====
+var LINE_TOKEN  = '你的 Channel Access Token 貼在這裡';
+var LINE_USER_ID = '你的 User ID 貼在這裡';
+
+// ===== LINE API 網址（固定不用改） =====
+var LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push';
+var LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';</code></pre>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>建立新的 GAS 專案</strong><br>
+            到 Google 試算表 → 擴充功能 → Apps Script → 清空預設程式碼
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>貼上程式碼</strong><br>
+            把下載的 .gs 檔案內容全部貼上
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>填入你的 Token 和 User ID</strong><br>
+            將 <code>'你的 Channel Access Token 貼在這裡'</code> 替換成你剛複製的 Token（記得保留引號）
+        </div>
+        <div class="box warning">
+            <strong>常見錯誤：</strong>Token 前後不要有多餘空格，也不要不小心刪掉引號 <code>' '</code>！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: pushText() 推播文字 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📤 步驟六：pushText() 推播文字</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            第一個推播函式 — 傳送一則文字訊息到你的 LINE。
+        </p>
+<pre><code>// ===== 推播文字訊息 =====
+function pushText(userId, text) {
+  var payload = {
+    to: userId,
+    messages: [{
+      type: 'text',
+      text: text
+    }]
+  };
+
+  UrlFetchApp.fetch(LINE_PUSH_URL, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  });
+}
+
+// ===== 測試推播 =====
+function testPush() {
+  pushText(LINE_USER_ID, '🎉 恭喜！你的 Line Bot 推播成功了！');
+  Logger.log('✅ 已推播文字訊息');
+}</code></pre>
+        <h3>程式碼解說</h3>
+        <ul class="explain-list">
+            <li><code>payload</code> — 要傳送的資料，包含「傳給誰」和「訊息內容」</li>
+            <li><code>to: userId</code> — 指定收件人的 User ID</li>
+            <li><code>messages</code> — 訊息陣列，可以放多則訊息</li>
+            <li><code>type: 'text'</code> — 訊息類型是文字</li>
+            <li><code>UrlFetchApp.fetch()</code> — GAS 發送 HTTP 請求到 LINE API</li>
+            <li><code>'Authorization': 'Bearer ' + LINE_TOKEN</code> — 用 Token 做身分驗證</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: pushImage() 推播圖片 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🖼️ 步驟七：pushImage() 推播圖片</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            除了文字，也可以推播圖片到 LINE！
+        </p>
+<pre><code>// ===== 推播圖片訊息 =====
+function pushImage(userId, imageUrl) {
+  var payload = {
+    to: userId,
+    messages: [{
+      type: 'image',
+      originalContentUrl: imageUrl,   // 原始圖片網址
+      previewImageUrl: imageUrl       // 預覽圖網址（可以跟原圖一樣）
+    }]
+  };
+
+  UrlFetchApp.fetch(LINE_PUSH_URL, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  });
+}
+
+// ===== 測試推播圖片 =====
+function testPushImage() {
+  var url = 'https://developers.line.biz/assets/img/logo/line-developers-logo.png';
+  pushImage(LINE_USER_ID, url);
+  Logger.log('✅ 已推播圖片');
+}</code></pre>
+        <div class="box warning">
+            <strong>圖片網址要求：</strong><br>
+            1. 必須是 <code>https://</code> 開頭（不支援 http）<br>
+            2. 必須是公開可存取的網址<br>
+            3. 支援格式：JPEG、PNG<br>
+            4. 圖片大小上限：10 MB
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: pushLine() 多則訊息 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📦 步驟八：pushLine() 多則訊息</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            一次推播多則訊息（最多 5 則），可以混合文字和圖片。
+        </p>
+<pre><code>// ===== 推播多則訊息（通用版） =====
+function pushLine(userId, messages) {
+  var payload = {
+    to: userId,
+    messages: messages    // 直接傳入訊息陣列
+  };
+
+  UrlFetchApp.fetch(LINE_PUSH_URL, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  });
+}
+
+// ===== 測試多則訊息 =====
+function testMultiMessage() {
+  var messages = [
+    { type: 'text', text: '📊 今日報告' },
+    { type: 'text', text: '✅ 系統運作正常\n📈 資料已更新 50 筆\n⏰ 下次更新：明天 09:00' },
+    { type: 'text', text: '以上是自動推播，如有問題請回覆！' }
+  ];
+  pushLine(LINE_USER_ID, messages);
+  Logger.log('✅ 已推播多則訊息');
+}</code></pre>
+        <div class="box info">
+            <strong>注意：</strong>LINE 每次推播最多 5 則訊息。如果超過 5 則會出現錯誤。文字中可以用 <code>\n</code> 換行來節省訊息數量。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 回覆函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>💬 步驟九：回覆函式（預覽）</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            回覆函式用於 Webhook 場景 — 使用者傳訊息時自動回覆。先了解結構，下一個實作會用到。
+        </p>
+<pre><code>// ===== 回覆文字訊息 =====
+function replyText(replyToken, text) {
+  var payload = {
+    replyToken: replyToken,    // 用 replyToken 取代 userId
+    messages: [{
+      type: 'text',
+      text: text
+    }]
+  };
+
+  UrlFetchApp.fetch(LINE_REPLY_URL, {   // 注意：用 REPLY_URL
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  });
+}
+
+// ===== 回覆多則訊息 =====
+function replyLine(replyToken, messages) {
+  var payload = {
+    replyToken: replyToken,
+    messages: messages
+  };
+
+  UrlFetchApp.fetch(LINE_REPLY_URL, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  });
+}</code></pre>
+        <div class="two-col">
+            <div class="col">
+                <h3>📤 推播（Push）</h3>
+                <ul>
+                    <li>用 <code>userId</code> 指定收件人</li>
+                    <li>用 <code>LINE_PUSH_URL</code></li>
+                    <li>可以隨時主動發送</li>
+                    <li>免費方案每月有額度限制</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3>💬 回覆（Reply）</h3>
+                <ul>
+                    <li>用 <code>replyToken</code>（一次性）</li>
+                    <li>用 <code>LINE_REPLY_URL</code></li>
+                    <li>只能在收到訊息後回覆</li>
+                    <li>回覆不計入額度</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 測試完整流程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 完整測試流程</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            按照順序執行以下測試，確認 Line Bot 正常運作。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>加 Bot 好友</strong><br>
+            在 LINE Developers → Channel 頁面 → Messaging API 分頁 → 找到 QR Code → 用手機 LINE 掃描加好友
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>執行 testPush()</strong><br>
+            GAS 編輯器 → 選擇 <code>testPush</code> → 點 ▶ 執行 → 第一次需要授權 → 手機 LINE 收到文字訊息
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>執行 testPushImage()</strong><br>
+            選擇 <code>testPushImage</code> → 點 ▶ 執行 → 手機收到一張 LINE Developers Logo 圖片
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>執行 testMultiMessage()</strong><br>
+            選擇 <code>testMultiMessage</code> → 點 ▶ 執行 → 手機一次收到 3 則文字訊息
+        </div>
+        <div class="box success">
+            <strong>成功畫面：</strong>手機 LINE 上收到來自你的 Bot 的文字訊息、圖片訊息和多則訊息。代表 Token 和 User ID 都正確，Line Bot 推播功能完成！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+        <table>
+            <tr><th>問題</th><th>原因</th><th>解決方法</th></tr>
+            <tr>
+                <td>❌ 401 Unauthorized</td>
+                <td>Token 錯誤或過期</td>
+                <td>重新複製 Token，確認沒有多餘空格</td>
+            </tr>
+            <tr>
+                <td>❌ 400 Bad Request</td>
+                <td>User ID 格式錯誤</td>
+                <td>確認 User ID 以 U 開頭且為 33 字元</td>
+            </tr>
+            <tr>
+                <td>❌ 沒收到訊息</td>
+                <td>沒加 Bot 好友</td>
+                <td>用手機 LINE 掃 QR Code 加好友</td>
+            </tr>
+            <tr>
+                <td>❌ 圖片傳送失敗</td>
+                <td>圖片網址不是 https</td>
+                <td>確認圖片 URL 以 https:// 開頭</td>
+            </tr>
+            <tr>
+                <td>❌ Exception: Request failed</td>
+                <td>網址拼錯或無法連線</td>
+                <td>確認 LINE_PUSH_URL 正確，網路正常</td>
+            </tr>
+            <tr>
+                <td>❌ 訊息超過 5 則</td>
+                <td>messages 陣列超過 5 個</td>
+                <td>每次推播最多 5 則，可分批發送</td>
+            </tr>
+        </table>
+        <div class="box warning">
+            <strong>除錯技巧：</strong>如果推播失敗，在 <code>UrlFetchApp.fetch()</code> 前加上 <code>Logger.log(JSON.stringify(payload))</code>，可以在執行紀錄中看到實際傳送的資料。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 總結 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <h1>實作 6 完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">你已經成功建立 Line Bot 並完成推播測試了！</p>
+        <div class="concept-grid" style="max-width: 900px; margin: 0 auto;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔑</div>
+                <h3>LINE Developers</h3>
+                <p>建立帳號與 Channel</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🎫</div>
+                <h3>Token & User ID</h3>
+                <p>取得 API 通行證</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📤</div>
+                <h3>推播函式</h3>
+                <p>pushText / pushImage</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">💬</div>
+                <h3>回覆函式</h3>
+                <p>replyText / replyLine</p>
+            </div>
+        </div>
+        <div class="box info" style="text-align: left; max-width: 700px; margin: 30px auto;">
+            <strong>下一個實作預告：</strong>實作 7 — 天氣預報 Line Bot 推播<br>
+            串接中央氣象署 API，自動取得天氣資料並推播到 LINE！
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作06_LineBot建立與推播.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇2_實作07_天氣預報LineBot推播.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+    </div><!-- end slide-container -->
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

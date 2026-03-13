@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 實作 12 — 取得 Line User ID</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">🔍 實作 12：取得 Line User ID</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🔍</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">取得 Line User ID</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            三種方法取得 userId 和 groupId — 操作教學
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">userId</span>
+            <span class="badge badge-blue">groupId</span>
+            <span class="badge badge-orange">Logger.log</span>
+            <span class="badge badge-green">Webhook</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📊 試算表查看</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 Logger 記錄</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">👥 群組 ID</div>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">第三篇 — 實作 12 / 純操作教學，無需下載程式碼</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件。</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">15 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #2e7d32;">★☆☆☆☆ 入門</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📁</div>
+                <h3>程式碼檔案</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">0 個（純操作）</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">前置條件</h3>
+        <table>
+            <thead>
+                <tr><th>條件</th><th>說明</th><th>在哪裡完成的</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Line Bot 已建立</strong></td><td>已經有一個 Line Bot，拿到了 Channel Access Token</td><td>實作 6</td></tr>
+                <tr><td><strong>訊息收集器</strong></td><td>已部署「訊息收集器」，會把收到的訊息存到試算表</td><td>實作 11</td></tr>
+                <tr><td><strong>已傳過訊息給 Bot</strong></td><td>至少用手機傳過一則訊息給你的 Line Bot</td><td>實作 11 測試時</td></tr>
+            </tbody>
+        </table>
+
+        <div class="box info">
+            <strong>💡 為什麼需要 User ID？</strong>Line Bot 要「主動推播」訊息給某個人，就需要知道那個人的 <code>userId</code>。這跟你的 LINE 帳號名稱無關，是一串 <code>U</code> 開頭的長字串。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成本實作後，你將學會：</p>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>從試算表找 userId</h3>
+                <p>打開訊息收集器的試算表，找到 userId 欄位並複製</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                <h3>從 Logger 取得 userId</h3>
+                <p>在 doPost() 中加入 <code>Logger.log()</code>，從執行記錄查看</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
+                <h3>取得 groupId</h3>
+                <p>把 Bot 加入群組，從 Webhook 資料中取得群組 ID</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔀</div>
+                <h3>userId vs groupId 差異</h3>
+                <p>理解兩者的用途差異，知道何時用哪一個</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: 為什麼需要 User ID ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>💡 為什麼需要 User ID？</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">Line Bot 有兩種傳訊息的方式，差別在於「誰先開口」：</p>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #1565c0;">💬 回覆（Reply）</h3>
+                <p><strong>情境：</strong>使用者先傳訊息給 Bot，Bot 回覆</p>
+                <p><strong>需要：</strong><code>replyToken</code>（自動夾帶，不用另外找）</p>
+                <p><strong>限制：</strong>只能在使用者傳訊後的短時間內回覆</p>
+                <p style="color: #1565c0; font-weight: 600;">不需要知道 userId！</p>
+            </div>
+            <div class="col">
+                <h3 style="color: #e65100;">📣 推播（Push）</h3>
+                <p><strong>情境：</strong>Bot 主動傳訊息給使用者（使用者沒先說話）</p>
+                <p><strong>需要：</strong><code>userId</code> 或 <code>groupId</code>（必須事先取得）</p>
+                <p><strong>限制：</strong>免費帳號每月 500 則</p>
+                <p style="color: #e65100; font-weight: 600;">必須知道 userId！</p>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 常見誤解：</strong><br>
+            - <code>userId</code> <strong>不是</strong>你的 LINE ID（就是加好友那個 @xxx）<br>
+            - <code>userId</code> 是一串 <code>U</code> 開頭、共 33 個字元的字串，例如 <code>U1234567890abcdef1234567890abcdef</code><br>
+            - 同一個人在不同的 Line Bot Channel 會有<strong>不同的 userId</strong>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 方法一 試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 方法一：從試算表查看</h2>
+        <p>如果你在實作 11 已經做好「訊息收集器」，最簡單的方法就是直接從試算表找！</p>
+
+        <h3>Step 1-1：打開訊息收集器的試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開你在實作 11 建立的 Google 試算表（訊息收集器會把所有收到的訊息存在這裡）<br>
+            <span class="result">👀 結果：</span>你會看到試算表裡有好幾列資料，每一列代表一則收到的訊息
+        </div>
+
+        <h3>Step 1-2：找到 userId 欄位</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>試算表的<strong>欄標題</strong>（第一列）<br>
+            <span class="action">👆 動作：</span>找到名為「<code>userId</code>」或「<code>來源ID</code>」的那一欄<br>
+            <span class="result">👀 結果：</span>該欄下方會有一串 <code>U</code> 開頭的長字串
+        </div>
+
+        <h3>Step 1-3：複製 userId</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊含有 <code>U</code> 開頭字串的儲存格，按 <code>Ctrl+C</code> 複製<br>
+            <span class="result">👀 結果：</span>你已經拿到你的 userId 了！把它貼到其他 GAS 專案的 <code>LINE_USER_ID</code> 設定值中即可
+        </div>
+
+        <div class="box info">
+            <strong>💡 這是最推薦的方法！</strong>因為不需要修改任何程式碼，直接從已經存好的資料中查找即可。如果試算表裡沒有資料，先用手機傳一則訊息給你的 Line Bot。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 方法二 Logger ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 方法二：用 Logger.log() 記錄</h2>
+        <p>如果你沒有訊息收集器，也可以在任何 Line Bot 的 <code>doPost()</code> 裡面加一行 log。</p>
+
+        <h3>Step 2-1：在 doPost() 開頭加入 Logger</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>你的 Line Bot GAS 專案，找到 <code>doPost(e)</code> 函式<br>
+            <span class="action">👆 動作：</span>在函式的<strong>第一行</strong>加入以下程式碼：
+        </div>
+
+        <pre><code>function doPost(e) {
+  // ===== 加入這兩行，把完整的 Webhook 資料印出來 =====
+  var data = JSON.parse(e.postData.contents);
+  Logger.log('Webhook 資料：' + JSON.stringify(data));
+
+  // 取出 userId
+  var userId = data.events[0].source.userId;
+  Logger.log('userId = ' + userId);
+
+  // ... 你原本的程式碼繼續寫在下面 ...
+}</code></pre>
+
+        <h3>Step 2-2：重新部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊右上角 <code>部署</code> → <code>管理部署</code> → 鉛筆圖示 → 版本選「新版本」→ <code>部署</code><br>
+            <span class="result">👀 結果：</span>新版本已上線
+        </div>
+
+        <h3>Step 2-3：傳訊息並查看 Log</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>用手機傳一則訊息給你的 Line Bot<br>
+            <span class="action">👆 動作：</span>回到 GAS 編輯器，點擊左側「⏱ 執行項目」<br>
+            <span class="result">👀 結果：</span>找到最近一筆 <code>doPost</code> 的執行記錄，展開就能看到 <code>userId = U...</code>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>Logger.log 的記錄只會保留一段時間。看到 userId 後，趕快複製下來存好！確認拿到後，可以把這兩行 Logger 刪除，避免影響效能。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 方法三 群組 groupId ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 方法三：取得群組 groupId</h2>
+        <p>如果你想讓 Bot 推播訊息到<strong>群組</strong>（而不是個人），就需要 <code>groupId</code>。</p>
+
+        <h3>Step 3-1：把 Bot 加入群組</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 LINE 手機 App 中，建立一個群組（或使用現有群組）<br>
+            <span class="action">👆 動作：</span>在群組中點擊「邀請」，把你的 Line Bot 加入群組<br>
+            <span class="result">👀 結果：</span>群組中會顯示 Bot 已加入
+        </div>
+
+        <h3>Step 3-2：在群組中傳一則訊息</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在群組中<strong>隨便傳一則訊息</strong>（任何文字都行）<br>
+            <span class="result">👀 結果：</span>這則訊息會觸發 Bot 的 <code>doPost()</code>
+        </div>
+
+        <h3>Step 3-3：從 Logger 或試算表取得 groupId</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>查看 Logger 或試算表中的 Webhook 資料<br>
+            <span class="result">👀 結果：</span>你會看到 <code>source</code> 欄位中有 <code>groupId</code>，格式為 <code>C</code> 開頭的長字串
+        </div>
+
+        <pre><code>// 群組訊息的 Webhook 資料結構
+{
+  "events": [{
+    "type": "message",
+    "source": {
+      "type": "group",              // ← 注意這裡是 "group"
+      "groupId": "Cab1234567890...", // ← 這就是 groupId
+      "userId": "U1234567890..."    // ← 傳訊息的人的 userId
+    },
+    "message": {
+      "type": "text",
+      "text": "你好"
+    }
+  }]
+}</code></pre>
+
+        <div class="box info">
+            <strong>💡 重點：</strong>群組訊息的 <code>source.type</code> 是 <code>"group"</code>，而且同時包含 <code>groupId</code>（群組的 ID）和 <code>userId</code>（傳訊息那個人的 ID）。推播到群組時，用 <code>groupId</code> 即可。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: userId vs groupId 差異 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔀 userId vs groupId 差異比較</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">兩者用途不同，搞清楚什麼時候用哪一個：</p>
+
+        <table>
+            <thead>
+                <tr><th>比較項目</th><th>userId</th><th>groupId</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>格式</strong></td>
+                    <td><code>U</code> 開頭，33 個字元</td>
+                    <td><code>C</code> 開頭，33 個字元</td>
+                </tr>
+                <tr>
+                    <td><strong>代表</strong></td>
+                    <td>一個 LINE 使用者</td>
+                    <td>一個 LINE 群組</td>
+                </tr>
+                <tr>
+                    <td><strong>推播效果</strong></td>
+                    <td>只有那個人收到訊息</td>
+                    <td>群組裡<strong>所有人</strong>都看到</td>
+                </tr>
+                <tr>
+                    <td><strong>取得方式</strong></td>
+                    <td>使用者傳訊息時，從 <code>source.userId</code> 取得</td>
+                    <td>在群組中傳訊息時，從 <code>source.groupId</code> 取得</td>
+                </tr>
+                <tr>
+                    <td><strong>唯一性</strong></td>
+                    <td>同一人在不同 Channel 有不同 userId</td>
+                    <td>同一群組在不同 Channel 有不同 groupId</td>
+                </tr>
+                <tr>
+                    <td><strong>常見用途</strong></td>
+                    <td>個人通知、個人查詢結果</td>
+                    <td>班級通知、團隊公告</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>程式碼中怎麼用？</h3>
+        <pre><code>// 推播給個人
+pushText('U1234567890abcdef...', '你好，這是個人訊息');
+
+// 推播到群組
+pushText('Cab1234567890abcdef...', '大家好，這是群組公告');
+
+// 兩個函式的用法完全一樣！
+// 差別只在於第一個參數放 userId 還是 groupId</code></pre>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 注意事項 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>⚠️ 注意事項</h2>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ userId 不等於 LINE ID</h3>
+                <p>你在 LINE 設定中看到的「LINE ID」（例如 <code>@mylineid</code>）是給好友搜尋用的，跟程式用的 <code>userId</code> 完全不同。</p>
+                <p><strong>LINE ID：</strong>你自己設定的，可讀的暱稱</p>
+                <p><strong>userId：</strong>系統自動產生的 U 開頭字串，無法修改</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ 不同 Channel 的 userId 不同</h3>
+                <p>同一個人對你的 Bot A 和 Bot B，會有<strong>兩個不同的 userId</strong>。</p>
+                <p>所以從 Bot A 拿到的 userId，不能拿去 Bot B 用！每個 Bot（Channel）都要各自收集 userId。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #1565c0;">💡 userId 不會過期</h3>
+                <p>一旦取得了 userId，只要那個人沒有封鎖你的 Bot，這個 userId 就會一直有效。可以存在程式碼的常數裡面。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #1565c0;">💡 Bot 需要開啟「加入群組」</h3>
+                <p>要取得 groupId，Bot 必須能被邀請加入群組。到 LINE Developers Console → Bot 設定 → 確認「Allow bot to join group chats」是開啟的。</p>
+            </div>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 安全提醒：</strong>userId 和 groupId 是敏感資訊，不要公開分享。雖然光有 userId 不能做什麼壞事（還需要 Channel Access Token），但為了安全起見，建議妥善保管。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🔍</div>
+        <h1 style="font-size: 42px;">實作 12 完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會三種取得 User ID 的方法了！</p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(3, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>試算表查看</h3>
+                <p>最簡單直接的方法</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📋</div>
+                <h3>Logger.log()</h3>
+                <p>從執行記錄取得</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">👥</div>
+                <h3>groupId</h3>
+                <p>群組推播必備</p>
+            </div>
+        </div>
+
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🎯 下一站預告 — 實作 13：活動報名即時通知</strong>
+            <ul>
+                <li>Google 表單報名 → 即時推播通知</li>
+                <li>onFormSubmit 事件驅動觸發</li>
+                <li>額滿自動關閉報名</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="篇3_實作13_活動報名即時通知.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進到實作 13！</p>
+    </div>
+</div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

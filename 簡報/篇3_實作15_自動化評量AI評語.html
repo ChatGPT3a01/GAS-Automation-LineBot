@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Part 7：自動化評量系統 — AI 自動評語 × PDF 解析 × Line Bot</title>
+    <title>實作 15：自動化評量 AI 評語</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -66,7 +66,7 @@
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">Part 7：自動化評量</div>
+        <div class="nav-title">實作 15：自動化評量 AI 評語</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -102,7 +102,7 @@
             <div class="flow-step">💬 推送個人評語</div>
         </div>
         <div style="margin-top: 20px;">
-            <a href="../GAS程式碼/07_自動化評量_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
+            <a href="../GAS程式碼/實作15_自動化評量AI評語.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
         </div>
         <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 1 — Part 7 / 壓軸實作</p>
     </div>
@@ -1264,7 +1264,8 @@ function testPdfExtraction() {
         </div>
 
         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-            <a href="../GAS程式碼/07_自動化評量_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="../GAS程式碼/實作15_自動化評量AI評語.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇4_實作16_RAG知識庫問答機器人.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
         <p style="font-size: 18px; color: #666; margin-top: 25px;">今天辛苦了！好好休息，你已經很棒了 💪</p>

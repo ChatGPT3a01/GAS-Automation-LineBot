@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📘 實作 10 — 出缺席通知 × Line Bot 群組推播</title>
+    <title>實作 17：出缺席通知群組推播</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
@@ -66,7 +66,7 @@
 <body>
 <script src="password-gate.js"></script>
     <div class="nav-bar">
-        <div class="nav-title">📘 實作 10 — 出缺席通知 × Line Bot 群組推播</div>
+        <div class="nav-title">實作 17：出缺席通知群組推播</div>
         <div class="nav-buttons">
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
@@ -101,7 +101,7 @@
             <div class="flow-step">📲 Line 群組推播</div>
         </div>
         <div style="margin-top: 20px;">
-            <a href="../GAS程式碼/10_出缺席通知_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
+            <a href="../GAS程式碼/實作17_出缺席通知群組推播.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
         </div>
         <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 2 — Part 10 / 出缺席通知自動化</p>
     </div>
@@ -125,7 +125,7 @@
             <div class="concept-card">
                 <h3>📦 本單元需要準備</h3>
                 <ol>
-                    <li><strong>下載本單元程式碼</strong> — 點擊簡報最後一頁的「📥 下載程式碼」按鈕，取得 <code>10_出缺席通知_LineBot.gs</code></li>
+                    <li><strong>下載本單元程式碼</strong> — 點擊簡報最後一頁的「📥 下載程式碼」按鈕，取得 <code>實作17_出缺席通知群組推播.gs</code></li>
                     <li><strong>（選用）群組 ID</strong> — 如果要推播到 Line 群組，需要先用「訊息收集器」（實作 2）取得群組 ID；沒有的話先推播給自己測試即可</li>
                 </ol>
             </div>
@@ -151,7 +151,7 @@
 
         <div class="box warning">
             <strong>⚠️ 如果你還沒完成 Day 1 Part 0：</strong><br>
-            請先回到 <a href="Day1_Part0_GAS環境與LineBot建立.html" style="color: #856404; font-weight: bold;">Day 1 Part 0 — GAS 環境與 Line Bot 建立</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
+            請先回到 <a href="篇2_實作06_LineBot建立與推播.html" style="color: #856404; font-weight: bold;">實作 06 — Line Bot 建立與推播</a>，完成 Line Bot 帳號設定後再回來。沒有 Channel Access Token 和 User ID，後面的步驟全部無法進行。
         </div>
     </div>
 </div>
@@ -210,7 +210,7 @@
         <div class="box warning">
             <strong>⚠️ 重要：以課程 .gs 檔案為準！</strong><br>
             AI 生成的程式碼<strong>可能與課程版本不同</strong>（例如變數宣告方式、函式名稱、URL 格式等都會有差異）。<br>
-            本課程所有步驟都是依照 <code>10_出缺席通知_LineBot.gs</code> 這個檔案來教學。<br>
+            本課程所有步驟都是依照 <code>實作17_出缺席通知群組推播.gs</code> 這個檔案來教學。<br>
             <strong>建議：直接使用課程提供的 .gs 檔案</strong>，Vibe Coding 提示詞僅供未來自行開發時參考。
         </div>
     </div>
@@ -367,7 +367,7 @@
 
         <h3>Step 3-2：開啟課程程式碼檔案</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>找到你下載的 <code>10_出缺席通知_LineBot.gs</code> 檔案（在你的下載資料夾中）<br>
+            <span class="action">👆 動作：</span>找到你下載的 <code>實作17_出缺席通知群組推播.gs</code> 檔案（在你的下載資料夾中）<br>
             <span class="action">👆 動作：</span>用<strong>記事本</strong>或任何文字編輯器開啟這個檔案<br>
             <span class="action">👆 動作：</span>按 <code>Ctrl+A</code>（全選檔案中的所有文字），再按 <code>Ctrl+C</code>（複製）
         </div>
@@ -1153,8 +1153,8 @@ function pushLine(to, messages) {
         </div>
 
         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-            <a href="../GAS程式碼/10_出缺席通知_LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
-            <a href="Day2_Part11_活動報名系統.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="../GAS程式碼/實作17_出缺席通知群組推播.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇4_實作18_AI自動發文系統.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
         <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進！</p>

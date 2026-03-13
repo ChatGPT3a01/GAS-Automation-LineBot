@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實作 3：一鍵建立 Google 表單</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">實作 3：一鍵建立 Google 表單</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
+            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">📋</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">一鍵自動建立 Google 表單</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            從試算表讀取題目清單 → 自動建立 Google Form → 連結回寫
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">FormApp</span>
+            <span class="badge badge-blue">create()</span>
+            <span class="badge badge-orange">單選多選</span>
+            <span class="badge badge-green">下拉</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📊 試算表題庫</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">⚙️ GAS 程式</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 Google 表單</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🔗 連結回寫</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/實作03_一鍵建立Google表單.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 18px; color: #999; margin-top: 30px;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 前置須知</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">35 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">★★☆☆☆ 初級</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>檔案數</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+        <h3>前置條件</h3>
+        <table>
+            <tr><th>條件</th><th>說明</th></tr>
+            <tr><td>✅ 已完成實作 0</td><td>知道如何建立 GAS 專案、執行函式</td></tr>
+            <tr><td>✅ 已完成實作 1</td><td>知道如何存取試算表、讀寫儲存格</td></tr>
+            <tr><td>✅ Google 帳號</td><td>需要有 Google Drive 權限建立表單</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成這個實作後，你將學會以下技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📋</div>
+                <h3>FormApp.create()</h3>
+                <p>用程式碼一鍵建立 Google 表單，不用手動到 Google Forms 介面操作</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📝</div>
+                <h3>多種題型</h3>
+                <p>單選題、多選題、文字題、下拉選單，全部用程式碼自動新增</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">⚙️</div>
+                <h3>表單屬性設定</h3>
+                <p>設定表單描述、確認訊息、收集 Email 等進階屬性</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">🔗</div>
+                <h3>連結回寫試算表</h3>
+                <p>將建立好的表單連結自動寫回試算表，方便管理與分享</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: FormApp 能做什麼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 FormApp 能做什麼？</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            <code>FormApp</code> 是 GAS 內建的服務，讓你用程式碼操作 Google 表單，就像自動機器人幫你建表單。
+        </p>
+        <div class="two-col">
+            <div class="col">
+                <h3>🖱️ 手動建立表單</h3>
+                <ol>
+                    <li>打開 Google Forms 網站</li>
+                    <li>手動輸入表單標題</li>
+                    <li>一題一題新增題目</li>
+                    <li>一個一個設定選項</li>
+                    <li>如果有 50 題... 😱</li>
+                </ol>
+                <div class="box warning">手動建立 50 題可能需要 1-2 小時！</div>
+            </div>
+            <div class="col">
+                <h3>⚙️ 程式自動建立</h3>
+                <ol>
+                    <li>把題目寫在試算表</li>
+                    <li>執行一個函式</li>
+                    <li>等待 5 秒鐘</li>
+                    <li>表單自動完成！</li>
+                    <li>50 題也只要 5 秒 🚀</li>
+                </ol>
+                <div class="box success">用 FormApp 只要按一次按鈕！</div>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>常見應用場景：</strong>期中考問卷、活動報名表、滿意度調查、課程評鑑、會議回饋表單
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 準備題目清單 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📊 步驟一：準備題目清單</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            我們先用 <code>createSampleQuestions()</code> 在試算表中建立一份範例題庫。
+        </p>
+        <h3>試算表結構（「題庫」工作表）</h3>
+        <table>
+            <tr><th>A 欄：題型</th><th>B 欄：題目</th><th>C 欄：選項（逗號分隔）</th></tr>
+            <tr><td>文字</td><td>請輸入你的姓名</td><td></td></tr>
+            <tr><td>單選</td><td>你最喜歡的程式語言？</td><td>Python,JavaScript,Java,C++</td></tr>
+            <tr><td>多選</td><td>你使用過哪些 Google 服務？</td><td>Gmail,Drive,Docs,Sheets,Forms</td></tr>
+            <tr><td>下拉</td><td>你的年齡區間？</td><td>18以下,18-25,26-35,36-45,46以上</td></tr>
+        </table>
+        <h3>建立範例題庫的程式碼</h3>
+<pre><code>// ===== 建立範例題庫 =====
+function createSampleQuestions() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 建立「題庫」工作表（如果不存在）
+  var sheet = ss.getSheetByName('題庫');
+  if (!sheet) {
+    sheet = ss.insertSheet('題庫');
+  }
+
+  // 寫入標題列
+  sheet.getRange('A1:C1').setValues([['題型', '題目', '選項']]);
+
+  // 寫入範例題目
+  var questions = [
+    ['文字', '請輸入你的姓名', ''],
+    ['單選', '你最喜歡的程式語言？', 'Python,JavaScript,Java,C++'],
+    ['多選', '你使用過哪些 Google 服務？', 'Gmail,Drive,Docs,Sheets,Forms'],
+    ['下拉', '你的年齡區間？', '18以下,18-25,26-35,36-45,46以上'],
+    ['文字', '對這堂課有什麼建議？', ''],
+    ['單選', '你會推薦這堂課嗎？', '一定會,可能會,不確定,不會']
+  ];
+  sheet.getRange(2, 1, questions.length, 3).setValues(questions);
+
+  Logger.log('✅ 已建立 ' + questions.length + ' 題範例題目');
+}</code></pre>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: FormApp.create() 基本用法 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 步驟二：FormApp.create() 建立表單</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            用一行程式碼就能建立一個全新的 Google 表單。
+        </p>
+<pre><code>// ===== 建立表單的基本寫法 =====
+function createBasicForm() {
+  // 建立一個新表單，參數是表單標題
+  var form = FormApp.create('我的第一個自動表單');
+
+  // 取得表單的填寫連結
+  var url = form.getPublishedUrl();
+  Logger.log('📋 表單連結：' + url);
+
+  // 取得表單的編輯連結
+  var editUrl = form.getEditUrl();
+  Logger.log('✏️ 編輯連結：' + editUrl);
+}</code></pre>
+        <div class="box info">
+            <strong>小提醒：</strong><code>FormApp.create('標題')</code> 會在你的 Google Drive 根目錄建立一個新表單。
+            回傳的 <code>form</code> 物件可以繼續用來新增題目和設定屬性。
+        </div>
+        <h3>程式碼解說</h3>
+        <ul class="explain-list">
+            <li><code>FormApp.create('標題')</code> — 建立新表單，回傳 Form 物件</li>
+            <li><code>form.getPublishedUrl()</code> — 取得「填寫表單」的網址（給受訪者用）</li>
+            <li><code>form.getEditUrl()</code> — 取得「編輯表單」的網址（給管理者用）</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 新增文字題 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 步驟三：新增文字題</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            文字題是最基本的題型，讓使用者輸入自由文字（姓名、建議等）。
+        </p>
+<pre><code>// ===== 新增文字題 =====
+// addTextItem() — 新增一個文字輸入欄位
+var textItem = form.addTextItem();
+textItem.setTitle('請輸入你的姓名');
+textItem.setRequired(true);  // 設為必填
+
+// 也可以新增「段落」文字題（多行輸入）
+var paragraphItem = form.addParagraphTextItem();
+paragraphItem.setTitle('對這堂課有什麼建議？');
+paragraphItem.setHelpText('請盡量詳細描述，謝謝！');</code></pre>
+        <div class="two-col">
+            <div class="col">
+                <h3>addTextItem()</h3>
+                <p>單行文字輸入，適合短回答</p>
+                <ul>
+                    <li>姓名、Email、電話</li>
+                    <li><code>setRequired(true)</code> 設必填</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3>addParagraphTextItem()</h3>
+                <p>多行文字輸入，適合長回答</p>
+                <ul>
+                    <li>建議、心得、詳細描述</li>
+                    <li><code>setHelpText()</code> 加提示文字</li>
+                </ul>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>共用方法：</strong>每種題目都可以用 <code>.setTitle('題目')</code>、<code>.setRequired(true/false)</code>、<code>.setHelpText('提示')</code>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 新增選擇題 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔘 步驟四：新增選擇題</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            GAS 支援三種選擇題：單選、多選、下拉選單。
+        </p>
+<pre><code>// ===== 單選題（只能選一個） =====
+var mcItem = form.addMultipleChoiceItem();
+mcItem.setTitle('你最喜歡的程式語言？');
+mcItem.setChoiceValues(['Python', 'JavaScript', 'Java', 'C++']);
+
+// ===== 多選題（可以選多個） =====
+var cbItem = form.addCheckboxItem();
+cbItem.setTitle('你使用過哪些 Google 服務？');
+cbItem.setChoiceValues(['Gmail', 'Drive', 'Docs', 'Sheets', 'Forms']);
+
+// ===== 下拉選單（只能選一個，節省空間） =====
+var listItem = form.addListItem();
+listItem.setTitle('你的年齡區間？');
+listItem.setChoiceValues(['18以下', '18-25', '26-35', '36-45', '46以上']);</code></pre>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <h3>單選題</h3>
+                <p><code>addMultipleChoiceItem()</code></p>
+                <p>圓圈按鈕，只能選一個</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <h3>多選題</h3>
+                <p><code>addCheckboxItem()</code></p>
+                <p>方塊打勾，可選多個</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <h3>下拉選單</h3>
+                <p><code>addListItem()</code></p>
+                <p>下拉清單，選一個</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 設定表單屬性 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>⚙️ 步驟五：設定表單屬性</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            建立完表單和題目後，還可以設定一些進階屬性。
+        </p>
+<pre><code>// ===== 設定表單屬性 =====
+
+// 表單描述（顯示在標題下方）
+form.setDescription('這是一份自動建立的問卷，請放心填寫！');
+
+// 送出後的確認訊息
+form.setConfirmationMessage('感謝您的填寫！您的回應已成功送出 ✅');
+
+// 收集填寫者的 Email
+form.setCollectEmail(true);
+
+// 允許修改回應
+form.setAllowResponseEdits(true);
+
+// 顯示進度列
+form.setProgressBar(true);
+
+// 隨機排列題目順序
+form.setShuffleQuestions(false);</code></pre>
+        <table>
+            <tr><th>方法</th><th>功能</th><th>參數</th></tr>
+            <tr><td><code>setDescription()</code></td><td>表單描述</td><td>文字</td></tr>
+            <tr><td><code>setConfirmationMessage()</code></td><td>送出後顯示的訊息</td><td>文字</td></tr>
+            <tr><td><code>setCollectEmail()</code></td><td>收集 Email</td><td>true / false</td></tr>
+            <tr><td><code>setAllowResponseEdits()</code></td><td>允許修改回應</td><td>true / false</td></tr>
+            <tr><td><code>setProgressBar()</code></td><td>顯示進度列</td><td>true / false</td></tr>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 連結回寫試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔗 步驟六：連結回寫試算表</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            建立完表單後，把連結自動寫回試算表，方便查閱和分享。
+        </p>
+<pre><code>// ===== 回寫連結到試算表 =====
+function writeFormLinks(form) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('題庫');
+
+  // 在 E1:F1 寫入標題
+  sheet.getRange('E1').setValue('填寫連結');
+  sheet.getRange('F1').setValue('編輯連結');
+
+  // 在 E2:F2 寫入連結
+  sheet.getRange('E2').setValue(form.getPublishedUrl());
+  sheet.getRange('F2').setValue(form.getEditUrl());
+
+  // 加上超連結格式，方便點擊
+  var publishedUrl = form.getPublishedUrl();
+  var richText = SpreadsheetApp.newRichTextValue()
+    .setText('點此填寫表單')
+    .setLinkUrl(publishedUrl)
+    .build();
+  sheet.getRange('E3').setRichTextValue(richText);
+
+  Logger.log('✅ 連結已回寫到試算表');
+}</code></pre>
+        <div class="box info">
+            <strong>兩個重要連結：</strong><br>
+            📋 <code>getPublishedUrl()</code> — 給填寫者的連結（公開分享用）<br>
+            ✏️ <code>getEditUrl()</code> — 給管理者的連結（可以修改表單內容）
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 完整程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔧 完整主程式：一鍵建立表單</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            把前面學到的全部組合起來，從試算表讀取題目、自動建立表單。
+        </p>
+<pre><code>// ===== 主程式：一鍵建立表單 =====
+function createFormFromSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('題庫');
+  var data = sheet.getDataRange().getValues();
+
+  // 建立新表單
+  var form = FormApp.create('自動建立的問卷調查');
+  form.setDescription('此問卷由 GAS 自動建立');
+  form.setConfirmationMessage('感謝填寫！✅');
+
+  // 從第 2 列開始讀取題目（第 1 列是標題）
+  for (var i = 1; i &lt; data.length; i++) {
+    var type = data[i][0];     // A 欄：題型
+    var title = data[i][1];    // B 欄：題目
+    var options = data[i][2];  // C 欄：選項
+
+    if (type === '文字') {
+      form.addTextItem().setTitle(title);
+    } else if (type === '單選') {
+      form.addMultipleChoiceItem()
+        .setTitle(title)
+        .setChoiceValues(options.split(','));
+    } else if (type === '多選') {
+      form.addCheckboxItem()
+        .setTitle(title)
+        .setChoiceValues(options.split(','));
+    } else if (type === '下拉') {
+      form.addListItem()
+        .setTitle(title)
+        .setChoiceValues(options.split(','));
+    }
+  }
+
+  // 回寫連結
+  sheet.getRange('E1').setValue('填寫連結');
+  sheet.getRange('E2').setValue(form.getPublishedUrl());
+  sheet.getRange('F1').setValue('編輯連結');
+  sheet.getRange('F2').setValue(form.getEditUrl());
+
+  Logger.log('✅ 表單建立完成：' + form.getPublishedUrl());
+}</code></pre>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 測試流程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 測試流程</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            依照以下步驟，一步一步測試你的程式。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>先執行 createSampleQuestions()</strong><br>
+            在 GAS 編輯器上方選擇函式 → 點擊 ▶ 執行 → 等待試算表出現「題庫」工作表
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>檢查試算表</strong><br>
+            切回試算表 → 確認有「題庫」分頁 → 裡面有 6 題範例題目
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>執行 createFormFromSheet()</strong><br>
+            回到 GAS 編輯器 → 選擇此函式 → 點擊 ▶ 執行 → 第一次需授權（選擇你的帳號 → 進階 → 前往）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>檢查結果</strong><br>
+            回到試算表 → E 欄出現「填寫連結」→ 點擊連結 → 看到自動建立的表單！
+        </div>
+        <div class="micro-step">
+            <span class="step-number">5</span>
+            <strong>到 Google Drive 確認</strong><br>
+            打開 Google Drive → 在根目錄找到「自動建立的問卷調查」→ 點開確認題目正確
+        </div>
+        <div class="box success">
+            <strong>成功畫面：</strong>Google 表單自動產生，包含 6 道題目（文字題、單選題、多選題、下拉選單），試算表 E 欄出現可點擊的表單連結。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+        <table>
+            <tr><th>問題</th><th>原因</th><th>解決方法</th></tr>
+            <tr>
+                <td>❌ 找不到表單</td>
+                <td>表單建立在 Drive 根目錄</td>
+                <td>到 Google Drive 首頁搜尋表單標題</td>
+            </tr>
+            <tr>
+                <td>❌ 授權失敗</td>
+                <td>未允許存取 Google Forms</td>
+                <td>點「進階」→「前往專案」→ 允許權限</td>
+            </tr>
+            <tr>
+                <td>❌ 選項為空</td>
+                <td>C 欄沒填選項或格式錯誤</td>
+                <td>確認選項用半形逗號分隔，不要有空格</td>
+            </tr>
+            <tr>
+                <td>❌ 題目只有一題</td>
+                <td>迴圈沒正確讀取</td>
+                <td>確認試算表從 A2 開始有資料，檢查 for 迴圈</td>
+            </tr>
+            <tr>
+                <td>❌ TypeError: Cannot read property 'split'</td>
+                <td>文字題的 C 欄為空觸發 split</td>
+                <td>程式碼中先判斷題型，文字題不需要 split</td>
+            </tr>
+        </table>
+        <div class="box warning">
+            <strong>除錯技巧：</strong>在 GAS 編輯器中按 <code>Ctrl+Enter</code> 可以查看 <code>Logger.log()</code> 的輸出，確認每個步驟是否正確執行。也可以在「執行紀錄」中查看完整的執行結果。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 總結 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <h1>實作 3 完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">你已經學會用 GAS 一鍵建立 Google 表單了！</p>
+        <div class="concept-grid" style="max-width: 900px; margin: 0 auto;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📋</div>
+                <h3>FormApp.create()</h3>
+                <p>程式碼建立表單</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📝</div>
+                <h3>四種題型</h3>
+                <p>文字/單選/多選/下拉</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⚙️</div>
+                <h3>屬性設定</h3>
+                <p>描述/確認訊息/收Email</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🔗</div>
+                <h3>連結回寫</h3>
+                <p>自動寫回試算表</p>
+            </div>
+        </div>
+        <div class="box info" style="text-align: left; max-width: 700px; margin: 30px auto;">
+            <strong>下一個實作預告：</strong>實作 4 — HTML 網頁表單<br>
+            學習用 GAS 建立自己的網頁表單，搭配 HtmlService 做出漂亮的前端介面！
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作03_一鍵建立Google表單.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇1_實作04_HTML網頁表單.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+    </div><!-- end slide-container -->
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>
