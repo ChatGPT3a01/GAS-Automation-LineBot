@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實作 2：自動寄信通知系統</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .highlight { background: linear-gradient(120deg, #69f0ae 0%, #00e676 100%); padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #1b5e20; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
+        .micro-step .action { color: #2e7d32; font-weight: 600; }
+        .micro-step .result { color: #e65100; font-weight: 600; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+        .explain-list code { font-size: 0.88em; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">實作 2：自動寄信通知</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">📧</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">自動寄信通知系統</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            建立收件名單 → 自動寄信 → HTML 美化信件 → 狀態回寫
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">MailApp</span>
+            <span class="badge badge-blue">GmailApp</span>
+            <span class="badge badge-orange">HTML Email</span>
+            <span class="badge badge-green">sendEmail</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">📋 收件人名單</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📝 組合信件內容</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📤 自動寄出</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">✅ 狀態回寫</div>
+        </div>
+        <div style="margin-top: 25px;">
+            <a href="../GAS程式碼/實作02_自動寄信通知系統.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 18px; color: #999; margin-top: 30px;">使用鍵盤 ← → 或下方按鈕切換投影片</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 前置須知</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">35 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>難度等級</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">★★☆☆☆ 初級</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <h3>程式檔案數</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+        <h3>前置條件</h3>
+        <table>
+            <tr><th>項目</th><th>說明</th><th>狀態</th></tr>
+            <tr><td>已完成實作 0-1</td><td>熟悉 GAS 編輯器、試算表讀寫操作</td><td>✅ 必備</td></tr>
+            <tr><td>Google 帳號</td><td>需要有 Gmail 信箱（用來寄信）</td><td>✅ 必備</td></tr>
+            <tr><td>收件人 Email</td><td>準備 1-2 個可收信的 Email 地址做測試</td><td>✅ 建議</td></tr>
+        </table>
+        <div class="box warning">
+            <strong>⚠️ 重要提醒：</strong>練習時請先<strong>寄給自己</strong>（你自己的 Gmail），確認信件內容正確後再寄給別人，避免寄出錯誤信件！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 學習目標 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 學習目標</h2>
+        <p>完成這個實作後，你將學會以下四項核心技能：</p>
+        <div class="concept-grid">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📤</div>
+                <h3>MailApp.sendEmail()</h3>
+                <p>用一行程式碼從 Gmail 寄出一封信，純文字格式</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🎨</div>
+                <h3>HTML 格式信件</h3>
+                <p>寄出有粗體、顏色、表格的美化信件</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3>寄信額度查詢</h3>
+                <p>查看 Gmail 每天還能寄幾封信</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔄</div>
+                <h3>批次寄信 + 狀態回寫</h3>
+                <p>從名單逐筆寄出，成功/失敗寫回試算表</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: Vibe Coding 提示詞 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🤖 Vibe Coding 提示詞</h2>
+        <p>如果你想用 AI 幫你寫這個程式，可以這樣描述你的需求：</p>
+        <div style="background: #f5f5f5; border: 2px solid #1b5e20; border-radius: 16px; padding: 30px; margin: 20px 0; font-size: 19px; line-height: 2;">
+            <p style="color: #1b5e20; font-weight: 700; font-size: 22px; margin-bottom: 16px;">📝 提示詞範例：</p>
+            <p>「我想做一個<strong>自動寄信系統</strong>，用 Google Apps Script 寫。</p>
+            <p>功能是這樣：我在 Google 試算表裡面有一份收件人名單，每一列有<strong>姓名、Email、主題</strong>三個欄位。</p>
+            <p>我要讓程式從第一個人開始，<strong>逐一寄出通知信</strong>，信件內容要<strong>帶入收件人的姓名</strong>，讓每封信看起來是客製化的。</p>
+            <p>寄信之後，要把<strong>「已寄出」或「失敗」寫回試算表</strong>的第四欄，旁邊第五欄記錄寄信時間。</p>
+            <p>另外我還想要一個功能，可以寄出 <strong>HTML 格式的漂亮信件</strong>（有粗體、有顏色、有表格），不是只有純文字。</p>
+            <p>最後幫我加一個<strong>查詢今天還能寄幾封信</strong>的功能。</p>
+            <p>請幫我寫完整的程式碼，我是初學者，請加上中文註解讓我看得懂。」</p>
+        </div>
+        <div class="box warning">
+            <strong>⚠️ 提醒：</strong>AI 產出的程式碼<strong>一定要自己看過、測試過</strong>才能使用。不要直接複製貼上就拿去寄信給別人！先寄給自己測試。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 成果預覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>👀 成果預覽</h2>
+        <p>完成這個實作後，你的試算表和信箱會長這樣：</p>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #1565c0;">📋 試算表名單（寄信後）</h3>
+                <table>
+                    <tr><th>姓名</th><th>Email</th><th>主題</th><th>寄送狀態</th><th>寄送時間</th></tr>
+                    <tr><td>王小明</td><td>ming@gmail.com</td><td>活動通知</td><td style="background: #e8f5e9; color: #2e7d32; font-weight: 600;">已寄出</td><td>2026/3/13 14:30</td></tr>
+                    <tr><td>林小美</td><td>mei@gmail.com</td><td>會議提醒</td><td style="background: #e8f5e9; color: #2e7d32; font-weight: 600;">已寄出</td><td>2026/3/13 14:30</td></tr>
+                    <tr><td>張大衛</td><td>（空白）</td><td>（空白）</td><td style="color: #999;">略過</td><td></td></tr>
+                </table>
+                <p style="font-size: 16px; color: #666; margin-top: 10px;">D 欄自動標記寄送狀態，E 欄記錄時間</p>
+            </div>
+            <div class="col">
+                <h3 style="color: #e65100;">📬 收件匣畫面</h3>
+                <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-top: 10px;">
+                    <div style="padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; background: #1b5e20; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">G</div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 15px; color: #333;">GAS 自動化系統</div>
+                            <div style="font-size: 13px; color: #666;">通知信件</div>
+                        </div>
+                    </div>
+                    <div style="padding: 16px; font-size: 15px; line-height: 1.8; color: #444;">
+                        <p style="font-size: 15px;">王小明 您好，</p>
+                        <p style="font-size: 15px;">這是一封由 GAS 自動寄出的通知信。</p>
+                        <p style="font-size: 15px;">祝好，<br>GAS 自動化系統</p>
+                    </div>
+                </div>
+                <p style="font-size: 16px; color: #666; margin-top: 10px;">每封信自動帶入收件人姓名，看起來是客製化的</p>
+            </div>
+        </div>
+        <div class="box success">
+            <strong>✅ 最終成果：</strong>從試算表名單一鍵寄出通知信，支援純文字和 HTML 格式，寄送結果自動寫回試算表。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: MailApp vs GmailApp ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📬 MailApp vs GmailApp 比較</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">
+            GAS 內建了兩個寄信服務，可以直接用你的 <span class="highlight">Gmail 帳號</span> 寄信，不需要設定任何郵件伺服器！
+        </p>
+
+        <table>
+            <tr><th style="width: 20%;">比較項目</th><th style="width: 40%;">📧 MailApp（簡單版）</th><th style="width: 40%;">📨 GmailApp（進階版）</th></tr>
+            <tr><td><strong>難度</strong></td><td>簡單，新手友善</td><td>稍微複雜，功能更多</td></tr>
+            <tr><td><strong>寄信</strong></td><td>✅ 純文字 + HTML</td><td>✅ 純文字 + HTML</td></tr>
+            <tr><td><strong>讀信</strong></td><td>❌ 不支援</td><td>✅ 可搜尋、讀取信件</td></tr>
+            <tr><td><strong>附件</strong></td><td>✅ 可加附件</td><td>✅ 可加附件</td></tr>
+            <tr><td><strong>寄件人名稱</strong></td><td>❌ 無法自訂</td><td>✅ 可設定 <code>{name: '系統'}</code></td></tr>
+            <tr><td><strong>管理標籤</strong></td><td>❌ 不支援</td><td>✅ 建立/移除標籤</td></tr>
+            <tr><td><strong>查詢額度</strong></td><td>✅ <code>getRemainingDailyQuota()</code></td><td>❌ 沒有這個方法</td></tr>
+            <tr><td><strong>每日上限</strong></td><td>免費 100 封 / Workspace 1500 封</td><td>免費 100 封 / Workspace 1500 封</td></tr>
+        </table>
+
+        <div class="box info">
+            <strong>💡 該用哪一個？</strong>如果只是寄信通知，用 <code>MailApp</code> 就夠了，而且還能查額度。如果需要讀取信件、管理標籤或自訂寄件人名稱，再用 <code>GmailApp</code>。本實作以 <code>MailApp</code> 為主。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟1 建立 GAS 專案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 步驟 1：建立新的 GAS 專案</h2>
+        <p>我們需要一個新的試算表和 GAS 專案來做這個實作。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：瀏覽器網址列</span></p>
+            <p>👆 <span class="action">動作：輸入 <code>sheets.new</code> 然後按 Enter</span></p>
+            <p>⏱️ 等待 2-3 秒，瀏覽器會自動建立一個新的空白試算表</p>
+            <p>👀 <span class="result">結果：看到一個全新的空白試算表畫面</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：試算表左上角的標題（顯示「未命名的試算表」）</span></p>
+            <p>👆 <span class="action">動作：點一下標題文字，改名為「自動寄信通知」，按 Enter 確認</span></p>
+            <p>👀 <span class="result">結果：左上角標題變成「自動寄信通知」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：試算表上方選單列</span></p>
+            <p>👆 <span class="action">動作：點「擴充功能」→ 點「Apps Script」</span></p>
+            <p>⏱️ 等待 3-5 秒，會開一個新的分頁</p>
+            <p>👀 <span class="result">結果：看到 Apps Script 編輯器，裡面有一個空的 <code>function myFunction() {}</code></span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Apps Script 編輯器左上角的專案標題（顯示「未命名的專案」）</span></p>
+            <p>👆 <span class="action">動作：點一下標題，改名為「自動寄信系統」，按 Enter 確認</span></p>
+            <p>👀 <span class="result">結果：專案名稱變成「自動寄信系統」</span></p>
+        </div>
+
+        <div class="box info">
+            <strong>💡 小提醒：</strong>Apps Script 編輯器會在新分頁開啟，你的試算表還在原本的分頁中。兩個分頁請都保留，等一下會交替使用。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟2 貼上程式碼 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 步驟 2：貼上程式碼</h2>
+        <p>把本實作的完整程式碼貼到 Apps Script 編輯器中。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Apps Script 編輯器的程式碼區域</span></p>
+            <p>👆 <span class="action">動作：用滑鼠全選程式碼區域的 <code>function myFunction() {}</code>（按 Ctrl+A 全選）</span></p>
+            <p>👀 <span class="result">結果：原本的預設程式碼被全部選取（反白）</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：同上，程式碼已經被全選</span></p>
+            <p>👆 <span class="action">動作：按 Delete 或 Backspace 鍵，把預設程式碼刪除</span></p>
+            <p>👀 <span class="result">結果：程式碼區域變成完全空白</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：本簡報封面頁的「📥 下載程式碼」按鈕，或講師提供的 .gs 檔案</span></p>
+            <p>👆 <span class="action">動作：開啟下載的 .gs 檔案，Ctrl+A 全選 → Ctrl+C 複製</span></p>
+            <p>👀 <span class="result">結果：完整程式碼已經複製到剪貼簿</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：回到 Apps Script 編輯器的空白程式碼區域</span></p>
+            <p>👆 <span class="action">動作：按 Ctrl+V 貼上程式碼</span></p>
+            <p>👀 <span class="result">結果：看到完整的程式碼出現，包含 <code>createSampleRecipients</code>、<code>sendNotifications</code>、<code>sendHtmlEmail</code>、<code>checkQuota</code> 四個函式</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Apps Script 編輯器上方工具列</span></p>
+            <p>👆 <span class="action">動作：按 Ctrl+S 儲存（或點磁片圖示 💾）</span></p>
+            <p>⏱️ 等待 1-2 秒</p>
+            <p>👀 <span class="result">結果：標題旁邊的小圓點消失，表示已儲存成功</span></p>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 請確認：</strong>程式碼貼上後，畫面應該看到四個 <code>function</code> 開頭的區塊。如果只看到一個或格式跑掉，請重新全選、刪除、貼上。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟3 授權注意事項 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔐 步驟 3：授權注意事項</h2>
+        <p>這個實作會存取你的 <strong>Gmail 寄信功能</strong>，所以第一次執行時 Google 會要求額外授權。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Apps Script 編輯器上方的函式下拉選單</span></p>
+            <p>👆 <span class="action">動作：確認下拉選單顯示的是 <code>createSampleRecipients</code>，然後按「▶ 執行」</span></p>
+            <p>⏱️ 等待 1-2 秒，會跳出授權彈窗</p>
+            <p>👀 <span class="result">結果：出現「需要授權」的彈窗</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：「需要授權」彈窗</span></p>
+            <p>👆 <span class="action">動作：點「審查權限」按鈕</span></p>
+            <p>👀 <span class="result">結果：跳到 Google 帳號選擇畫面</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Google 帳號選擇畫面</span></p>
+            <p>👆 <span class="action">動作：選擇你的 Google 帳號</span></p>
+            <p>👀 <span class="result">結果：出現「Google 尚未驗證這個應用程式」的警告畫面</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：「Google 尚未驗證這個應用程式」畫面左下角</span></p>
+            <p>👆 <span class="action">動作：點「進階」→ 點「前往 自動寄信系統（不安全）」</span></p>
+            <p>👀 <span class="result">結果：出現權限列表畫面，列出「查看、編輯試算表」和「代表您傳送電子郵件」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：權限列表畫面最下方</span></p>
+            <p>👆 <span class="action">動作：點「允許」按鈕</span></p>
+            <p>⏱️ 等待 2-3 秒</p>
+            <p>👀 <span class="result">結果：回到 Apps Script 編輯器，下方「執行記錄」面板顯示「範例名單建立完成！」</span></p>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 特別注意「傳送電子郵件」權限：</strong>這是 MailApp / GmailApp 需要的權限。如果你之前只做過試算表操作，這次會多出這個權限要求，這是正常的！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟4 建立收件人名單 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 步驟 4：建立收件人名單</h2>
+        <p>剛才授權時已經執行了 <code>createSampleRecipients()</code>，現在來看看試算表的變化。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：瀏覽器分頁列</span></p>
+            <p>👆 <span class="action">動作：切到「自動寄信通知」試算表的分頁</span></p>
+            <p>👀 <span class="result">結果：看到試算表已經被填入資料</span></p>
+        </div>
+
+        <h3>試算表結構圖解</h3>
+        <table>
+            <tr>
+                <th style="background: #1565C0; text-align: center;">A：姓名</th>
+                <th style="background: #1565C0; text-align: center;">B：Email</th>
+                <th style="background: #1565C0; text-align: center;">C：主題</th>
+                <th style="background: #1565C0; text-align: center;">D：寄送狀態</th>
+                <th style="background: #1565C0; text-align: center;">E：寄送時間</th>
+            </tr>
+            <tr><td>王小明</td><td>your-email@gmail.com</td><td>活動通知</td><td style="color: #999;">（空白）</td><td style="color: #999;">（空白）</td></tr>
+            <tr><td>林小美</td><td>your-email@gmail.com</td><td>會議提醒</td><td style="color: #999;">（空白）</td><td style="color: #999;">（空白）</td></tr>
+            <tr><td>張大衛</td><td>your-email@gmail.com</td><td style="color: #999;">（空白）</td><td style="color: #999;">（空白）</td><td style="color: #999;">（空白）</td></tr>
+        </table>
+
+        <div class="box info">
+            <strong>💡 程式做了什麼？</strong>
+            <ul style="margin-top: 8px;">
+                <li>第 1 列：建立了藍底白字的表頭（姓名、Email、主題、寄送狀態、寄送時間）</li>
+                <li>第 2-4 列：填入 3 筆範例收件人資料</li>
+                <li>第 1 列被凍結（往下捲動時表頭不會消失）</li>
+                <li>各欄寬度已自動調整好</li>
+            </ul>
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 下一步很重要！</strong>你需要把 B 欄的 <code>your-email@gmail.com</code> 改成真實的 Email（先改成你自己的 Gmail 來測試）。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 程式碼解析 createSampleRecipients ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析：createSampleRecipients</h2>
+        <p>逐行看懂這個函式在做什麼：</p>
+
+        <ul class="explain-list">
+            <li><code>var sheet = SpreadsheetApp.getActiveSheet();</code> — 取得目前正在看的那個工作表</li>
+            <li><code>sheet.clear();</code> — 把工作表上所有資料清除乾淨，從頭開始</li>
+            <li><code>var headers = ['姓名', 'Email', '主題', '寄送狀態', '寄送時間'];</code> — 用陣列定義 5 個欄位的表頭文字</li>
+            <li><code>sheet.getRange(1, 1, 1, headers.length).setValues([headers]);</code> — 把表頭寫到第 1 列的 A-E 欄。<code>getRange(列, 欄, 高, 寬)</code></li>
+            <li><code>.setFontWeight('bold').setBackground('#1565C0').setFontColor('#FFFFFF')</code> — 表頭設定粗體、藍色背景、白色文字（連續呼叫，叫做 method chaining）</li>
+            <li><code>var recipients = [['王小明', 'your-email@gmail.com', '活動通知'], ...];</code> — 用二維陣列準備 3 筆範例收件人（姓名、Email、主題）</li>
+            <li><code>sheet.getRange(2, 1, recipients.length, 3).setValues(recipients);</code> — 從第 2 列開始，把 3 筆資料一次寫入（批次寫入比逐格快！）</li>
+            <li><code>sheet.setColumnWidth(1, 100);</code> — 設定 A 欄寬度為 100px，讓表格更好看</li>
+            <li><code>sheet.setFrozenRows(1);</code> — 凍結第 1 列，往下捲動時表頭會固定在最上面</li>
+            <li><code>Logger.log('範例名單建立完成！');</code> — 在「執行記錄」面板印出完成訊息</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 學到的新技巧：</strong><code>setFrozenRows(1)</code> 凍結表頭列 — 這在資料很多的試算表中非常實用，捲動時表頭始終可見。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 步驟5 修改 Email ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✏️ 步驟 5：修改 Email 為你自己的信箱</h2>
+        <p>範例資料中的 Email 是假的，你必須改成<strong>真實的 Email</strong> 才能收到信。練習時先全部改成自己的 Gmail。</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：試算表的 B2 儲存格（王小明那列的 Email 欄）</span></p>
+            <p>👆 <span class="action">動作：雙擊 B2 進入編輯模式，把 <code>your-email@gmail.com</code> 改成你自己的 Gmail 地址（例如 <code>ming123@gmail.com</code>）</span></p>
+            <p>👀 <span class="result">結果：B2 顯示你的真實 Gmail 地址</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：試算表的 B3 儲存格（林小美那列）</span></p>
+            <p>👆 <span class="action">動作：同樣改成你自己的 Gmail（或另一個你能收信的 Email）</span></p>
+            <p>👀 <span class="result">結果：B3 顯示你的真實 Email</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：試算表的 B4 儲存格（張大衛那列）</span></p>
+            <p>👆 <span class="action">動作：同樣改成你自己的 Gmail</span></p>
+            <p>👀 <span class="result">結果：三列的 Email 都改成真實的信箱了</span></p>
+        </div>
+
+        <h3>修改後應該長這樣</h3>
+        <table>
+            <tr><th>A：姓名</th><th>B：Email</th><th>C：主題</th></tr>
+            <tr><td>王小明</td><td style="color: #2e7d32; font-weight: 600;">你的真實Email@gmail.com</td><td>活動通知</td></tr>
+            <tr><td>林小美</td><td style="color: #2e7d32; font-weight: 600;">你的真實Email@gmail.com</td><td>會議提醒</td></tr>
+            <tr><td>張大衛</td><td style="color: #2e7d32; font-weight: 600;">你的真實Email@gmail.com</td><td>（空白→主題會自動用「通知信件」）</td></tr>
+        </table>
+
+        <div class="box warning">
+            <strong>⚠️ 千萬不要：</strong>不要在練習階段填入同學或主管的真實 Email！萬一信件內容有誤會很尷尬。等完全確認沒問題後再改成正式收件人。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 步驟6 執行純文字寄信 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📤 步驟 6：執行純文字寄信</h2>
+        <p>Email 改好了，現在來寄信！</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：切到 Apps Script 編輯器分頁</span></p>
+            <p>👆 <span class="action">動作：在上方的函式下拉選單中，選擇 <code>sendNotifications</code></span></p>
+            <p>👀 <span class="result">結果：下拉選單顯示「sendNotifications」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：函式下拉選單左邊的「▶ 執行」按鈕</span></p>
+            <p>👆 <span class="action">動作：點「▶ 執行」</span></p>
+            <p>⏱️ 等待 5-15 秒（寄信需要時間，每封約 2-3 秒）</p>
+            <p>👀 <span class="result">結果：下方「執行記錄」顯示「成功 3，失敗 0」（如果 3 封都寄成功）</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：切回「自動寄信通知」試算表分頁</span></p>
+            <p>👆 <span class="action">動作：查看 D 欄和 E 欄的變化</span></p>
+            <p>👀 <span class="result">結果：D 欄出現「已寄出」（綠底）或「略過」，E 欄顯示寄信時間</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：開一個新分頁</span></p>
+            <p>👆 <span class="action">動作：前往 <code>mail.google.com</code> 打開你的 Gmail 收件匣</span></p>
+            <p>⏱️ 等待 10-30 秒（信件可能需要一點時間才到達）</p>
+            <p>👀 <span class="result">結果：收件匣出現 2-3 封新信件，主題分別是「活動通知」和「會議提醒」</span></p>
+        </div>
+
+        <div class="box success">
+            <strong>✅ 恭喜！</strong>你已經成功用 GAS 寄出了你的第一批自動信件！
+        </div>
+        <div class="box info">
+            <strong>💡 沒收到信？</strong>檢查一下垃圾郵件資料夾，自動化信件有時會被 Gmail 歸類到那裡。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析 sendNotifications ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析：sendNotifications</h2>
+        <p>這是最核心的函式，逐段看懂它的邏輯：</p>
+
+        <h3>第一段：讀取資料</h3>
+        <ul class="explain-list">
+            <li><code>var sheet = SpreadsheetApp.getActiveSheet();</code> — 取得目前的工作表</li>
+            <li><code>var lastRow = sheet.getLastRow();</code> — 取得最後一列的列號（有 3 筆資料就是 4）</li>
+            <li><code>if (lastRow &lt;= 1) { ... return; }</code> — 如果只有表頭沒有資料，就印出提示然後直接結束</li>
+            <li><code>var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();</code> — 從第 2 列開始，讀取所有收件人資料（A~C 欄）成為二維陣列</li>
+        </ul>
+
+        <h3>第二段：迴圈逐筆寄信</h3>
+        <ul class="explain-list">
+            <li><code>for (var i = 0; i &lt; data.length; i++)</code> — 對每一筆收件人執行以下動作</li>
+            <li><code>var name = data[i][0], email = data[i][1], subject = data[i][2] || '通知信件';</code> — 取出姓名、Email、主題。如果主題是空的，用預設值「通知信件」</li>
+            <li><code>if (!email || email.indexOf('@') === -1)</code> — 檢查 Email 是否為空或不包含 <code>@</code> 符號。不合格就標記「略過」</li>
+        </ul>
+
+        <h3>第三段：try-catch 錯誤處理</h3>
+        <ul class="explain-list">
+            <li><code>try { ... }</code> — 把可能出錯的寄信動作包在 try 裡面</li>
+            <li><code>MailApp.sendEmail(email, subject, body);</code> — 用三個參數呼叫寄信：收件人、主題、內容</li>
+            <li><code>sheet.getRange(row, 4).setValue('已寄出').setBackground('#E8F5E9');</code> — 成功後在 D 欄寫入「已寄出」並上綠底色</li>
+            <li><code>catch (e) { ... }</code> — 如果寄信失敗（例如額度用完），在 D 欄寫入「失敗」並上紅底色，E 欄記錄錯誤訊息</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 關鍵觀念：</strong><code>try-catch</code> 讓程式碼遇到錯誤時不會整個中斷，而是跳到 catch 區塊處理錯誤，然後繼續處理下一筆。這在批次操作中非常重要！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 步驟7 HTML 格式信件 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎨 步驟 7：寄出 HTML 格式信件</h2>
+        <p>純文字太單調？<code>sendHtmlEmail()</code> 可以寄出有<span class="highlight">粗體、顏色、表格</span>的漂亮信件！</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：切到 Apps Script 編輯器分頁</span></p>
+            <p>👆 <span class="action">動作：在上方的函式下拉選單中，選擇 <code>sendHtmlEmail</code></span></p>
+            <p>👀 <span class="result">結果：下拉選單顯示「sendHtmlEmail」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：函式下拉選單左邊的「▶ 執行」按鈕</span></p>
+            <p>👆 <span class="action">動作：點「▶ 執行」</span></p>
+            <p>⏱️ 等待 5-10 秒</p>
+            <p>👀 <span class="result">結果：「執行記錄」面板沒有顯示紅色錯誤訊息，表示寄信成功</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：你的 Gmail 收件匣（<code>mail.google.com</code>）</span></p>
+            <p>👆 <span class="action">動作：找到主題為「HTML 通知」的新信件，點進去看</span></p>
+            <p>⏱️ 等待 10-30 秒（信件送達需要時間）</p>
+            <p>👀 <span class="result">結果：看到有格式的漂亮信件，有粗體的標題「自動通知」和收件人姓名</span></p>
+        </div>
+
+        <h3>HTML 信件 vs 純文字信件</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #666;">📝 純文字信件</h3>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 15px; line-height: 1.8; color: #444;">
+                    王小明 您好，<br><br>
+                    這是一封由 GAS 自動寄出的通知信。<br><br>
+                    祝好，<br>
+                    GAS 自動化系統
+                </div>
+            </div>
+            <div class="col">
+                <h3 style="color: #1565c0;">🎨 HTML 格式信件</h3>
+                <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                    <div style="background: #1b5e20; color: white; padding: 12px; text-align: center; font-weight: bold;">自動通知</div>
+                    <div style="padding: 12px; font-size: 14px; line-height: 1.7;">
+                        <p style="font-size: 14px;"><strong>王小明</strong> 您好</p>
+                        <p style="font-size: 14px; color: #e65100; font-weight: bold;">請準時參加！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 程式碼解析 sendHtmlEmail ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析：sendHtmlEmail</h2>
+        <p>HTML 格式信件的關鍵程式碼解析：</p>
+
+        <pre><code>function sendHtmlEmail() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+
+  for (var i = 0; i &lt; data.length; i++) {
+    var name = data[i][0], email = data[i][1],
+        subject = data[i][2] || 'HTML 通知';
+    if (!email || email.indexOf('@') === -1) continue;
+
+    var htmlBody = '&lt;h2&gt;自動通知&lt;/h2&gt;'
+      + '&lt;p&gt;&lt;strong&gt;' + name + '&lt;/strong&gt; 您好&lt;/p&gt;';
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody,
+      body: '純文字備援'
+    });
+  }
+}</code></pre>
+
+        <h3>逐行解釋</h3>
+        <ul class="explain-list">
+            <li><code>var htmlBody = '&lt;h2&gt;自動通知&lt;/h2&gt;...';</code> — 用 HTML 標籤組合信件內容。<code>&lt;h2&gt;</code> 是大標題、<code>&lt;strong&gt;</code> 是粗體、<code>&lt;p&gt;</code> 是段落</li>
+            <li><code>MailApp.sendEmail({ to, subject, htmlBody, body })</code> — 這裡用<strong>物件格式</strong>呼叫 sendEmail，不是三個參數的格式</li>
+            <li><code>htmlBody: htmlBody</code> — 關鍵！用 <code>htmlBody</code>（注意大小寫）就會寄出 HTML 格式的信件</li>
+            <li><code>body: '純文字備援'</code> — 如果收件人的信箱不支援 HTML，就會顯示這段純文字</li>
+            <li><code>if (!email || email.indexOf('@') === -1) continue;</code> — Email 不合格就跳過這筆，用 <code>continue</code> 直接進入下一輪迴圈</li>
+        </ul>
+
+        <div class="box warning">
+            <strong>⚠️ 常見錯誤：</strong>寫成 <code>body: htmlBody</code> 而不是 <code>htmlBody: htmlBody</code>，會導致收件人看到 HTML 原始碼（一堆 &lt;tag&gt;），而不是漂亮的格式化信件。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 步驟8 查看寄信額度 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📊 步驟 8：查看寄信額度</h2>
+        <p>Google 每天有寄信上限，在大量寄信前<strong>一定要先查額度</strong>！</p>
+
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：Apps Script 編輯器的函式下拉選單</span></p>
+            <p>👆 <span class="action">動作：選擇 <code>checkQuota</code></span></p>
+            <p>👀 <span class="result">結果：下拉選單顯示「checkQuota」</span></p>
+        </div>
+        <div class="micro-step">
+            <p>📍 <span class="position">位置：「▶ 執行」按鈕</span></p>
+            <p>👆 <span class="action">動作：點「▶ 執行」</span></p>
+            <p>⏱️ 等待 1-2 秒</p>
+            <p>👀 <span class="result">結果：「執行記錄」顯示「今日剩餘寄信額度：97 封」（如果剛才寄了 3 封就是 100-3=97）</span></p>
+        </div>
+
+        <h3>各版本帳號的每日上限</h3>
+        <table>
+            <tr><th>帳號類型</th><th>每日上限</th><th>說明</th></tr>
+            <tr><td>免費 Gmail（@gmail.com）</td><td><strong>100 封 / 天</strong></td><td>一般個人帳號</td></tr>
+            <tr><td>Google Workspace（學校/公司信箱）</td><td><strong>1,500 封 / 天</strong></td><td>例如 @school.edu.tw</td></tr>
+        </table>
+
+        <h3>程式碼（只有兩行就夠用）</h3>
+        <pre><code>function checkQuota() {
+  var remaining = MailApp.getRemainingDailyQuota();
+  Logger.log('今日剩餘寄信額度：' + remaining + ' 封');
+}</code></pre>
+
+        <div class="box warning">
+            <strong>⚠️ 額度限制注意事項：</strong>
+            <ul style="margin-top: 8px;">
+                <li>額度每天凌晨（太平洋時間）自動重置</li>
+                <li>超過上限會收到錯誤：<code>Service invoked too many times for one day</code></li>
+                <li>MailApp 和 GmailApp 共用同一個額度</li>
+                <li>大量寄信前，<strong>先跑 checkQuota() 確認</strong>再決定要不要寄</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅❌ 成功 / 失敗對照</h2>
+        <p>寄信後，試算表的 D 欄和 E 欄會自動更新。以下是各種情況的對照：</p>
+
+        <div class="two-col">
+            <div class="col" style="border: 2px solid #4caf50;">
+                <h3 style="color: #2e7d32;">✅ 寄信成功</h3>
+                <table>
+                    <tr><th>D 欄</th><th>E 欄</th></tr>
+                    <tr>
+                        <td style="background: #E8F5E9; color: #2e7d32; font-weight: 600;">已寄出</td>
+                        <td>2026/3/13 下午2:30:15</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 10px;">D 欄顯示「已寄出」+<strong>綠色底色</strong><br>E 欄記錄精確的寄信時間</p>
+                <div style="background: #e8f5e9; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 15px;">
+                    <strong>收件匣確認：</strong><br>
+                    ✔ 收到新信件<br>
+                    ✔ 主題與 C 欄一致<br>
+                    ✔ 內容有帶入收件人姓名
+                </div>
+            </div>
+            <div class="col" style="border: 2px solid #f44336;">
+                <h3 style="color: #c62828;">❌ 寄信失敗</h3>
+                <table>
+                    <tr><th>D 欄</th><th>E 欄</th></tr>
+                    <tr>
+                        <td style="background: #FFEBEE; color: #c62828; font-weight: 600;">失敗</td>
+                        <td>Invalid email: bad-email</td>
+                    </tr>
+                    <tr>
+                        <td>略過</td>
+                        <td>（空白）</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 10px;">「失敗」+<strong>紅色底色</strong>：寄信時出錯<br>「略過」：Email 欄位空白或格式不對</p>
+                <div style="background: #ffebee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 15px;">
+                    <strong>常見失敗原因：</strong><br>
+                    ✘ Email 不含 @ 符號<br>
+                    ✘ 每日額度已用完<br>
+                    ✘ Email 地址不存在
+                </div>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 實用技巧：</strong>寄信後如果有「失敗」的，修正 Email 後可以重新執行 <code>sendNotifications</code>。不過要注意：成功的人會被重複寄信。進階做法是加個判斷 — 如果 D 欄已經是「已寄出」就跳過。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 19: 完整程式碼一覽 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📜 完整程式碼一覽</h2>
+        <p>本實作包含 4 個函式，各自負責一項功能：</p>
+
+        <table>
+            <tr><th style="width: 25%;">函式名稱</th><th style="width: 35%;">功能說明</th><th style="width: 20%;">執行順序</th><th style="width: 20%;">備註</th></tr>
+            <tr>
+                <td><code>createSampleRecipients()</code></td>
+                <td>建立收件人名單（表頭 + 範例資料）</td>
+                <td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">1</span> 第一個執行</td>
+                <td>只需要跑一次</td>
+            </tr>
+            <tr>
+                <td><code>sendNotifications()</code></td>
+                <td>純文字批次寄信 + 狀態回寫</td>
+                <td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">2</span> 修改 Email 後</td>
+                <td>核心功能</td>
+            </tr>
+            <tr>
+                <td><code>sendHtmlEmail()</code></td>
+                <td>HTML 格式信件（粗體、顏色）</td>
+                <td><span class="step-number" style="width: 28px; height: 28px; font-size: 14px;">3</span> 體驗 HTML 信件</td>
+                <td>進階功能</td>
+            </tr>
+            <tr>
+                <td><code>checkQuota()</code></td>
+                <td>查詢今日剩餘寄信額度</td>
+                <td>隨時都可以執行</td>
+                <td>建議寄信前先查</td>
+            </tr>
+        </table>
+
+        <h3>程式碼結構圖</h3>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 20px 0;">
+            <div class="flow-step" style="background: #e3f2fd;">📋 createSampleRecipients</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step" style="background: #fff3e0;">✏️ 手動修改 Email</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step" style="background: #e8f5e9;">📤 sendNotifications</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step" style="background: #fce4ec;">🎨 sendHtmlEmail</div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 觀念整理：</strong>
+            <ul style="margin-top: 8px;">
+                <li><code>MailApp.sendEmail(to, subject, body)</code> — 三參數格式，寄純文字</li>
+                <li><code>MailApp.sendEmail({to, subject, htmlBody})</code> — 物件格式，寄 HTML</li>
+                <li><code>MailApp.getRemainingDailyQuota()</code> — 回傳今日剩餘額度數字</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 20: 應用場景 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🌟 應用場景</h2>
+        <p>學會自動寄信後，你可以應用在很多真實場景：</p>
+
+        <div class="concept-grid">
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+                <h3>活動通知</h3>
+                <p>工作坊、研習、會議的報名確認信和行前通知，從試算表名單一鍵寄出。</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">🏫</div>
+                <h3>成績通知</h3>
+                <p>期中考、期末考成績個別寄信給家長，每封信自動帶入學生姓名和成績。</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">🔔</div>
+                <h3>會議提醒</h3>
+                <p>搭配定時觸發器（Trigger），每天自動寄出當日會議提醒給與會者。</p>
+            </div>
+            <div class="concept-card">
+                <div style="font-size: 40px; margin-bottom: 10px;">✅</div>
+                <h3>帳號確認</h3>
+                <p>新會員註冊後自動寄出帳號確認信，附上密碼或登入連結。</p>
+            </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 進階提示：</strong>搭配 GAS 的「觸發條件」功能（Apps Script → 左側 ⏰ 圖示 → 新增觸發條件），可以設定每天固定時間自動執行寄信程式，完全不用手動！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 21: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+        <table>
+            <tr><th style="width: 25%;">問題</th><th style="width: 30%;">原因</th><th style="width: 45%;">解決方法</th></tr>
+            <tr>
+                <td>授權時找不到「進階」</td>
+                <td>Google 更新了介面</td>
+                <td>往下捲一下，「進階」可能在畫面左下角小字處</td>
+            </tr>
+            <tr>
+                <td>錯誤：Service invoked too many times</td>
+                <td>今日寄信額度已用完</td>
+                <td>執行 <code>checkQuota()</code> 確認。等隔天凌晨額度自動重置</td>
+            </tr>
+            <tr>
+                <td>收件人沒收到信</td>
+                <td>信件可能被歸類到垃圾郵件</td>
+                <td>請收件人檢查「垃圾郵件」資料夾，並把你的 Gmail 加入通訊錄</td>
+            </tr>
+            <tr>
+                <td>錯誤：Invalid email</td>
+                <td>Email 地址格式不正確</td>
+                <td>檢查有沒有打錯字、多空格、缺少 @ 符號</td>
+            </tr>
+            <tr>
+                <td>HTML 信件顯示原始碼</td>
+                <td>用了 <code>body</code> 而不是 <code>htmlBody</code></td>
+                <td>改用 <code>MailApp.sendEmail({to, subject, htmlBody})</code>，注意是 html<strong>B</strong>ody</td>
+            </tr>
+            <tr>
+                <td>錯誤：You do not have permission</td>
+                <td>沒有授權 Gmail 寄信權限</td>
+                <td>重新執行任一函式，跳出授權彈窗後點「審查權限」→「允許」</td>
+            </tr>
+            <tr>
+                <td>寄出的信沒有寄件人名稱</td>
+                <td><code>MailApp</code> 不支援設定寄件人名稱</td>
+                <td>改用 <code>GmailApp.sendEmail(to, subj, body, {name: '系統'})</code></td>
+            </tr>
+            <tr>
+                <td>D 欄顯示「略過」</td>
+                <td>B 欄的 Email 是空白或沒有 @</td>
+                <td>在 B 欄填入正確的 Email 地址，重新執行 <code>sendNotifications</code></td>
+            </tr>
+        </table>
+        <div class="box warning">
+            <strong>⚠️ 避免被當成垃圾信的技巧：</strong>
+            <ul style="margin-top: 8px;">
+                <li>不要在短時間內寄太多封（建議每批次間隔幾秒）</li>
+                <li>信件主旨不要全部大寫或有太多驚嘆號</li>
+                <li>不要放太多連結，尤其是縮網址</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 22: 總結 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <h1>🎉 實作 2 完成！</h1>
+        <p style="font-size: 24px; color: #555; margin-bottom: 30px;">恭喜你完成了自動寄信通知系統，已經學會以下技能：</p>
+
+        <div class="concept-grid" style="max-width: 900px; margin: 0 auto;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">📤</div>
+                <h3>MailApp.sendEmail()</h3>
+                <p>三參數格式：寄純文字信件</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🎨</div>
+                <h3>HTML Email</h3>
+                <p>物件格式 + htmlBody：美化信件</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                <h3>額度查詢</h3>
+                <p>getRemainingDailyQuota()</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🛡️</div>
+                <h3>try-catch 錯誤處理</h3>
+                <p>批次操作不怕某筆出錯</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">✅</div>
+                <h3>狀態回寫</h3>
+                <p>成功/失敗/略過紀錄到試算表</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🔄</div>
+                <h3>for 迴圈批次處理</h3>
+                <p>逐筆讀取名單、逐封寄出</p>
+            </div>
+        </div>
+
+        <div class="box info" style="text-align: left; max-width: 700px; margin: 30px auto;">
+            <strong>📌 下一個實作預告：</strong>實作 3 — 一鍵建立 Google 表單<br>
+            學會用程式碼自動建立 Google 表單，包含各種題型（單選、多選、下拉）和驗證規則！
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作02_自動寄信通知系統.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇1_實作03_一鍵建立Google表單.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+    </div><!-- end slide-container -->
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>
