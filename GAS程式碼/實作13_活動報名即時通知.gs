@@ -95,9 +95,13 @@ function onFormSubmit(e) {
   try {
     Logger.log('===== 收到新報名 =====');
 
-    // 取得提交的資料
-    var responses = e.namedValues;  // { '姓名': ['王小明'], 'Email': ['test@gmail.com'], ... }
-    var timestamp = e.namedValues['時間戳記'] ? e.namedValues['時間戳記'][0] : new Date().toLocaleString('zh-TW');
+    // 取得提交的資料（防呆：確認 namedValues 存在）
+    var responses = e.namedValues || e.values || {};
+    if (!responses || Object.keys(responses).length === 0) {
+      Logger.log('警告：無法取得表單資料');
+      return;
+    }
+    var timestamp = responses['時間戳記'] ? responses['時間戳記'][0] : new Date().toLocaleString('zh-TW');
 
     // 組合報名資訊
     var info = '';

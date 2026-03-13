@@ -14,7 +14,7 @@
  * 事前準備：
  *   1. 取得 Line Bot 的 Channel Access Token
  *   2. 取得你的 Line User ID
- *   3. 建立一個 Google 試算表（用於記錄已推播的新聞）
+ *   3. 在 Google 試算表的綁定專案中執行（用於記錄已推播的新聞）
  *
  * 設定排程自動執行：
  *   1. 在 Apps Script 編輯器中，點選左側「觸發條件」（鬧鐘圖示）
@@ -83,7 +83,52 @@ function pushLine(to, messages) {
 }
 
 // ============================================================
-// 第二部分：RSS 解析
+// 第二部分：試算表記錄與去重
+// ============================================================
+
+/**
+ * 檢查某則新聞是否已經推播過
+ * @param {string} title - 新聞標題
+ * @returns {boolean} 是否已推播
+ */
+function isAlreadyPushed(title) {
+  var sheet = getLogSheet();
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][1] === title) return true;
+  }
+  return false;
+}
+
+/**
+ * 將已推播的新聞記錄到試算表
+ * @param {Object[]} newsItems - 新聞項目陣列
+ */
+function logPushedNews(newsItems) {
+  var sheet = getLogSheet();
+  var now = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+  for (var i = 0; i < newsItems.length; i++) {
+    sheet.appendRow([now, newsItems[i].title, newsItems[i].link, newsItems[i].source]);
+  }
+}
+
+/**
+ * 取得或建立新聞記錄工作表
+ */
+function getLogSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('推播記錄');
+  if (!sheet) {
+    sheet = ss.insertSheet('推播記錄');
+    sheet.getRange(1, 1, 1, 4).setValues([['推播時間', '標題', '連結', '來源']]);
+    sheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1b5e20').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// ============================================================
+// 第三部分：RSS 解析
 // ============================================================
 
 /**
@@ -185,8 +230,9 @@ function formatDate(dateStr) {
 
 /**
  * 從所有 RSS 來源取得新聞並組合成推播訊息
+ * 會自動跳過已推播過的新聞（去重）
  *
- * @returns {string} 格式化後的新聞訊息
+ * @returns {Object} { message: 格式化訊息, newItems: 新推播的項目陣列 }
  */
 function buildNewsMessage() {
   var now = new Date();
@@ -197,36 +243,47 @@ function buildNewsMessage() {
   message += '━━━━━━━━━━━━━━━\n';
 
   var hasNews = false;
+  var newItems = [];  // 記錄本次新推播的項目
 
   for (var i = 0; i < RSS_FEEDS.length; i++) {
     var feed = RSS_FEEDS[i];
     Logger.log('正在抓取：' + feed.name + '（' + feed.url + '）');
 
     var items = fetchRSS(feed.url);
+    var feedNewItems = [];
 
-    if (items.length > 0) {
+    // 過濾已推播過的新聞
+    for (var j = 0; j < items.length; j++) {
+      if (!isAlreadyPushed(items[j].title)) {
+        feedNewItems.push(items[j]);
+      }
+    }
+
+    if (feedNewItems.length > 0) {
       hasNews = true;
       message += '\n【' + feed.name + '】\n';
 
-      for (var j = 0; j < items.length; j++) {
-        var item = items[j];
+      for (var k = 0; k < feedNewItems.length; k++) {
+        var item = feedNewItems[k];
         var time = formatDate(item.pubDate);
-        message += '\n' + (j + 1) + '. ' + item.title;
+        message += '\n' + (k + 1) + '. ' + item.title;
         if (time) message += '\n   🕐 ' + time;
         if (item.link) message += '\n   🔗 ' + item.link;
         message += '\n';
+
+        newItems.push({ title: item.title, link: item.link, source: feed.name });
       }
     }
   }
 
   if (!hasNews) {
-    message += '\n目前沒有取得到新聞，請檢查 RSS 來源設定。';
+    message += '\n目前沒有新的新聞，或所有新聞都已推播過。';
   }
 
   message += '\n━━━━━━━━━━━━━━━';
   message += '\n💡 由 GAS 自動推播';
 
-  return message;
+  return { message: message, newItems: newItems };
 }
 
 // ============================================================
@@ -240,8 +297,9 @@ function buildNewsMessage() {
 function sendDailyNews() {
   Logger.log('===== 開始推播每日新聞 =====');
 
-  // 組合新聞訊息
-  var newsMessage = buildNewsMessage();
+  // 組合新聞訊息（含去重）
+  var result = buildNewsMessage();
+  var newsMessage = result.message;
 
   // Line Bot 單則訊息上限 5000 字
   // 如果超過，只取前 4900 字
@@ -251,6 +309,12 @@ function sendDailyNews() {
 
   // 推播到 Line
   pushText(LINE_USER_ID, newsMessage);
+
+  // 記錄已推播的新聞到試算表（避免下次重複推播）
+  if (result.newItems.length > 0) {
+    logPushedNews(result.newItems);
+    Logger.log('已記錄 ' + result.newItems.length + ' 則新聞到試算表');
+  }
 
   Logger.log('===== 每日新聞推播完成 =====');
 }
@@ -275,9 +339,10 @@ function testFetchSingleRSS() {
  * 測試：組合新聞訊息（只在日誌中顯示，不推播）
  */
 function testBuildMessage() {
-  var message = buildNewsMessage();
-  Logger.log('訊息長度：' + message.length + ' 字');
-  Logger.log(message);
+  var result = buildNewsMessage();
+  Logger.log('訊息長度：' + result.message.length + ' 字');
+  Logger.log('新增項目：' + result.newItems.length + ' 則');
+  Logger.log(result.message);
 }
 
 /**

@@ -48,6 +48,12 @@ var IGNORE_SOURCE_TYPE = ['join', 'leave', 'follow', 'unfollow'];
  */
 function doPost(e) {
   try {
+    // 檢查 postData 是否存在
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'no postData' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var userData = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
 
@@ -70,6 +76,10 @@ function doPost(e) {
   } catch (error) {
     Logger.log('doPost 錯誤：' + error.toString());
   }
+
+  // 回傳 200 OK 給 Line 平台，避免 Webhook 重試
+  return ContentService.createTextOutput(JSON.stringify({ status: 'ok' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**

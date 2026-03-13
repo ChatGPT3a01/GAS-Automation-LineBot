@@ -1,3 +1,7 @@
+<!--
+  ⚠️ 在 Apps Script 中，此檔案必須命名為「查詢介面」（不含 .html）
+  步驟：在 GAS 編輯器中點選「+」→「HTML」→ 輸入名稱「查詢介面」→ 貼上此內容
+-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -177,6 +181,16 @@
 
   <script>
     /**
+     * HTML 跳脫（防止 XSS 攻擊）
+     * 將特殊字元轉換為安全的 HTML 實體
+     */
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(String(text)));
+      return div.innerHTML;
+    }
+
+    /**
      * 執行搜尋
      */
     function doSearch() {
@@ -184,7 +198,11 @@
       var resultsDiv = document.getElementById('results');
 
       if (!keyword) {
-        resultsDiv.innerHTML = '<div class="no-result">請輸入搜尋關鍵字</div>';
+        resultsDiv.textContent = '';
+        var noInput = document.createElement('div');
+        noInput.className = 'no-result';
+        noInput.textContent = '請輸入搜尋關鍵字';
+        resultsDiv.appendChild(noInput);
         return;
       }
 
@@ -199,32 +217,52 @@
     }
 
     /**
-     * 顯示搜尋結果
+     * 顯示搜尋結果（使用安全的 DOM 建構方式）
      */
     function showResults(data) {
       var resultsDiv = document.getElementById('results');
       var keyword = document.getElementById('keyword').value.trim();
 
+      // 清空結果區
+      resultsDiv.textContent = '';
+
       if (!data || data.length === 0) {
-        resultsDiv.innerHTML = '<div class="no-result">🔍 找不到「' + keyword + '」的相關資料</div>';
+        var noResult = document.createElement('div');
+        noResult.className = 'no-result';
+        noResult.textContent = '🔍 找不到「' + keyword + '」的相關資料';
+        resultsDiv.appendChild(noResult);
         return;
       }
 
-      var html = '<div class="result-count">🔍 搜尋「' + keyword + '」找到 <strong>' + data.length + '</strong> 筆資料</div>';
+      // 結果數量
+      var countDiv = document.createElement('div');
+      countDiv.className = 'result-count';
+      countDiv.innerHTML = '🔍 搜尋「' + escapeHtml(keyword) + '」找到 <strong>' + data.length + '</strong> 筆資料';
+      resultsDiv.appendChild(countDiv);
 
+      // 逐筆建立結果卡片
       for (var i = 0; i < data.length; i++) {
-        html += '<div class="result-card">';
+        var card = document.createElement('div');
+        card.className = 'result-card';
         var keys = Object.keys(data[i]);
         for (var j = 0; j < keys.length; j++) {
-          html += '<div class="field">';
-          html += '<span class="field-name">' + keys[j] + '</span>';
-          html += '<span class="field-value">' + data[i][keys[j]] + '</span>';
-          html += '</div>';
-        }
-        html += '</div>';
-      }
+          var fieldDiv = document.createElement('div');
+          fieldDiv.className = 'field';
 
-      resultsDiv.innerHTML = html;
+          var nameSpan = document.createElement('span');
+          nameSpan.className = 'field-name';
+          nameSpan.textContent = keys[j];
+
+          var valueSpan = document.createElement('span');
+          valueSpan.className = 'field-value';
+          valueSpan.textContent = data[i][keys[j]];
+
+          fieldDiv.appendChild(nameSpan);
+          fieldDiv.appendChild(valueSpan);
+          card.appendChild(fieldDiv);
+        }
+        resultsDiv.appendChild(card);
+      }
     }
 
     /**
@@ -232,7 +270,11 @@
      */
     function showError(error) {
       var resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '<div class="no-result">⚠️ 搜尋發生錯誤：' + error.message + '</div>';
+      resultsDiv.textContent = '';
+      var errDiv = document.createElement('div');
+      errDiv.className = 'no-result';
+      errDiv.textContent = '⚠️ 搜尋發生錯誤：' + error.message;
+      resultsDiv.appendChild(errDiv);
     }
 
     // 頁面載入後自動聚焦搜尋框

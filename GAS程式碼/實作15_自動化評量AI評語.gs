@@ -141,17 +141,17 @@ function handleEvent(event) {
     // 回覆「處理中」
     replyText(replyToken, '⏳ 正在處理你的檔案，約需 30 秒到 1 分鐘...');
 
-    // 清除狀態 & 非同步處理
+    // 清除狀態 & 處理檔案
     clearUserState(userId);
-    processFileAsync(userId, messageId, fileName);
+    processFile(userId, messageId, fileName);
   }
 }
 
 // ============================================
-// 第四部分：非同步檔案處理（核心流程）
+// 第四部分：檔案處理（核心流程）
 // ============================================
 
-function processFileAsync(userId, messageId, fileName) {
+function processFile(userId, messageId, fileName) {
   try {
     // Step 1：從 LINE 下載檔案
     const fileBlob = downloadFromLine(messageId);
@@ -184,7 +184,7 @@ function processFileAsync(userId, messageId, fileName) {
     );
 
   } catch (error) {
-    console.error('processFileAsync 錯誤:', error);
+    console.error('processFile 錯誤:', error);
     pushText(userId, '❌ 處理時發生錯誤：' + error.message + '\n\n請稍後再試。');
   }
 }
@@ -346,6 +346,11 @@ function callGemini(systemPrompt, userPrompt) {
     throw new Error('Gemini 錯誤：' + result.error.message);
   }
 
+  if (!result.candidates || !result.candidates[0] ||
+      !result.candidates[0].content || !result.candidates[0].content.parts) {
+    throw new Error('Gemini 回覆格式異常');
+  }
+
   return result.candidates[0].content.parts[0].text.trim();
 }
 
@@ -377,6 +382,10 @@ function callOpenAI(systemPrompt, userPrompt) {
 
   if (result.error) {
     throw new Error('OpenAI 錯誤：' + result.error.message);
+  }
+
+  if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+    throw new Error('OpenAI 回覆格式異常');
   }
 
   return result.choices[0].message.content.trim();

@@ -10,7 +10,9 @@
  *
  * 檔案結構（需在 Apps Script 中建立兩個檔案）：
  *   - Code.gs：此檔案（後端程式）
- *   - form.html：前端網頁（參考 04_HTML表單_前端.html）
+ *   - form.html：前端網頁
+ *     ⚠️ 在 Apps Script 中必須命名為「form」（不含 .html）
+ *     內容請參考下載包中的 04_HTML表單_前端.html
  *
  * 試算表結構（自動建立）：
  *   時間戳記 | 姓名 | Email | 訊息內容
@@ -62,6 +64,14 @@ function doGet(e) {
  */
 function processForm(formData) {
   try {
+    // 基本輸入驗證
+    if (!formData.name || !formData.email || !formData.message) {
+      return { success: false, message: '請填寫所有必填欄位。' };
+    }
+    if (formData.email.indexOf('@') === -1) {
+      return { success: false, message: 'Email 格式不正確。' };
+    }
+
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(FORM_SHEET_NAME);
 
@@ -167,7 +177,7 @@ function pushText(to, text) {
 }
 
 function pushLine(to, messages) {
-  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+  var response = UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
@@ -176,6 +186,11 @@ function pushLine(to, messages) {
     payload: JSON.stringify({ to: to, messages: messages }),
     muteHttpExceptions: true
   });
+
+  if (response.getResponseCode() !== 200) {
+    Logger.log('推播失敗，狀態碼：' + response.getResponseCode());
+    Logger.log('錯誤內容：' + response.getContentText());
+  }
 }
 
 // ========== 測試函式 ==========
