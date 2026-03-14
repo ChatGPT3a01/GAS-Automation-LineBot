@@ -495,7 +495,7 @@ function writeReportToSheet(result) {
 <div class="slide">
     <div class="content-card">
         <h2><span class="step-number">7</span> 完整流程測試</h2>
-        <p>把所有步驟串起來，一個函式搞定！</p>
+        <p>把所有步驟串起來，一個函式搞定！這個實作分成<strong>兩階段</strong>操作：先建立測試試卷，再執行 AI 審題。</p>
 
         <pre><code>// ===== 主函式：一鍵審題 =====
 function reviewExamQuestions() {
@@ -528,31 +528,132 @@ function reviewExamQuestions() {
   Logger.log('📊 報告連結：' + report.getUrl());
 }</code></pre>
 
-        <h3>測試方式</h3>
-        <div class="micro-step">
-            <span class="action">👆 動作：</span>確認 <code>GEMINI_API_KEY</code> 和 <code>EXAM_DOC_ID</code> 已正確設定<br>
-            <span class="action">👆 動作：</span>在函式下拉選單中選擇 <code>reviewExamQuestions</code>，然後點擊 <strong>▶ 執行</strong><br>
-            <span class="result">⏱️ 等待：</span>約 15~30 秒（讀文件 + AI 分析 + 寫報告）<br>
-            <span class="result">👀 結果：</span>Logger 會印出審查摘要和試算表連結
+        <!-- 三階段視覺化流程 -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 25px 0 10px;">
+            <div class="flow-step" style="background: #e3f2fd; border-color: #90caf9;">📄 第一階段：建立試卷</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step" style="background: #fff3e0; border-color: #ffcc80;">🤖 第二階段：AI 審查</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step" style="background: #e8f5e9; border-color: #a5d6a7;">📊 查看報告</div>
         </div>
 
-        <div class="two-col">
+        <!-- 第一階段 -->
+        <h3 style="margin-top: 25px; padding: 8px 16px; background: #e3f2fd; border-radius: 8px; border-left: 5px solid #1565c0; color: #1565c0;">📌 第一階段：建立測試試卷</h3>
+
+        <div class="micro-step">
+            <strong>Step 1：建立 GAS 專案</strong><br>
+            <span class="action">👆 動作：</span>打開任一 Google 試算表 → 點選上方「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」<br>
+            <span class="result">👀 預期：</span>GAS 編輯器開啟，畫面上有預設的 <code>myFunction</code>
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 2：貼上程式碼</strong><br>
+            <span class="action">👆 動作：</span>全選預設程式碼（Ctrl+A）→ 刪除 → 貼上本實作的完整程式碼<br>
+            <span class="action">👆 動作：</span>按 <strong>Ctrl+S</strong> 儲存 → 確認編輯器沒有出現紅色錯誤底線<br>
+            <span class="result">👀 預期：</span>左側檔案列表顯示 <code>程式碼.gs</code>，無任何錯誤
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 3：設定 API Key</strong><br>
+            <span class="action">👆 動作：</span>找到程式碼最上方的設定區，把 <code>GEMINI_API_KEY</code> 換成你的 API Key<br>
+            <span class="action">👆 動作：</span><code>EXAM_DOC_ID</code> 先不動（等一下會自動取得）<br>
+            <span class="action">👆 動作：</span>再次按 <strong>Ctrl+S</strong> 儲存
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 4：建立範例試卷</strong><br>
+            <span class="action">👆 動作：</span>點擊上方的函式下拉選單 → 選擇 <code>createSampleExam</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong><br>
+            <span class="result">👀 預期：</span>第一次執行會跳出授權視窗 → 依照畫面指示完成授權<br>
+            <span class="result">⏱️ 等待：</span>約 5 秒<br>
+            <span class="result">👀 預期：</span>底部出現「執行完畢」
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 5：取得文件 ID</strong><br>
+            <span class="action">👆 動作：</span>點擊左側「<strong>⏱ 執行項目</strong>」圖示（時鐘圖示）<br>
+            <span class="result">👀 預期：</span>找到最新的執行記錄，點擊展開，看到：<br>
+            <div style="background: #282c34; color: #abb2bf; padding: 12px 16px; border-radius: 8px; margin: 8px 0; font-family: Consolas, monospace; font-size: 15px; line-height: 1.8;">
+                ✅ 範例試卷已建立！<br>
+                📄 文件 ID：1aBcDeFgHiJkLmNoPqRsTuVwXyZ<br>
+                📎 開啟連結：https://docs.google.com/document/d/...
+            </div>
+            <span class="action">👆 動作：</span>複製「文件 ID：」後面那串英數字<br>
+            <span class="action">👆 動作：</span>回到程式碼，把 <code>EXAM_DOC_ID</code> 的值改成剛才複製的 ID<br>
+            <span class="action">👆 動作：</span>按 <strong>Ctrl+S</strong> 儲存
+        </div>
+
+        <!-- 第二階段 -->
+        <h3 style="margin-top: 25px; padding: 8px 16px; background: #fff3e0; border-radius: 8px; border-left: 5px solid #e65100; color: #e65100;">📌 第二階段：執行 AI 審題</h3>
+
+        <div class="micro-step">
+            <strong>Step 6：執行主函式</strong><br>
+            <span class="action">👆 動作：</span>點擊上方的函式下拉選單 → 選擇 <code>reviewExamQuestions</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 15~30 秒（讀文件 + AI 審查 + 寫報告）<br>
+            <span class="result">👀 預期：</span>底部出現「執行完畢」
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 7：查看執行結果</strong><br>
+            <span class="action">👆 動作：</span>點擊左側「<strong>⏱ 執行項目</strong>」→ 展開最新的執行記錄<br>
+            <span class="result">👀 預期：</span>看到 AI 審查的完整結果，類似下方內容：<br>
+            <div style="background: #282c34; color: #abb2bf; padding: 12px 16px; border-radius: 8px; margin: 8px 0; font-family: Consolas, monospace; font-size: 14px; line-height: 1.8;">
+                📝 開始審查段考試題...<br>
+                ✅ 已讀取試卷，共 186 個字<br>
+                🤖 正在請 AI 審查...<br>
+                ===== 審查結果摘要 =====<br>
+                題目數量：4<br>
+                整體評分：7 / 10<br>
+                整體評語：整體試題品質尚可，但第 4 題有明顯瑕疵...<br>
+                <br>
+                --- 第 1 題 ---<br>
+                &nbsp;&nbsp;清晰度：5/5<br>
+                &nbsp;&nbsp;難度：簡單<br>
+                &nbsp;&nbsp;選項品質：4/5<br>
+                &nbsp;&nbsp;問題：無<br>
+                &nbsp;&nbsp;建議：無<br>
+                <br>
+                --- 第 4 題 ---<br>
+                &nbsp;&nbsp;清晰度：1/5<br>
+                &nbsp;&nbsp;難度：無法判定<br>
+                &nbsp;&nbsp;選項品質：1/5<br>
+                &nbsp;&nbsp;問題：題意不清，無法判斷要問什麼<br>
+                &nbsp;&nbsp;建議：需要具體的問題描述和合理的選項<br>
+                <br>
+                🎉 審查完成！<br>
+                📊 報告連結：https://docs.google.com/spreadsheets/d/...
+            </div>
+            <span class="result">👀 重點：</span>第 4 題（故意有問題的題目）應該被 AI 標記「<strong>題意不清</strong>」或「<strong>選項不合理</strong>」
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 8：查看審查報告試算表</strong><br>
+            <span class="action">👆 動作：</span>點擊 Logger 最後一行的試算表連結開啟報告<br>
+            <span class="result">👀 預期：</span>自動產生的試算表，有<strong>深綠色標題列</strong><br>
+            <span class="result">👀 預期：</span>每一列是一題的審查結果（題號、清晰度、難度、選項品質、問題、建議）<br>
+            <span class="result">👀 預期：</span>底部有<strong>整體評分</strong>和<strong>整體評語</strong>
+        </div>
+
+        <!-- 成功/失敗對照 -->
+        <div class="two-col" style="margin-top: 20px;">
             <div class="col">
                 <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
                 <ul>
-                    <li>Logger 印出「審查完成！」</li>
-                    <li>每一題都有清晰度、難度、選項品質的評分</li>
-                    <li>第 4 題（故意有問題的）應該被 AI 標註「題意不清」</li>
-                    <li>Google Drive 中多了一份「段考審查報告」試算表</li>
+                    <li>Logger 顯示「🎉 審查完成！」</li>
+                    <li>Google Drive 出現新試算表「段考審查報告_xxxx」</li>
+                    <li>試算表有深綠色標題列 + 4 題審查結果</li>
+                    <li>第 4 題被 AI 標記有問題（清晰度低分）</li>
+                    <li>每一題都有具體的評分和建議</li>
                 </ul>
             </div>
             <div class="col">
-                <h3 style="color: #e53935;">❌ 失敗的樣子</h3>
+                <h3 style="color: #e53935;">❌ 失敗排查</h3>
                 <ul>
-                    <li>出現紅色錯誤文字</li>
-                    <li>「API 回覆失敗」→ 檢查 API Key</li>
-                    <li>「SyntaxError」→ AI 回覆格式有誤，再執行一次</li>
-                    <li>「文件找不到」→ 檢查 EXAM_DOC_ID 是否正確</li>
+                    <li>「<strong>文件找不到</strong>」→ 確認 EXAM_DOC_ID 是否正確（從執行記錄複製）</li>
+                    <li>「<strong>API 回覆失敗</strong>」→ 檢查 API Key 是否正確、有無多餘空格</li>
+                    <li>「<strong>SyntaxError</strong>」→ AI 回覆格式有誤，再執行一次即可</li>
+                    <li>第 4 題沒被標記問題 → AI 判斷可能不同，屬正常現象</li>
                 </ul>
             </div>
         </div>

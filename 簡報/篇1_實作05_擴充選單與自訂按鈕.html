@@ -436,41 +436,91 @@ function clearDataSafe() {
 <!-- ======================== Slide 10: 測試方式 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>🧪 測試方式</h2>
+        <h2>🧪 測試方式（詳細步驟）</h2>
         <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
-            依照以下步驟測試你的擴充選單。
+            依照以下步驟，逐步測試你的擴充選單。每一步都有動作與預期結果。
         </p>
+
         <div class="micro-step">
             <span class="step-number">1</span>
-            <strong>貼上程式碼</strong><br>
-            在 GAS 編輯器中貼上所有程式碼（含 onOpen 和各功能函式）
+            <strong>建立 GAS 專案</strong><br>
+            👆 <strong>動作：</strong>打開一份 Google 試算表 → 點擊上方選單「擴充功能」→ 點「Apps Script」<br>
+            👀 <strong>結果：</strong>瀏覽器開啟新分頁，顯示 GAS 編輯器畫面
         </div>
+
         <div class="micro-step">
             <span class="step-number">2</span>
-            <strong>儲存專案</strong><br>
-            按 <code>Ctrl + S</code> 儲存 → 確認沒有紅色錯誤
+            <strong>貼上程式碼</strong><br>
+            👆 <strong>動作：</strong>在 GAS 編輯器中，用 <code>Ctrl + A</code> 選取所有預設程式碼 → 按 <code>Delete</code> 刪除 → 貼上本實作的完整程式碼<br>
+            👀 <strong>結果：</strong>編輯器中出現包含 <code>onOpen()</code>、<code>showMessage()</code>、<code>addNewData()</code>、<code>clearData()</code> 等函式的程式碼
         </div>
+
         <div class="micro-step">
             <span class="step-number">3</span>
-            <strong>重新整理試算表頁面</strong><br>
-            切到試算表 → 按 <code>F5</code> 或 <code>Ctrl + R</code> 重新整理頁面<br>
-            等待幾秒鐘 → 上方選單列出現「🔧 我的工具箱」
+            <strong>儲存專案</strong><br>
+            👆 <strong>動作：</strong>按 <code>Ctrl + S</code> 儲存<br>
+            👀 <strong>結果：</strong>確認編輯器上方沒有出現紅色錯誤提示，標題旁的「●」消失表示已儲存
         </div>
+
         <div class="micro-step">
             <span class="step-number">4</span>
-            <strong>測試各項功能</strong><br>
-            點擊「🔧 我的工具箱」→ 逐一測試每個選單項目<br>
-            第一次執行會需要授權（選擇帳號 → 進階 → 前往）
+            <strong>觸發 onOpen() — 重新整理試算表</strong><br>
+            👆 <strong>動作：</strong>切回試算表的瀏覽器分頁 → 按 <code>F5</code> 重新整理頁面<br>
+            ⏱️ <strong>等待：</strong>3～5 秒（GAS 需要時間載入執行 onOpen）<br>
+            👀 <strong>結果：</strong>試算表上方的選單列最右邊，出現一個全新的選單「🔧 我的工具箱」<br>
+            📍 <strong>位置：</strong>在「說明」選單的右邊，跟「檔案、編輯、檢視…」排在同一列
         </div>
+
         <div class="micro-step">
             <span class="step-number">5</span>
-            <strong>驗證結果</strong><br>
-            ✅ 新增資料：最後一列出現新資料<br>
-            ✅ 產生報表：出現「報表」工作表<br>
-            ✅ 清除資料：需要雙重確認後才清除
+            <strong>測試選單功能（含授權）</strong><br>
+            👆 <strong>動作：</strong>點擊上方的「🔧 我的工具箱」<br>
+            👀 <strong>結果：</strong>展開下拉選單，看到三個項目：「📊 產生報表」「➕ 新增資料」和「🗑️ 清除資料」<br>
+            👆 <strong>動作：</strong>第一次點擊任一項目時，會跳出授權視窗<br>
+            👆 <strong>授權流程：</strong>點「審查權限」→ 選擇你的 Google 帳號 → 點左下角「進階」→ 點「前往（專案名稱）」→ 點「允許」
         </div>
-        <div class="box success">
-            <strong>成功畫面：</strong>重新整理試算表後，上方選單列出現「🔧 我的工具箱」選單，點擊後能看到所有功能項目，執行時會彈出對話框。
+
+        <div class="micro-step">
+            <span class="step-number">6</span>
+            <strong>測試「新增資料」</strong><br>
+            👆 <strong>動作：</strong>點「🔧 我的工具箱」→ 點「➕ 新增資料」<br>
+            👀 <strong>結果：</strong>螢幕中間彈出一個輸入對話框，標題是「➕ 新增資料」，下方有輸入欄位和「確定 / 取消」按鈕<br>
+            👆 <strong>動作：</strong>在輸入框中打字，例如「測試項目」→ 按「確定」<br>
+            👀 <strong>結果：</strong>彈出成功提示：「✅ 已新增：測試項目」<br>
+            👆 <strong>動作：</strong>按「確定」關閉提示<br>
+            👀 <strong>結果：</strong>試算表最後一列出現「測試項目」和時間戳記
+        </div>
+
+        <div class="micro-step">
+            <span class="step-number">7</span>
+            <strong>測試「產生報表」</strong><br>
+            👆 <strong>動作：</strong>點「🔧 我的工具箱」→ 點「📊 產生報表」<br>
+            👀 <strong>結果：</strong>彈出提示：「✅ 報表已產生！請切換到「報表」工作表查看。」<br>
+            👆 <strong>動作：</strong>點擊試算表底部新出現的「報表」工作表分頁<br>
+            👀 <strong>結果：</strong>看到報表標題、產生時間、資料筆數等統計資訊
+        </div>
+
+        <h3 style="margin-top: 30px;">成功 / 失敗 對照</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功畫面</h3>
+                <ul>
+                    <li>試算表上方選單列最右邊出現「🔧 我的工具箱」</li>
+                    <li>點擊後展開下拉選單，顯示所有功能項目</li>
+                    <li>點選「➕ 新增資料」後，螢幕中央彈出輸入對話框</li>
+                    <li>輸入內容按確定後，試算表最後一列出現新資料</li>
+                    <li>「📊 產生報表」執行後出現「報表」工作表</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #c62828;">❌ 常見失敗</h3>
+                <ul>
+                    <li><strong>選單沒出現</strong> — 忘了重新整理試算表頁面（按 F5）</li>
+                    <li><strong>點選單項目沒反應</strong> — <code>addItem</code> 裡的函式名稱字串打錯</li>
+                    <li><strong>對話框報錯</strong> — 在 GAS 編輯器直接執行含 <code>getUi()</code> 的函式（必須從試算表選單觸發）</li>
+                    <li><strong>授權失敗</strong> — 沒有點「進階」→「前往專案」，直接關掉了授權視窗</li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>

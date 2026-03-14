@@ -470,7 +470,51 @@ function createContentSlides(presentation, slides) {
     </div>
 </div>
 
-<!-- ======================== Slide 11: 完整流程 ======================== -->
+<!-- ======================== Slide 11: AI 回傳範例 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 AI 回傳的 JSON 長什麼樣？</h2>
+        <p>當你呼叫 Gemini API 後，AI 會回傳一段 JSON 文字。以下是一個實際回傳的範例：</p>
+
+        <div class="box info" style="padding: 20px 25px;">
+            <strong>AI 實際回傳的 JSON 範例：</strong>
+            <pre style="margin: 15px 0 0 0; font-size: 16px;"><code>{
+  "title": "人工智慧入門",
+  "subtitle": "從基礎觀念到實際應用",
+  "slides": [
+    {
+      "heading": "什麼是人工智慧？",
+      "bullets": [
+        "AI 是讓電腦模擬人類智慧的技術",
+        "包含機器學習、深度學習、自然語言處理",
+        "已廣泛應用於日常生活"
+      ]
+    },
+    {
+      "heading": "AI 的三大類型",
+      "bullets": [...]
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <h3>每個欄位代表什麼意思？</h3>
+        <ul class="explain-list">
+            <li><code>"title"</code> — 簡報的大標題，會放在封面頁</li>
+            <li><code>"subtitle"</code> — 副標題，放在封面頁標題下方</li>
+            <li><code>"slides"</code> — 一個陣列，每個元素是一頁投影片</li>
+            <li><code>"heading"</code> — 這一頁的標題，會顯示在頁面上方的綠色橫條</li>
+            <li><code>"bullets"</code> — 這一頁的重點列表，每個字串是一個重點條目</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 程式怎麼使用這段 JSON？</strong><br>
+            程式就是用 <code>JSON.parse()</code> 把這段文字變成物件，然後用 <code>outline.title</code> 取標題、<code>outline.slides[0].heading</code> 取第一頁標題、<code>outline.slides[0].bullets[0]</code> 取第一頁的第一個重點。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 完整流程 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2><span class="step-number">7</span> 完整流程測試</h2>
@@ -510,20 +554,84 @@ function generatePresentation() {
   Logger.log('📎 開啟連結：' + pres.getUrl());
 }</code></pre>
 
-        <h3>測試方式</h3>
+        <h3>設定 → 貼碼 → 執行 操作流程</h3>
+
         <div class="micro-step">
-            <span class="action">👆 動作：</span>在函式下拉選單中選擇 <code>generatePresentation</code>，然後點擊 <strong>▶ 執行</strong><br>
-            <span class="result">⏱️ 等待：</span>約 10~20 秒（AI 需要思考 + 建立簡報）<br>
-            <span class="result">👀 結果：</span>執行記錄會顯示簡報的網址，點擊就能看到自動生成的簡報！
+            <strong>Step 1：建立 GAS 專案</strong><br>
+            <span class="action">👆 動作：</span>打開任一 Google 試算表（或新建一個）→ 擴充功能 → Apps Script<br>
+            <span class="result">👀 結果：</span>GAS 編輯器開啟，畫面上有一段預設的空白程式碼
         </div>
 
-        <div class="box success">
-            <strong>✅ 成功後你會看到：</strong>Google 雲端硬碟中多了一份新的簡報，有漂亮的封面頁和多頁內容，全部都是 AI 自動生成的！
+        <div class="micro-step">
+            <strong>Step 2：貼上程式碼</strong><br>
+            <span class="action">👆 動作：</span>全選刪除預設程式碼 → 貼上完整程式碼（從封面頁下載的 <code>.gs</code> 檔案內容）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存 → 確認沒有紅色錯誤底線<br>
+            <span class="result">👀 結果：</span>程式碼顯示正常，沒有任何紅色標記
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 3：設定 API Key</strong><br>
+            <span class="action">👆 動作：</span>找到程式碼最上方的設定區<br>
+            <span class="action">👆 動作：</span>把 <code>var GEMINI_API_KEY = '你的_API_Key';</code> 裡的引號內容，換成你在 Google AI Studio 複製的 API Key<br>
+            <span class="action">👆 動作：</span>再次 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>API Key 已正確貼入，引號內是一串 <code>AIzaSy...</code> 開頭的長字串
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 4：修改主題（可選）</strong><br>
+            <span class="action">👆 動作：</span>找到 <code>generatePresentation()</code> 函式中的 <code>var topic = '人工智慧入門';</code><br>
+            <span class="action">👆 動作：</span>可以改成你想要的主題，例如 <code>'Google Apps Script 教學'</code><br>
+            <span class="result">👀 結果：</span>主題文字已修改完成
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 5：執行程式</strong><br>
+            <span class="action">👆 動作：</span>在函式下拉選單中選擇 <code>generatePresentation</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong><br>
+            <span class="result">👀 結果：</span>第一次會跳出授權視窗 → 按照授權流程操作（選擇帳號 → 進階 → 前往專案 → 允許）<br>
+            <span class="result">⏱️ 等待：</span>10~30 秒（AI 生成大綱 + 建立簡報需要時間）<br>
+            <span class="result">👀 結果：</span>底部狀態列出現「執行完畢」
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 6：查看結果</strong><br>
+            <span class="action">👆 動作：</span>點擊左側「⏱ 執行項目」圖示，找到最新的執行記錄<br>
+            <span class="result">👀 結果：</span>看到綠色「已完成」狀態<br>
+            <span class="action">👆 動作：</span>展開記錄，找到「📎 開啟連結：https://docs.google.com/...」<br>
+            <span class="action">👆 動作：</span>點擊這個連結<br>
+            <span class="result">👀 結果：</span>瀏覽器開啟一份全新的 Google 簡報！有封面頁 + 5~8 頁內容頁！
+        </div>
+
+        <div class="micro-step">
+            <strong>Step 7：到 Google Drive 確認</strong><br>
+            <span class="action">👆 動作：</span>打開 <code>drive.google.com</code><br>
+            <span class="result">👀 結果：</span>根目錄出現一份以 AI 生成標題命名的簡報檔案
+        </div>
+
+        <h3 style="margin-top: 25px;">成功 / 失敗對照</h3>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>Google Drive 根目錄出現新簡報</li>
+                    <li>封面頁有標題和副標題，深綠色背景</li>
+                    <li>5~8 頁內容頁，每頁有標題和重點條目</li>
+                    <li>執行記錄顯示綠色「已完成」</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗怎麼辦</h3>
+                <ul>
+                    <li><strong>API Key 錯誤（403）</strong>→ 到 Google AI Studio 重新複製 API Key</li>
+                    <li><strong>JSON 解析失敗</strong>→ 再執行一次（AI 每次回覆可能不同）</li>
+                    <li><strong>簡報排版不好看</strong>→ 調整 Prompt，限制每頁字數和重點數量</li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 12: 常見問題排解 ======================== -->
+<!-- ======================== Slide 13: 常見問題排解 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>❓ 常見問題排解</h2>
@@ -576,7 +684,7 @@ function generatePresentation() {
     </div>
 </div>
 
-<!-- ======================== Slide 13: 重點回顧 ======================== -->
+<!-- ======================== Slide 14: 重點回顧 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>📝 重點回顧</h2>
@@ -626,7 +734,7 @@ function generatePresentation() {
     </div>
 </div>
 
-<!-- ======================== Slide 14: 完成頁 ======================== -->
+<!-- ======================== Slide 15: 完成頁 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
         <div style="font-size: 80px; margin-bottom: 20px;">🎨</div>

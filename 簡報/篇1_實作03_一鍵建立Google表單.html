@@ -487,45 +487,156 @@ function createFormFromSheet() {
     </div>
 </div>
 
-<!-- ======================== Slide 12: 測試流程 ======================== -->
+<!-- ======================== Slide 12: 詳細操作步驟 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>🧪 測試流程</h2>
+        <h2>📍 建立 GAS 專案並貼上程式碼</h2>
         <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
-            依照以下步驟，一步一步測試你的程式。
+            在開始測試之前，先把程式碼放進 GAS 編輯器。如果你已經做過實作 0，這些步驟會很熟悉。
         </p>
         <div class="micro-step">
             <span class="step-number">1</span>
-            <strong>先執行 createSampleQuestions()</strong><br>
-            在 GAS 編輯器上方選擇函式 → 點擊 ▶ 執行 → 等待試算表出現「題庫」工作表
+            <strong>打開 GAS 編輯器</strong><br>
+            👆 打開任意一個 Google 試算表（新建或現有的都可以）<br>
+            👆 點擊上方選單「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」<br>
+            👀 瀏覽器會開啟新分頁，顯示 GAS 程式碼編輯器
         </div>
         <div class="micro-step">
             <span class="step-number">2</span>
-            <strong>檢查試算表</strong><br>
-            切回試算表 → 確認有「題庫」分頁 → 裡面有 6 題範例題目
+            <strong>清除預設程式碼</strong><br>
+            👆 在編輯器中，按 <code>Ctrl + A</code> 全選預設的 <code>myFunction()</code> 程式碼<br>
+            👆 按 <code>Delete</code> 或 <code>Backspace</code> 刪除<br>
+            👀 編輯區域變成空白
         </div>
         <div class="micro-step">
             <span class="step-number">3</span>
-            <strong>執行 createFormFromSheet()</strong><br>
-            回到 GAS 編輯器 → 選擇此函式 → 點擊 ▶ 執行 → 第一次需授權（選擇你的帳號 → 進階 → 前往）
+            <strong>貼上完整程式碼</strong><br>
+            👆 從封面頁點「📥 下載程式碼」下載 <code>.gs</code> 檔案<br>
+            👆 用「記事本」或任何文字編輯器打開 <code>.gs</code> 檔案<br>
+            👆 按 <code>Ctrl + A</code> 全選 → <code>Ctrl + C</code> 複製<br>
+            👆 回到 GAS 編輯器，按 <code>Ctrl + V</code> 貼上<br>
+            👀 編輯器中出現完整的程式碼（包含 <code>createSampleQuestions</code> 和 <code>createFormFromSheet</code> 兩個函式）
         </div>
         <div class="micro-step">
             <span class="step-number">4</span>
-            <strong>檢查結果</strong><br>
-            回到試算表 → E 欄出現「填寫連結」→ 點擊連結 → 看到自動建立的表單！
+            <strong>確認設定區</strong><br>
+            📍 此實作不需要額外填入 API Key 或設定常數<br>
+            👀 程式碼會自動使用你目前打開的試算表，不用改任何設定
         </div>
         <div class="micro-step">
             <span class="step-number">5</span>
-            <strong>到 Google Drive 確認</strong><br>
-            打開 Google Drive → 在根目錄找到「自動建立的問卷調查」→ 點開確認題目正確
+            <strong>儲存專案</strong><br>
+            👆 按 <code>Ctrl + S</code> 儲存<br>
+            👀 上方標題旁邊如果有「未儲存」的圓點會消失<br>
+            👀 確認編輯器中沒有出現紅色底線或錯誤提示
         </div>
-        <div class="box success">
-            <strong>成功畫面：</strong>Google 表單自動產生，包含 6 道題目（文字題、單選題、多選題、下拉選單），試算表 E 欄出現可點擊的表單連結。
+        <div class="box info">
+            <strong>小提醒：</strong>如果貼上後看到紅色波浪底線，可能是複製時多了空白或少了字元。建議重新下載 <code>.gs</code> 檔案，再全選複製一次。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 13: 常見問題排解 ======================== -->
+<!-- ======================== Slide 13: 測試流程 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🧪 測試流程（詳細步驟）</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            依照以下步驟，一步一步測試你的程式。每一步都有明確的動作和預期結果。
+        </p>
+        <div class="micro-step">
+            <span class="step-number">1</span>
+            <strong>執行 createSampleQuestions()：建立範例題庫</strong><br>
+            👆 在 GAS 編輯器上方，找到函式下拉選單（預設顯示 <code>createSampleQuestions</code>）<br>
+            📍 如果下拉選單不是顯示這個函式名稱，點下拉選單手動選擇 <code>createSampleQuestions</code><br>
+            👆 點擊下拉選單左邊的 <strong>▶ 執行</strong> 按鈕<br>
+            👀 底部「執行紀錄」區域會顯示「執行開始」，等 3-5 秒後出現「執行完畢」
+        </div>
+        <div class="micro-step">
+            <span class="step-number">2</span>
+            <strong>確認題庫已建立</strong><br>
+            👆 切回試算表頁面（點瀏覽器上方的試算表分頁）<br>
+            👀 試算表底部出現新的工作表分頁「<strong>題庫</strong>」<br>
+            👆 點擊「題庫」分頁<br>
+            👀 看到第 1 列是標題（題型、題目、選項），第 2-7 列是 6 筆題目資料<br>
+            👀 A 欄有「文字」「單選」「多選」「下拉」等題型，B 欄是題目，C 欄是選項
+        </div>
+        <div class="micro-step">
+            <span class="step-number">3</span>
+            <strong>執行 createFormFromSheet()：自動建立表單</strong><br>
+            👆 切回 GAS 編輯器（點瀏覽器上方的 Apps Script 分頁）<br>
+            👆 在函式下拉選單中，選擇 <code>createFormFromSheet</code><br>
+            👆 點擊 <strong>▶ 執行</strong> 按鈕<br>
+            👀 第一次執行時，會跳出「需要授權」的對話框 → 進入 Step 4
+        </div>
+        <div class="micro-step">
+            <span class="step-number">4</span>
+            <strong>完成授權流程（只有第一次需要）</strong><br>
+            👆 點「<strong>審查權限</strong>」按鈕<br>
+            👆 選擇你的 Google 帳號<br>
+            👆 出現警告畫面時，點左下角「<strong>進階</strong>」<br>
+            👆 點「<strong>前往（你的專案名稱）</strong>」<br>
+            👆 點「<strong>允許</strong>」按鈕<br>
+            👀 回到 GAS 編輯器，程式自動開始執行<br>
+            👀 底部「執行紀錄」顯示「執行完畢」（約 5-10 秒）
+        </div>
+        <div class="micro-step">
+            <span class="step-number">5</span>
+            <strong>確認表單建立結果</strong><br>
+            👆 切回試算表（點瀏覽器上方的試算表分頁）<br>
+            👀 「題庫」工作表的 <strong>E1</strong> 出現「填寫連結」、<strong>F1</strong> 出現「編輯連結」<br>
+            👀 <strong>E2</strong> 出現一段 Google Forms 的網址（以 <code>https://docs.google.com/forms/</code> 開頭）<br>
+            👆 點擊 E2 儲存格中的連結<br>
+            👀 瀏覽器開啟新分頁，顯示你自動建立的 Google 表單！
+        </div>
+        <div class="micro-step">
+            <span class="step-number">6</span>
+            <strong>到 Google Drive 確認</strong><br>
+            👆 打開 <code>drive.google.com</code><br>
+            👀 在「我的雲端硬碟」根目錄找到「<strong>自動建立的問卷調查</strong>」<br>
+            👆 雙擊打開，確認表單有 6 道題目，題型包含文字、單選、多選、下拉
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅ 成功 / ❌ 失敗 對照</h2>
+        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">
+            對照下方的檢查清單，確認你的結果是否正確。如果遇到右欄的情況，按照解法排除。
+        </p>
+        <div class="two-col">
+            <div class="col" style="border: 2px solid #28a745; background: #f0fff0;">
+                <h3 style="color: #28a745;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>試算表底部出現「<strong>題庫</strong>」工作表分頁</li>
+                    <li>題庫中有 6 列資料（A 欄題型、B 欄題目、C 欄選項）</li>
+                    <li>E1 顯示「填寫連結」、F1 顯示「編輯連結」</li>
+                    <li>E2 是一段 <code>https://docs.google.com/forms/...</code> 的網址</li>
+                    <li>點開連結後看到 Google 表單，有 6 道題目</li>
+                    <li>表單包含：2 題文字題、2 題單選題、1 題多選題、1 題下拉選單</li>
+                    <li>Google Drive 根目錄出現「自動建立的問卷調查」</li>
+                </ul>
+            </div>
+            <div class="col" style="border: 2px solid #dc3545; background: #fff5f5;">
+                <h3 style="color: #dc3545;">❌ 常見失敗與快速解法</h3>
+                <ul>
+                    <li><strong>「題庫」分頁沒出現</strong><br>→ 確認執行的是 <code>createSampleQuestions</code>（不是 <code>createFormFromSheet</code>）</li>
+                    <li><strong>E 欄沒有連結</strong><br>→ 確認已成功執行 <code>createFormFromSheet</code>，檢查「執行紀錄」有無錯誤訊息</li>
+                    <li><strong>「TypeError: Cannot read property 'split'」</strong><br>→ 文字題的 C 欄必須留空白（不要填任何文字），檢查是否不小心多打了字</li>
+                    <li><strong>授權畫面跑不出來</strong><br>→ 檢查瀏覽器是否封鎖了彈出視窗，允許 script.google.com 的彈出視窗</li>
+                    <li><strong>表單只有部分題目</strong><br>→ 確認題庫工作表的 A 欄題型只填「文字」「單選」「多選」「下拉」四種</li>
+                    <li><strong>重複執行會建立多個表單</strong><br>→ 這是正常的！每次執行都會建立新表單。到 Google Drive 刪除不要的即可</li>
+                </ul>
+            </div>
+        </div>
+        <div class="box warning">
+            <strong>除錯技巧：</strong>在 GAS 編輯器中，點擊左側選單的「<strong>執行項目</strong>」圖示（時鐘圖示），可以看到每次執行的紀錄和錯誤訊息。如果出現紅色錯誤，先看錯誤訊息的第一行，通常就能找到問題所在。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 常見問題排解 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>❓ 常見問題排解</h2>
@@ -563,7 +674,7 @@ function createFormFromSheet() {
     </div>
 </div>
 
-<!-- ======================== Slide 14: 總結 ======================== -->
+<!-- ======================== Slide 16: 總結 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
         <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
