@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/"
+  to = "/簡報/index.html"
+  status = 302
+  force = true
