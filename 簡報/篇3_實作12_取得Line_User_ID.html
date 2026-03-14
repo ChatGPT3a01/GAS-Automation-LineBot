@@ -332,6 +332,27 @@ U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6
             <span class="result">👀 結果：</span>你已經拿到 userId 了！
         </div>
 
+        <div class="two-col" style="margin-top: 25px;">
+            <div class="col" style="border-left: 4px solid #28a745;">
+                <h3 style="color: #28a745;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>Bot <strong>秒回</strong>你的 userId（<code>U</code> 開頭長字串）</li>
+                    <li>個人聊天：顯示「這是個人聊天」</li>
+                    <li>群組聊天：額外顯示 groupId</li>
+                    <li>長按 userId 可以直接複製</li>
+                </ul>
+            </div>
+            <div class="col" style="border-left: 4px solid #dc3545;">
+                <h3 style="color: #dc3545;">❌ 失敗怎麼辦</h3>
+                <ul>
+                    <li><strong>Bot 完全沒回應</strong> → Webhook URL 貼錯或「Use webhook」沒開</li>
+                    <li><strong>Bot 回覆系統預設訊息</strong> → 忘了部署新版本或部署類型選錯</li>
+                    <li><strong>出現英文錯誤</strong> → LINE_TOKEN 填錯或沒存檔</li>
+                    <li><strong>只回 userId 沒回 groupId</strong> → 你是在個人聊天傳的，要在群組中傳</li>
+                </ul>
+            </div>
+        </div>
+
         <div class="box success">
             <strong>🎉 就這麼簡單！</strong>傳個「你好」就拿到 ID 了。
         </div>
@@ -409,7 +430,51 @@ var LINE_USER_ID = 'U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6';</code></pre>
     </div>
 </div>
 
-<!-- ======================== Slide 11: 程式碼解說 ======================== -->
+<!-- ======================== Slide 11: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔧 常見問題排解</h2>
+
+        <table>
+            <thead>
+                <tr><th>問題</th><th>原因</th><th>解決方法</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Bot 完全沒回覆</strong></td>
+                    <td>Webhook URL 沒設定</td>
+                    <td>確認 LINE Developers 的 Webhook URL 已貼上 GAS 部署網址</td>
+                </tr>
+                <tr>
+                    <td><strong>Bot 回覆罐頭訊息</strong></td>
+                    <td>沒部署或沒選「新版本」</td>
+                    <td>部署 → 管理部署 → 鉛筆圖示 → 版本選「新版本」→ 部署</td>
+                </tr>
+                <tr>
+                    <td><strong>授權視窗沒出現</strong></td>
+                    <td>已經授權過了</td>
+                    <td>這是正常的，如果之前已授權就不會再跳</td>
+                </tr>
+                <tr>
+                    <td><strong>userId 顯示 undefined</strong></td>
+                    <td>LINE Token 無效</td>
+                    <td>重新從 LINE Developers 複製 Token</td>
+                </tr>
+                <tr>
+                    <td><strong>在群組傳訊息沒回覆</strong></td>
+                    <td>Bot 沒被加入群組</td>
+                    <td>先邀請 Bot 加入群組，再傳訊息</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="box warning">
+            <strong>⚠️ 除錯方式：</strong>到 GAS 編輯器左側的「⏱ 執行項目」查看錯誤記錄。如果沒有任何記錄，代表 LINE 根本沒呼叫到你的 GAS → 檢查 Webhook URL。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解說 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>📖 程式碼解說</h2>
@@ -447,7 +512,7 @@ var LINE_USER_ID = 'U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6';</code></pre>
     </div>
 </div>
 
-<!-- ======================== Slide 12: 完成頁 ======================== -->
+<!-- ======================== Slide 13: 完成頁 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
         <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>

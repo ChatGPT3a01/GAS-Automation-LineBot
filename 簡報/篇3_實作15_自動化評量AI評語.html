@@ -104,7 +104,7 @@
         <div style="margin-top: 20px;">
             <a href="../GAS程式碼/實作15_自動化評量AI評語.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
         </div>
-        <p style="font-size: 16px; color: #999; margin-top: 30px;">Day 1 — Part 7 / 壓軸實作</p>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">第三篇 — 實作 15 / AI 穿插實作</p>
     </div>
 </div>
 
@@ -118,7 +118,7 @@
             <div class="concept-card">
                 <h3>✅ 必備條件（Day 1 已完成）</h3>
                 <ol>
-                    <li><strong>Line Bot 帳號</strong> — 你在 Part 0 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code></li>
+                    <li><strong>Line Bot 帳號</strong> — 你在 實作 6 已經建立了一個 Line Bot，並且拿到了 <code>Channel Access Token</code></li>
                     <li><strong>你的 User ID</strong> — 在 LINE Developers 後台的 Basic Settings 頁面，有一個「Your user ID」（U 開頭的字串）</li>
                     <li><strong>Google 帳號</strong> — 能登入 Google Drive 和 Google Sheets</li>
                     <li><strong>AI API Key</strong> — Gemini（免費推薦）或 OpenAI 的 API Key</li>
@@ -129,7 +129,7 @@
                 <table>
                     <tr><td><strong>預估時間</strong></td><td>約 40 分鐘</td></tr>
                     <tr><td><strong>難度</strong></td><td>⭐⭐⭐⭐ 進階（Day 1 綜合應用）</td></tr>
-                    <tr><td><strong>前置單元</strong></td><td>Part 0（環境建置）、Part 1（RAG / AI API）、Part 5（試算表）</td></tr>
+                    <tr><td><strong>前置單元</strong></td><td>實作 6（Line Bot）、實作 9（AI API）、實作 1（試算表）</td></tr>
                     <tr><td><strong>新技術</strong></td><td>PropertiesService、Drive API v2、PDF 轉文字</td></tr>
                 </table>
             </div>
@@ -216,12 +216,12 @@
 
         <table>
             <tr><th>技術</th><th>用途</th><th>哪裡學過</th></tr>
-            <tr><td>LINE Messaging API</td><td>接收檔案 + 回傳評語</td><td>Part 0-2</td></tr>
+            <tr><td>LINE Messaging API</td><td>接收檔案 + 回傳評語</td><td>實作 6-8</td></tr>
             <tr><td>PropertiesService</td><td>管理使用者對話狀態</td><td>本 Part 新學！</td></tr>
-            <tr><td>DriveApp</td><td>儲存學生 PDF</td><td>Part 2</td></tr>
+            <tr><td>DriveApp</td><td>儲存學生 PDF</td><td>實作 8</td></tr>
             <tr><td>Drive API（進階服務）</td><td>PDF → Google Docs → 文字提取</td><td>本 Part 新學！</td></tr>
-            <tr><td>Gemini / OpenAI API</td><td>AI 自動生成評語</td><td>Part 1</td></tr>
-            <tr><td>SpreadsheetApp</td><td>記錄評量結果</td><td>Part 3, 5</td></tr>
+            <tr><td>Gemini / OpenAI API</td><td>AI 自動生成評語</td><td>實作 9</td></tr>
+            <tr><td>SpreadsheetApp</td><td>記錄評量結果</td><td>實作 1, 5</td></tr>
         </table>
     </div>
 </div>
@@ -1067,12 +1067,28 @@ function testPdfExtraction() {
   }
 }</code></pre>
 
-        <h3>執行測試的操作步驟</h3>
+        <h3>Step 1：測試基本設定</h3>
         <div class="micro-step">
-            <span class="position">📍 位置：</span>Apps Script 編輯器<strong>上方工具列</strong>，<strong>▶ 執行</strong> 按鈕左邊的下拉選單<br>
-            <span class="action">👆 動作：</span>點擊下拉選單 → 選擇 <code>testBot</code> → 點擊 <strong>▶ 執行</strong><br>
-            <span class="result">⏱️ 等待：</span>首次執行會跳出授權對話框（審查權限 → 選帳號 → 進階 → 前往 → 允許）<br>
-            <span class="result">👀 結果：</span>編輯器下方「執行記錄」顯示所有設定值，確認無誤後再依序測試 <code>testAI</code> 和 <code>testPdfExtraction</code>
+            <span class="action">👆 動作：</span>函式下拉選單選 <code>testBot</code> → 點 <strong>▶ 執行</strong><br>
+            <span class="result">👀 結果：</span>第一次會跳授權 → 審查權限 → 選帳號 → 進階 → 前往 → 允許<br>
+            <span class="result">👀 結果：</span>執行記錄顯示所有設定值和「✅ 基本設定確認完成」<br>
+            <span class="position">📍 確認：</span>LINE Token 長度不是 0、各 ID 不是空的
+        </div>
+
+        <h3>Step 2：測試 AI 評語</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>函式下拉選單改選 <code>testAI</code> → 點 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>約 5-10 秒<br>
+            <span class="result">👀 結果：</span>執行記錄顯示「✅ 成功！」和一段 100-150 字的評語<br>
+            <span class="position">📍 如果出現「❌ 失敗」</span> → 檢查 <code>AI_API_KEY</code> 是否正確
+        </div>
+
+        <h3>Step 3：測試 PDF 提取（可選）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>先手動上傳一個 PDF 到你的「學生作品」資料夾<br>
+            <span class="action">👆 動作：</span>函式下拉選單改選 <code>testPdfExtraction</code> → 點 <strong>▶ 執行</strong><br>
+            <span class="result">👀 結果：</span>執行記錄顯示「✅ 提取成功！」和文字前 300 字<br>
+            <span class="position">📍 如果出現「Drive is not defined」</span> → 忘了啟用 Drive API（回到 Step 2-2）
         </div>
     </div>
 </div>
@@ -1218,49 +1234,41 @@ function testPdfExtraction() {
     </div>
 </div>
 
-<!-- ======================== Slide 22: 完成頁（Day 1 全部完成） ======================== -->
+<!-- ======================== Slide 22: 完成頁 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
         <div style="font-size: 100px; margin-bottom: 15px;">🎉🏆🎉</div>
-        <h1 style="font-size: 48px; margin-bottom: 10px;">恭喜完成 Day 1 全部課程！</h1>
+        <h1 style="font-size: 48px; margin-bottom: 10px;">實作 15 完成！</h1>
         <p style="font-size: 24px; color: #555; margin-bottom: 30px;">
-            你已經從零開始，學會用 GAS + Line Bot 打造 <strong>8 個自動化系統</strong>
+            你已經學會用 AI + Line Bot 打造自動化評語系統了！
         </p>
 
         <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">🔧</div>
-                <h3>Part 0-2</h3>
-                <p>環境建置、RAG 知識庫、訊息收集器</p>
+                <div style="font-size: 36px;">📤</div>
+                <h3>PDF 上傳</h3>
+                <p>Line Bot 接收檔案</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">🔗</div>
-                <h3>Part 3-4</h3>
-                <p>第一個 GAS、HTML 表單</p>
-            </div>
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">📊</div>
-                <h3>Part 5-6</h3>
-                <p>寫入試算表、天氣預報</p>
+                <div style="font-size: 36px;">📖</div>
+                <h3>PDF 轉文字</h3>
+                <p>Drive API 進階服務</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">🤖</div>
-                <h3>Part 7</h3>
-                <p>AI 自動評語 + PDF 解析</p>
+                <h3>AI 評語</h3>
+                <p>Gemini Prompt 設計</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>自動記錄</h3>
+                <p>SpreadsheetApp</p>
             </div>
         </div>
 
         <div class="box info" style="text-align: left; max-width: 750px; margin: 0 auto 30px;">
-            <strong>Day 1 學到的核心技能總回顧：</strong>
-            <ul>
-                <li>LINE Messaging API — Webhook、replyText、pushText</li>
-                <li>Google Apps Script — doPost、doGet、UrlFetchApp</li>
-                <li>Google Drive — DriveApp、Drive API 進階服務</li>
-                <li>Google Sheets — SpreadsheetApp、自動建表記錄</li>
-                <li>AI API 串接 — Gemini / OpenAI、Prompt 設計</li>
-                <li>進階技巧 — PropertiesService 狀態管理、PDF 文字提取</li>
-                <li>VibeCoding — 用自然語言讓 AI 幫你寫程式</li>
-            </ul>
+            <strong>🎊 第三篇完成！</strong><br>
+            恭喜你完成了第三篇的所有實作！下一步進入第四篇 — 實作 16：RAG 知識庫問答機器人。
         </div>
 
         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
@@ -1268,7 +1276,7 @@ function testPdfExtraction() {
             <a href="篇4_實作16_RAG知識庫問答機器人.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
-        <p style="font-size: 18px; color: #666; margin-top: 25px;">今天辛苦了！好好休息，你已經很棒了 💪</p>
+        <p style="font-size: 18px; color: #666; margin-top: 25px;">準備好了嗎？讓我們繼續前進到第四篇！</p>
     </div>
 </div>
 
