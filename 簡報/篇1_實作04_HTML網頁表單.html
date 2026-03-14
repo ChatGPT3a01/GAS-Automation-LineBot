@@ -400,24 +400,31 @@
         <h3>目的說明</h3>
         <p>Code.gs 是整個系統的「後端大腦」，負責三件事：提供表單頁面、處理表單資料、推播 Line 通知。</p>
 
-        <h3>設定區（最上方兩行）</h3>
+        <h3>設定區（最上方三行）</h3>
 <pre><code>var LINE_TOKEN = '在此貼上你的 Channel Access Token';
-var LINE_USER_ID = '在此貼上你的 User ID';</code></pre>
+var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';</code></pre>
 
         <ul class="explain-list">
             <li><code>var LINE_TOKEN</code> — 你的 LINE Bot 授權金鑰，用來呼叫 LINE Messaging API 推播訊息</li>
-            <li><code>var LINE_USER_ID</code> — 你自己的 LINE User ID，指定推播通知要送給誰</li>
+            <li><code>var LINE_USER_ID</code> — 你自己的 LINE User ID（<code>U</code> 開頭），推播通知到你的個人聊天室</li>
+            <li><code>var LINE_GROUP_ID</code> — 群組 ID（<code>C</code> 開頭），推播通知到群組。不需要群組通知就留預設文字即可</li>
         </ul>
 
         <div class="micro-step">
-            <p>📍 <span class="position">Code.gs 第 1~2 行</span></p>
+            <p>📍 <span class="position">Code.gs 最上方設定區</span></p>
             <p>👆 <span class="action">將 <code>'在此貼上你的 Channel Access Token'</code> 替換為你的 Token（含單引號）</span></p>
             <p>👆 <span class="action">將 <code>'在此貼上你的 User ID'</code> 替換為你的 User ID（含單引號）</span></p>
-            <p>👀 <span class="result">兩行都變成你自己的值，例如 <code>var LINE_TOKEN = 'abc123...';</code></span></p>
+            <p>👆 <span class="action">（選填）將 <code>LINE_GROUP_ID</code> 替換為你的 Group ID → 表單通知會同時推播到群組</span></p>
+            <p>👀 <span class="result">設定完成後，例如 <code>var LINE_TOKEN = 'abc123...';</code></span></p>
+        </div>
+
+        <div class="box info">
+            <strong>💡 個人 + 群組雙通知：</strong>同時填入 <code>LINE_USER_ID</code> 和 <code>LINE_GROUP_ID</code>，每次有人填表單，你個人會收到通知，群組也會同時收到！不需要群組通知就不用填 <code>LINE_GROUP_ID</code>。
         </div>
 
         <div class="box warning">
-            <strong>⚠️ 常見錯誤：</strong>Token 和 User ID 都要保留外面的<strong>單引號</strong>！只替換引號裡面的中文字。
+            <strong>⚠️ 常見錯誤：</strong>Token 和 ID 都要保留外面的<strong>單引號</strong>！只替換引號裡面的中文字。
         </div>
     </div>
 </div>
@@ -482,7 +489,13 @@ var LINE_USER_ID = '在此貼上你的 User ID';</code></pre>
       + '📅 時間：' + now + '\n'
       + '📊 累計第 ' + rowCount + ' 筆';
 
+    // 推播給個人
     pushText(LINE_USER_ID, notification);
+
+    // 推播到群組（如果有設定 groupId）
+    if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+      pushText(LINE_GROUP_ID, notification);
+    }
 
     return { success: true, message: '提交成功！感謝你的填寫。' };
   } catch (error) {
@@ -498,7 +511,8 @@ var LINE_USER_ID = '在此貼上你的 User ID';</code></pre>
             <li><code>if (!sheet) { sheet = createFormSheet(ss); }</code> — 如果工作表不存在，自動建立一個（含格式化標題列）</li>
             <li><code>sheet.appendRow([...])</code> — 在試算表最後一列新增一筆資料</li>
             <li><code>sheet.getLastRow() - 1</code> — 取得目前總筆數（扣掉標題列）</li>
-            <li><code>pushText(LINE_USER_ID, notification)</code> — 將通知訊息推播到你的 LINE</li>
+            <li><code>pushText(LINE_USER_ID, notification)</code> — 將通知訊息推播到你的個人 LINE</li>
+            <li><code>if (LINE_GROUP_ID...)</code> — 如果有設定群組 ID（<code>C</code> 開頭），也同時推播到群組</li>
             <li><code>return { success: true, ... }</code> — 回傳 JSON 物件給前端，前端依此顯示成功或失敗訊息</li>
         </ul>
     </div>

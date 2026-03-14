@@ -32,6 +32,7 @@
 // ========== Line Bot 設定 ==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 
 // ========== 試算表設定 ==========
 var FORM_SHEET_NAME = '表單回覆';
@@ -104,7 +105,13 @@ function processForm(formData) {
     notification += '📅 時間：' + now + '\n';
     notification += '📊 累計第 ' + rowCount + ' 筆';
 
+    // 推播給個人
     pushText(LINE_USER_ID, notification);
+
+    // 推播到群組（如果有設定 groupId）
+    if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+      pushText(LINE_GROUP_ID, notification);
+    }
 
     Logger.log('表單資料已記錄，已推播 Line 通知');
 
