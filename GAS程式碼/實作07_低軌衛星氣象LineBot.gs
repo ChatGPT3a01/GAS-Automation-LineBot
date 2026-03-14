@@ -8,7 +8,8 @@
  *   2. 天氣查詢 — 串接 OpenWeatherMap API（免費）
  *   3. 洋流查詢 — 串接 Stormglass API（免費）
  *   4. 衛星雲圖 — 提供即時衛星雲圖連結
- *   5. 查詢記錄 — 自動記錄到 Google 試算表
+ *   5. 訂閱推播 — 使用者可訂閱每日天氣，系統定時自動推播
+ *   6. 查詢記錄 — 自動記錄到 Google 試算表
  *
  * 使用的 API：
  *   - OpenWeatherMap（免費，每分鐘 60 次）https://openweathermap.org/api
@@ -25,6 +26,8 @@
  * 操作方式：
  *   使用者在 Line 輸入「低軌衛星」→ 顯示選單
  *   輸入 1~5 選擇功能 → 輸入 1~9 選擇地區 → 回傳資料
+ *   輸入「訂閱天氣」→ 選地區 → 每天定時自動推播
+ *   輸入「取消訂閱天氣」→ 停止推播
  *
  * ============================================================
  */
@@ -42,6 +45,7 @@ var LOG_SHEET = '查詢記錄';
 var WEATHER_SHEET = '天氣資料';
 var OCEAN_SHEET = '海洋資料';
 var SESSION_SHEET = '使用者狀態';
+var SUBSCRIPTION_SHEET = '天氣訂閱';
 
 // ========== 預設查詢地區 ==========
 
@@ -118,6 +122,22 @@ function handleMessage(event) {
     replyMessages = getMainMenu();
     setUserState(userId, 'MAIN_MENU', null);
   }
+  // ===== 訂閱每日天氣 =====
+  else if (userMessage === '訂閱天氣') {
+    setUserState(userId, 'SELECT_LOCATION', 'subscribe_weather');
+    replyMessages = getLocationMenu('subscribe_weather');
+  }
+  // ===== 取消訂閱每日天氣 =====
+  else if (userMessage === '取消訂閱天氣') {
+    var ok = cancelWeatherSubscription(userId);
+    replyMessages = [{
+      type: 'text',
+      text: ok
+        ? '✅ 已取消每日天氣推播。'
+        : 'ℹ️ 你目前沒有啟用中的天氣訂閱。'
+    }];
+    setUserState(userId, 'MAIN_MENU', null);
+  }
   else if (userState.state === 'MAIN_MENU' && ['1', '2', '3', '4', '5'].indexOf(userMessage) !== -1) {
     // 使用者選擇了功能
     replyMessages = handleMainMenuSelection(userId, userMessage);
@@ -159,7 +179,10 @@ function getMainMenu() {
     + '4️⃣  查詢所有資料\n'
     + '5️⃣  顯示使用說明\n\n'
     + '━━━━━━━━━━━━━━━━━━\n'
-    + '💡 輸入「取消」可隨時返回此選單';
+    + '📌 其他指令：\n'
+    + '• 訂閱天氣 → 每日自動推播\n'
+    + '• 取消訂閱天氣 → 停止推播\n'
+    + '• 取消 → 返回此選單';
 
   return [{ type: 'text', text: text }];
 }
@@ -172,8 +195,10 @@ function getWelcomeMessage() {
     + '請輸入【低軌衛星】開始使用\n\n'
     + '━━━━━━━━━━━━━━━━━━\n'
     + '可用指令：\n'
-    + '• 低軌衛星 - 開啟主選單\n'
-    + '• 取消 - 返回主選單';
+    + '• 低軌衛星 → 開啟主選單\n'
+    + '• 訂閱天氣 → 每日自動推播\n'
+    + '• 取消訂閱天氣 → 停止推播\n'
+    + '• 取消 → 返回主選單';
 
   return [{ type: 'text', text: text }];
 }
@@ -186,6 +211,7 @@ function getLocationMenu(action) {
   if (action === 'weather') actionName = '天氣';
   if (action === 'ocean') actionName = '洋流';
   if (action === 'all') actionName = '所有資料';
+  if (action === 'subscribe_weather') actionName = '每日天氣推播';
 
   var text = '📍 請選擇要查詢' + actionName + '的地區：\n\n'
     + '1️⃣  台北\n'
@@ -279,6 +305,15 @@ function handleLocationSelection(userId, selection, action) {
       var satelliteMsg = getSatelliteResponse();
       return weatherMsg.concat(oceanMsg).concat(satelliteMsg);
 
+    case 'subscribe_weather':
+      upsertWeatherSubscription(userId, location.name, location.lat, location.lon);
+      return [{
+        type: 'text',
+        text: '✅ 已訂閱 ' + location.name + ' 的每日天氣推播。\n'
+          + '系統會在固定時間自動推送給你。\n\n'
+          + '💡 輸入「取消訂閱天氣」可停止推播'
+      }];
+
     default:
       return getMainMenu();
   }
@@ -323,6 +358,14 @@ function handleCustomInput(userId, locationName, action) {
         var o = getOceanResponse(lat, lon, name);
         var s = getSatelliteResponse();
         return w.concat(o).concat(s);
+      case 'subscribe_weather':
+        upsertWeatherSubscription(userId, name, lat, lon);
+        return [{
+          type: 'text',
+          text: '✅ 已訂閱 ' + name + ' 的每日天氣推播。\n'
+            + '系統會在固定時間自動推送給你。\n\n'
+            + '💡 輸入「取消訂閱天氣」可停止推播'
+        }];
       default:
         return getMainMenu();
     }
@@ -607,6 +650,10 @@ function getHelpResponse() {
     + '【自訂地點】\n'
     + '選擇「9. 自行輸入」後\n'
     + '可輸入任何城市名稱查詢\n\n'
+    + '【每日推播】\n'
+    + '• 輸入「訂閱天氣」→ 選地區\n'
+    + '• 每天固定時間自動收到天氣\n'
+    + '• 輸入「取消訂閱天氣」可停止\n\n'
     + '【資料來源】\n'
     + '🌤️ 天氣：OpenWeatherMap\n'
     + '🌊 洋流：Stormglass\n'
@@ -772,6 +819,216 @@ function logError(functionName, error) {
 }
 
 // ============================================================
+// 天氣訂閱管理
+// ============================================================
+
+/**
+ * 新增或更新天氣訂閱
+ */
+function upsertWeatherSubscription(userId, locationName, lat, lon) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SUBSCRIPTION_SHEET);
+
+    if (!sheet) {
+      sheet = ss.insertSheet(SUBSCRIPTION_SHEET);
+      sheet.appendRow(['使用者ID', '地區名稱', '緯度', '經度', '是否啟用', '建立時間', '更新時間']);
+      sheet.getRange(1, 1, 1, 7).setFontWeight('bold')
+        .setBackground('#1b5e20').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var now = new Date();
+
+    // 找到已存在的訂閱就更新
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === userId) {
+        sheet.getRange(i + 1, 2).setValue(locationName);
+        sheet.getRange(i + 1, 3).setValue(lat);
+        sheet.getRange(i + 1, 4).setValue(lon);
+        sheet.getRange(i + 1, 5).setValue('Y');
+        sheet.getRange(i + 1, 7).setValue(now);
+        return true;
+      }
+    }
+
+    // 沒有就新增
+    sheet.appendRow([userId, locationName, lat, lon, 'Y', now, now]);
+    return true;
+  } catch (error) {
+    logError('upsertWeatherSubscription', error);
+    return false;
+  }
+}
+
+/**
+ * 取消天氣訂閱
+ */
+function cancelWeatherSubscription(userId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SUBSCRIPTION_SHEET);
+    if (!sheet) return false;
+
+    var data = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === userId && String(data[i][4]).toUpperCase() === 'Y') {
+        sheet.getRange(i + 1, 5).setValue('N');
+        sheet.getRange(i + 1, 7).setValue(new Date());
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    logError('cancelWeatherSubscription', error);
+    return false;
+  }
+}
+
+/**
+ * 取得所有啟用中的訂閱
+ */
+function getActiveSubscriptions() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SUBSCRIPTION_SHEET);
+    if (!sheet) return [];
+
+    var data = sheet.getDataRange().getValues();
+    var result = [];
+
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][4]).toUpperCase() === 'Y') {
+        result.push({
+          userId: data[i][0],
+          locationName: data[i][1],
+          lat: Number(data[i][2]),
+          lon: Number(data[i][3])
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    logError('getActiveSubscriptions', error);
+    return [];
+  }
+}
+
+// ============================================================
+// 每日自動推播
+// ============================================================
+
+/**
+ * 定時推播天氣給所有訂閱者（設定時間觸發器呼叫此函式）
+ */
+function sendScheduledWeatherPush() {
+  var subscribers = getActiveSubscriptions();
+
+  if (subscribers.length === 0) {
+    Logger.log('目前沒有啟用中的天氣訂閱者');
+    return;
+  }
+
+  for (var i = 0; i < subscribers.length; i++) {
+    var sub = subscribers[i];
+
+    try {
+      var d = getWeatherData(sub.lat, sub.lon);
+
+      if (!d) {
+        pushLine(sub.userId, [{
+          type: 'text',
+          text: '⚠️ 今日 ' + sub.locationName + ' 天氣推播失敗，請稍後再試。'
+        }]);
+        continue;
+      }
+
+      var text = '🌤️ 早安！以下是今天 ' + sub.locationName + ' 的天氣\n'
+        + '━━━━━━━━━━━━━━━━━━\n'
+        + '🌡️ 溫度：' + d.temperature + '°C\n'
+        + '🤔 體感：' + d.feelsLike + '°C\n'
+        + '☁️ 天氣：' + d.description + '\n'
+        + '💧 濕度：' + d.humidity + '%\n'
+        + '🌬️ 風速：' + d.windSpeed + ' m/s\n'
+        + '☁️ 雲量：' + d.clouds + '%\n'
+        + '🌅 日出：' + d.sunrise + '\n'
+        + '🌇 日落：' + d.sunset + '\n'
+        + '━━━━━━━━━━━━━━━━━━\n'
+        + '⏰ 推播時間：' + new Date().toLocaleString('zh-TW') + '\n'
+        + '📡 資料來源：OpenWeatherMap';
+
+      pushLine(sub.userId, [{ type: 'text', text: text }]);
+
+      // 避免太快觸發 API 限制
+      Utilities.sleep(300);
+
+    } catch (error) {
+      logError('sendScheduledWeatherPush', error);
+    }
+  }
+
+  Logger.log('✅ 已推播天氣給 ' + subscribers.length + ' 位訂閱者');
+}
+
+/**
+ * 建立每日固定時間觸發器
+ * 參數 hour: 0~23, minute: 0/15/30/45
+ */
+function setupDailyWeatherTrigger(hour, minute) {
+  // 先刪除舊的
+  deleteDailyWeatherTriggers();
+
+  // 建立新的
+  ScriptApp.newTrigger('sendScheduledWeatherPush')
+    .timeBased()
+    .everyDays(1)
+    .atHour(hour)
+    .nearMinute(minute)
+    .create();
+
+  Logger.log('✅ 已建立每日推播觸發器：' + hour + ':' + (minute < 10 ? '0' : '') + minute);
+}
+
+/**
+ * 刪除所有天氣推播觸發器
+ */
+function deleteDailyWeatherTriggers() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sendScheduledWeatherPush') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+}
+
+/**
+ * 列出目前所有觸發器（除錯用）
+ */
+function listProjectTriggers() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    Logger.log((i + 1) + '. ' + triggers[i].getHandlerFunction()
+      + ' / ' + triggers[i].getEventType()
+      + ' / ' + triggers[i].getTriggerSource());
+  }
+}
+
+// ===== 常用排程快捷函式 =====
+
+/** 設定每天早上 7:00 推播 */
+function setup7AM() { setupDailyWeatherTrigger(7, 0); }
+
+/** 設定每天早上 7:30 推播 */
+function setup730AM() { setupDailyWeatherTrigger(7, 30); }
+
+/** 設定每天早上 8:00 推播 */
+function setup8AM() { setupDailyWeatherTrigger(8, 0); }
+
+// ============================================================
 // 測試函式
 // ============================================================
 
@@ -802,6 +1059,16 @@ function testOceanAPI() {
   } else {
     Logger.log('❌ 海洋 API 測試失敗，請檢查 STORMGLASS_API_KEY');
   }
+}
+
+/**
+ * 測試推播給自己（先填入你的 Line User ID）
+ */
+function testPushToMe() {
+  var myUserId = '請改成你的_LINE_USER_ID';
+  var msg = getWeatherResponse(25.0330, 121.5654, '台北');
+  pushLine(myUserId, msg);
+  Logger.log('✅ 已推播測試天氣到你的 Line');
 }
 
 /**

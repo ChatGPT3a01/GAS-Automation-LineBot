@@ -76,13 +76,14 @@
         <div style="font-size: 100px; margin-bottom: 20px;">🛰️</div>
         <h1 style="font-size: 58px; margin-bottom: 16px;">低軌衛星氣象 Line Bot</h1>
         <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
-            互動式選單查詢天氣、洋流、衛星雲圖
+            互動式選單查詢天氣、洋流、衛星雲圖 + 每日訂閱推播
         </p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
             <span class="badge badge-green">Webhook</span>
             <span class="badge badge-blue">OpenWeatherMap</span>
             <span class="badge badge-orange">Stormglass</span>
             <span class="badge badge-green">互動選單</span>
+            <span class="badge badge-blue">訂閱推播</span>
         </div>
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
             <div class="flow-step">💬 輸入「低軌衛星」</div>
@@ -161,10 +162,16 @@
                 <p style="font-size: 14px; color: #888;">提供即時衛星影像連結</p>
             </div>
             <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px;">📬</div>
+                <h3>訂閱推播</h3>
+                <p>使用者可訂閱每日天氣，系統定時自動推播</p>
+                <p style="font-size: 14px; color: #888;">觸發器排程 + 推播 API</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 48px;">📊</div>
                 <h3>查詢記錄</h3>
                 <p>自動將天氣、海洋資料記錄到 Google 試算表</p>
-                <p style="font-size: 14px; color: #888;">自動建立 4 個工作表</p>
+                <p style="font-size: 14px; color: #888;">自動建立工作表</p>
             </div>
         </div>
         <div class="box info">
@@ -422,7 +429,80 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
     </div>
 </div>
 
-<!-- ======================== Slide 11: 常見問題排解 ======================== -->
+<!-- ======================== Slide 11: 步驟8 訂閱天氣推播 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">8</span> 測試訂閱天氣推播</h2>
+        <p>Bot 支援「訂閱天氣」功能，讓使用者選擇地區後，每天自動收到天氣推播。</p>
+
+        <h3>Step 8-1：訂閱天氣</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 Line 中輸入「<strong>訂閱天氣</strong>」<br>
+            <span class="result">👀 結果：</span>Bot 回覆地區選單（跟查詢天氣一樣的 8 個地區 + 自行輸入）<br>
+            <span class="action">👆 動作：</span>輸入「<strong>1</strong>」（台北）<br>
+            <span class="result">👀 結果：</span>Bot 回覆「✅ 已訂閱 台北 的每日天氣推播」
+        </div>
+
+        <h3>Step 8-2：確認試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>回到 Google 試算表，查看是否多出「<strong>天氣訂閱</strong>」工作表<br>
+            <span class="result">👀 結果：</span>工作表中有一筆記錄：你的 User ID、地區名稱、經緯度、啟用狀態「Y」
+        </div>
+
+        <h3>Step 8-3：取消訂閱</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 Line 中輸入「<strong>取消訂閱天氣</strong>」<br>
+            <span class="result">👀 結果：</span>Bot 回覆「✅ 已取消每日天氣推播」，試算表的啟用狀態變成「N」
+        </div>
+
+        <div class="box info">
+            <strong>💡 訂閱邏輯：</strong>每位使用者只能訂閱一個地區。重新訂閱會覆蓋原本的地區。取消後隨時可以再訂閱。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 步驟9 設定定時觸發器 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">9</span> 設定定時推播觸發器</h2>
+        <p>訂閱只是「記錄」使用者想收天氣，還需要設定「<strong>觸發器</strong>」讓系統每天自動執行推播。</p>
+
+        <h3>方法一：用快捷函式設定（推薦）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>回到 GAS 編輯器<br>
+            <span class="action">👆 動作：</span>函式下拉選單 → 選 <code>setup7AM</code>（早上 7 點推播）→ 點 <strong>▶ 執行</strong><br>
+            <span class="result">👀 結果：</span>執行記錄顯示「已建立每日推播觸發器：7:00」
+        </div>
+
+        <table>
+            <thead><tr><th>快捷函式</th><th>推播時間</th></tr></thead>
+            <tbody>
+                <tr><td><code>setup7AM</code></td><td>每天早上 7:00</td></tr>
+                <tr><td><code>setup730AM</code></td><td>每天早上 7:30</td></tr>
+                <tr><td><code>setup8AM</code></td><td>每天早上 8:00</td></tr>
+            </tbody>
+        </table>
+
+        <h3>方法二：自訂時間</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>函式下拉選單 → 選 <code>setupDailyWeatherTrigger</code><br>
+            <span class="action">📝 修改：</span>在程式碼中找到 <code>setupDailyWeatherTrigger(hour, minute)</code> 呼叫，自行改數字<br>
+            <span class="result">💡 範例：</span><code>setupDailyWeatherTrigger(6, 30)</code> = 每天早上 6:30 推播
+        </div>
+
+        <h3>確認觸發器</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>GAS 左側選單 →「<strong>觸發條件</strong>」（鬧鐘圖示）<br>
+            <span class="result">👀 結果：</span>看到一筆 <code>sendScheduledWeatherPush</code> 的時間觸發器，就表示設定成功！
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 注意：</strong>GAS 的時間觸發器有 ±15 分鐘誤差（Google 的限制）。設定 7:00 可能在 6:45~7:15 之間執行。如果要刪除觸發器，可以在「觸發條件」頁面手動刪除，或執行 <code>deleteDailyWeatherTriggers</code> 函式。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 常見問題排解 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>❓ 常見問題排解</h2>
@@ -489,6 +569,8 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
 
   if (userMessage === '低軌衛星') {
     replyMessages = getMainMenu();         // → 主選單
+  } else if (userMessage === '訂閱天氣') {
+    replyMessages = getLocationMenu('subscribe_weather'); // → 訂閱
   } else if (userState.state === 'MAIN_MENU') {
     replyMessages = handleMainMenuSelection(...);  // → 功能選擇
   } else if (userState.state === 'SELECT_LOCATION') {
@@ -517,6 +599,7 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
                 <tr><td><strong>互動設計</strong></td><td>（未涉及）</td><td><strong>狀態機</strong>（多步驟對話）+ 選單系統</td></tr>
                 <tr><td><strong>試算表</strong></td><td>（未涉及）</td><td><strong>自動建立工作表</strong> + 記錄查詢與資料</td></tr>
                 <tr><td><strong>地理編碼</strong></td><td>（未涉及）</td><td><strong>Geocoding API</strong>（地名 → 座標）</td></tr>
+                <tr><td><strong>定時推播</strong></td><td>（未涉及）</td><td><strong>訂閱系統</strong> + 觸發器排程自動推播</td></tr>
             </tbody>
         </table>
 
@@ -530,6 +613,9 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
                 <tr><td><code>getOceanData(lat, lon)</code></td><td>呼叫 Stormglass API</td></tr>
                 <tr><td><code>getUserState / setUserState</code></td><td>從試算表讀寫使用者狀態</td></tr>
                 <tr><td><code>replyToLine(token, messages)</code></td><td>Webhook 回覆訊息</td></tr>
+                <tr><td><code>upsertWeatherSubscription</code></td><td>新增/更新天氣訂閱</td></tr>
+                <tr><td><code>sendScheduledWeatherPush</code></td><td>定時推播天氣給所有訂閱者</td></tr>
+                <tr><td><code>setup7AM / setup730AM / setup8AM</code></td><td>快捷設定每日觸發器時間</td></tr>
                 <tr><td><code>testWeatherAPI / testOceanAPI</code></td><td>測試 API 連線</td></tr>
             </tbody>
         </table>
@@ -543,7 +629,7 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
         <h1 style="font-size: 42px;">實作 7 完成！</h1>
         <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會建立互動式氣象查詢 Line Bot！</p>
 
-        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(5, 1fr);">
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">🌐</div>
                 <h3>Webhook</h3>
@@ -563,6 +649,11 @@ var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
                 <div style="font-size: 36px;">📋</div>
                 <h3>互動選單</h3>
                 <p>狀態機設計</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📬</div>
+                <h3>定時推播</h3>
+                <p>訂閱 + 觸發器</p>
             </div>
         </div>
 
