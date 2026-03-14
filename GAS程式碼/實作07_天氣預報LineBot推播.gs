@@ -31,6 +31,7 @@
 // ========== Line Bot 設定 ==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 
 // ========== 氣象 API 設定 ==========
 var CWA_API_KEY = '在此貼上你的中央氣象署 API 授權碼';
@@ -232,7 +233,7 @@ function sendWeatherReport() {
   var locationData = getWeatherData(TARGET_CITY);
 
   if (!locationData) {
-    pushText(LINE_USER_ID, '❌ 天氣預報取得失敗\n\n可能原因：\n1. API 授權碼不正確\n2. 縣市名稱不正確\n3. API 服務暫時無法使用');
+    pushToAll('❌ 天氣預報取得失敗\n\n可能原因：\n1. API 授權碼不正確\n2. 縣市名稱不正確\n3. API 服務暫時無法使用');
     return;
   }
 
@@ -240,7 +241,7 @@ function sendWeatherReport() {
   var forecasts = parseWeatherData(locationData);
 
   if (forecasts.length === 0) {
-    pushText(LINE_USER_ID, '❌ 天氣預報解析失敗：沒有預報資料');
+    pushToAll('❌ 天氣預報解析失敗：沒有預報資料');
     return;
   }
 
@@ -248,7 +249,7 @@ function sendWeatherReport() {
   var report = formatWeatherReport(TARGET_CITY, forecasts);
 
   // 推播到 Line
-  pushText(LINE_USER_ID, report);
+  pushToAll(report);
 
   // 記錄到試算表
   logWeatherToSheet(TARGET_CITY, forecasts);
@@ -267,7 +268,7 @@ function sendMultiCityWeather() {
     if (locationData) {
       var forecasts = parseWeatherData(locationData);
       var report = formatWeatherReport(cities[i], forecasts);
-      pushText(LINE_USER_ID, report);
+      pushToAll(report);
 
       // 避免短時間內送太多訊息
       Utilities.sleep(1000);
@@ -322,6 +323,16 @@ function logWeatherToSheet(cityName, forecasts) {
 
 // ========== Line Bot 推播函式（共用模組）==========
 
+/**
+ * 同時推播給個人和群組（如果有設定 GROUP_ID）
+ */
+function pushToAll(text) {
+  pushToAll(text);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushText(LINE_GROUP_ID, text);
+  }
+}
+
 function pushText(to, text) {
   pushLine(to, [{ type: 'text', text: text }]);
 }
@@ -356,9 +367,9 @@ function testApiConnection() {
   if (code === 200) {
     var json = JSON.parse(response.getContentText());
     Logger.log('API 連線成功！資料筆數：' + json.records.location.length);
-    pushText(LINE_USER_ID, '✅ 氣象 API 連線測試成功！\n\n已成功取得 ' + TARGET_CITY + ' 的天氣資料。');
+    pushToAll('✅ 氣象 API 連線測試成功！\n\n已成功取得 ' + TARGET_CITY + ' 的天氣資料。');
   } else {
     Logger.log('API 連線失敗：' + response.getContentText());
-    pushText(LINE_USER_ID, '❌ 氣象 API 連線失敗\n狀態碼：' + code + '\n\n請確認 API 授權碼是否正確。');
+    pushToAll('❌ 氣象 API 連線失敗\n狀態碼：' + code + '\n\n請確認 API 授權碼是否正確。');
   }
 }

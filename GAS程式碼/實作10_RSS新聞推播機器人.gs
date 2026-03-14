@@ -30,6 +30,7 @@
 // ========== Line Bot 設定 ==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 
 // ========== RSS 來源設定 ==========
 // 可以自行新增或修改 RSS 來源
@@ -49,6 +50,16 @@ var NEWS_COUNT = 3;
 /**
  * 推播文字訊息
  */
+/**
+ * 同時推播給個人和群組（如果有設定 GROUP_ID）
+ */
+function pushToAll(text) {
+  pushToAll(text);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushText(LINE_GROUP_ID, text);
+  }
+}
+
 function pushText(to, text) {
   pushLine(to, [{ type: 'text', text: text }]);
 }
@@ -308,7 +319,7 @@ function sendDailyNews() {
   }
 
   // 推播到 Line
-  pushText(LINE_USER_ID, newsMessage);
+  pushToAll(newsMessage);
 
   // 記錄已推播的新聞到試算表（避免下次重複推播）
   if (result.newItems.length > 0) {
@@ -356,5 +367,5 @@ function testSendDailyNews() {
  * 測試：推播文字
  */
 function testPush() {
-  pushText(LINE_USER_ID, '🧪 RSS 新聞推播 Line Bot 連線測試成功！');
+  pushToAll('🧪 RSS 新聞推播 Line Bot 連線測試成功！');
 }

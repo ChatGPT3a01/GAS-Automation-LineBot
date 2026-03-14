@@ -29,9 +29,10 @@
  * ============================================================
  */
 
-// ========== 設定區（請修改以下四個值）==========
+// ========== 設定區（請修改以下設定）==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 var ROOT_FOLDER_ID = '在此貼上 Google Drive 資料夾 ID';
 var SPREADSHEET_ID = '在此貼上 Google 試算表 ID';
 
@@ -378,6 +379,16 @@ function padZero(num) {
 
 // ========== Line Bot 推播函式（共用模組）==========
 
+/**
+ * 同時推播給個人和群組（如果有設定 GROUP_ID）
+ */
+function pushToAll(text) {
+  pushText(LINE_USER_ID, text);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushText(LINE_GROUP_ID, text);
+  }
+}
+
 function pushText(to, text) {
   pushLine(to, [{ type: 'text', text: text }]);
 }
@@ -420,6 +431,6 @@ function replyLine(replyToken, messages) {
  * 測試：推播一則訊息確認系統運作正常
  */
 function testSystem() {
-  pushText(LINE_USER_ID, '🔧 訊息收集器測試成功！\n\n系統已就緒，請在 Line 傳送訊息給 Bot 進行測試。');
+  pushToAll('🔧 訊息收集器測試成功！\n\n系統已就緒，請在 Line 傳送訊息給 Bot 進行測試。');
   Logger.log('測試推播已發送');
 }

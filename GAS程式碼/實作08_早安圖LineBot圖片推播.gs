@@ -31,6 +31,7 @@
 // ========== Line Bot 設定 ==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 
 // ========== Google Drive 設定 ==========
 // 在 Google Drive 建立一個資料夾，把早安圖放進去
@@ -63,6 +64,23 @@ function pushImage(to, imageUrl) {
 /**
  * 推播底層函式
  */
+/**
+ * 同時推播給個人和群組（如果有設定 GROUP_ID）
+ */
+function pushToAll(text) {
+  pushText(LINE_USER_ID, text);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushText(LINE_GROUP_ID, text);
+  }
+}
+
+function pushImageToAll(imageUrl) {
+  pushImage(LINE_USER_ID, imageUrl);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushImage(LINE_GROUP_ID, imageUrl);
+  }
+}
+
 function pushLine(to, messages) {
   var url = 'https://api.line.me/v2/bot/message/push';
   var options = {
@@ -170,7 +188,7 @@ function sendMorningImage() {
 
   if (images.length === 0) {
     Logger.log('資料夾中沒有圖片！');
-    pushText(LINE_USER_ID, '⚠️ 早安圖資料夾中沒有圖片，請上傳一些圖片。');
+    pushToAll('⚠️ 早安圖資料夾中沒有圖片，請上傳一些圖片。');
     return;
   }
 
@@ -180,8 +198,8 @@ function sendMorningImage() {
   // 步驟 3：取得公開連結
   var imageUrl = getPublicImageUrl(selectedImage);
 
-  // 步驟 4：推播圖片到 Line
-  pushImage(LINE_USER_ID, imageUrl);
+  // 步驟 4：推播圖片到 Line（個人 + 群組）
+  pushImageToAll(imageUrl);
 
   // 步驟 5：附帶早安文字訊息
   var now = new Date();
@@ -195,7 +213,7 @@ function sendMorningImage() {
   ];
   var greeting = greetings[Math.floor(Math.random() * greetings.length)];
 
-  pushText(LINE_USER_ID, greeting + '\n\n📅 ' + dateStr + '\n📸 今日早安圖：' + selectedImage.getName());
+  pushToAll(greeting + '\n\n📅 ' + dateStr + '\n📸 今日早安圖：' + selectedImage.getName());
 
   Logger.log('===== 早安圖發送完成 =====');
 }
@@ -225,5 +243,5 @@ function testSendMorningImage() {
  * 測試：推播文字
  */
 function testPush() {
-  pushText(LINE_USER_ID, '🧪 早安圖 Line Bot 連線測試成功！');
+  pushToAll('🧪 早安圖 Line Bot 連線測試成功！');
 }

@@ -19,9 +19,10 @@
  * ============================================================
  */
 
-// ========== 請修改以下兩個值 ==========
+// ========== 請修改以下設定 ==========
 var LINE_TOKEN = '在此貼上你的 Channel Access Token';
 var LINE_USER_ID = '在此貼上你的 User ID';
+var LINE_GROUP_ID = '在此貼上你的 Group ID（不需要群組通知就留空白）';
 
 // ============================================================
 // 第一部分：推播函式（共用模組）
@@ -133,7 +134,11 @@ function replyLine(replyToken, messages) {
  */
 function testPush() {
   var now = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-  pushText(LINE_USER_ID, '🎉 Line Bot 連線測試成功！\n\n目前時間：' + now + '\n\n如果你看到這則訊息，表示 GAS 與 Line Bot 已成功串接。');
+  var msg = '🎉 Line Bot 連線測試成功！\n\n目前時間：' + now + '\n\n如果你看到這則訊息，表示 GAS 與 Line Bot 已成功串接。';
+  pushText(LINE_USER_ID, msg);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushText(LINE_GROUP_ID, msg);
+  }
 }
 
 /**
@@ -143,6 +148,9 @@ function testPushImage() {
   // 使用 Google 的範例圖片
   var imageUrl = 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png';
   pushImage(LINE_USER_ID, imageUrl);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushImage(LINE_GROUP_ID, imageUrl);
+  }
   Logger.log('圖片推播測試完成！');
 }
 
@@ -150,9 +158,13 @@ function testPushImage() {
  * 測試推播多則訊息
  */
 function testMultiMessage() {
-  pushLine(LINE_USER_ID, [
+  var messages = [
     { type: 'text', text: '第 1 則：這是文字訊息' },
     { type: 'text', text: '第 2 則：Line Bot 一次最多推播 5 則' },
     { type: 'text', text: '第 3 則：恭喜你成功了！🎉' }
-  ]);
+  ];
+  pushLine(LINE_USER_ID, messages);
+  if (LINE_GROUP_ID && LINE_GROUP_ID.indexOf('C') === 0) {
+    pushLine(LINE_GROUP_ID, messages);
+  }
 }
