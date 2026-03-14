@@ -52,10 +52,9 @@
         .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
         .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
         .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
-        .micro-step strong { color: #1b5e20; }
-        .explain-list { list-style: none; padding-left: 0; }
-        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
-        .explain-list li:last-child { border-bottom: none; }
+        .micro-step .action { color: #e65100; font-weight: 600; }
+        .micro-step .result { color: #1b5e20; font-weight: 600; }
+        .micro-step .position { color: #1565c0; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -63,10 +62,9 @@
     <div class="nav-bar">
         <div class="nav-title">🔍 實作 12：取得 Line User ID</div>
         <div class="nav-buttons">
+            <a class="nav-btn" href="../GAS程式碼/實作12_取得Line_User_ID.gs" download>&#11015; 下載程式碼</a>
             <a href="index.html" class="nav-btn">🏠 總覽</a>
             <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
-            <a href="https://www.youtube.com/@Liang-yt02" target="_blank" class="nav-btn">🎥 YT</a>
-            <a href="https://www.facebook.com/groups/2754139931432955" target="_blank" class="nav-btn">📘 FB</a>
         </div>
     </div>
 
@@ -78,22 +76,24 @@
         <div style="font-size: 100px; margin-bottom: 20px;">🔍</div>
         <h1 style="font-size: 58px; margin-bottom: 16px;">取得 Line User ID</h1>
         <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
-            三種方法取得 userId 和 groupId — 操作教學
+            建一個「ID 查詢 Bot」— 傳訊息就回覆你的 User ID
         </p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
             <span class="badge badge-green">userId</span>
             <span class="badge badge-blue">groupId</span>
-            <span class="badge badge-orange">Logger.log</span>
-            <span class="badge badge-green">Webhook</span>
+            <span class="badge badge-orange">doPost</span>
+            <span class="badge badge-green">replyLine</span>
         </div>
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
-            <div class="flow-step">📊 試算表查看</div>
+            <div class="flow-step">📝 建立 GAS</div>
             <span class="flow-arrow">→</span>
-            <div class="flow-step">📋 Logger 記錄</div>
+            <div class="flow-step">🚀 部署 Web App</div>
             <span class="flow-arrow">→</span>
-            <div class="flow-step">👥 群組 ID</div>
+            <div class="flow-step">💬 傳訊息給 Bot</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 收到你的 ID</div>
         </div>
-        <p style="font-size: 16px; color: #999; margin-top: 30px;">第三篇 — 實作 12 / 純操作教學，無需下載程式碼</p>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">第三篇 — 實作 12 / 預估 20 分鐘</p>
     </div>
 </div>
 
@@ -101,23 +101,21 @@
 <div class="slide">
     <div class="content-card">
         <h2>📋 開始前，請確認</h2>
-        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">在動手之前，請逐項核對以下條件。</p>
-
         <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">⏱️</div>
                 <h3>預估時間</h3>
-                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">15 分鐘</p>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">20 分鐘</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">📊</div>
                 <h3>難度</h3>
-                <p style="font-size: 28px; font-weight: 700; color: #2e7d32;">★☆☆☆☆ 入門</p>
+                <p style="font-size: 28px; font-weight: 700; color: #2e7d32;">★★☆☆☆ 簡單</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">📁</div>
                 <h3>程式碼檔案</h3>
-                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">0 個（純操作）</p>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個 .gs</p>
             </div>
         </div>
 
@@ -128,312 +126,349 @@
             </thead>
             <tbody>
                 <tr><td><strong>Line Bot 已建立</strong></td><td>已經有一個 Line Bot，拿到了 Channel Access Token</td><td>實作 6</td></tr>
-                <tr><td><strong>訊息收集器</strong></td><td>已部署「訊息收集器」，會把收到的訊息存到試算表</td><td>實作 11</td></tr>
-                <tr><td><strong>已傳過訊息給 Bot</strong></td><td>至少用手機傳過一則訊息給你的 Line Bot</td><td>實作 11 測試時</td></tr>
+                <tr><td><strong>已加 Bot 好友</strong></td><td>手機已經掃 QR code 加了 Bot 好友</td><td>實作 6</td></tr>
             </tbody>
         </table>
 
         <div class="box info">
-            <strong>💡 為什麼需要 User ID？</strong>Line Bot 要「主動推播」訊息給某個人，就需要知道那個人的 <code>userId</code>。這跟你的 LINE 帳號名稱無關，是一串 <code>U</code> 開頭的長字串。
+            <strong>💡 這個實作在做什麼？</strong><br>
+            我們要建一個「ID 查詢 Bot」。你傳任何訊息給這個 Bot，它就會<strong>直接回覆你的 User ID</strong>。<br>
+            拿到 ID 後，就可以貼到其他實作的 <code>LINE_USER_ID</code> 設定裡面使用。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 3: 學習目標 ======================== -->
-<div class="slide">
-    <div class="content-card">
-        <h2>🎯 學習目標</h2>
-        <p style="font-size: 22px; color: #555; margin-bottom: 20px;">完成本實作後，你將學會：</p>
-
-        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
-                <h3>從試算表找 userId</h3>
-                <p>打開訊息收集器的試算表，找到 userId 欄位並複製</p>
-            </div>
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
-                <h3>從 Logger 取得 userId</h3>
-                <p>在 doPost() 中加入 <code>Logger.log()</code>，從執行記錄查看</p>
-            </div>
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
-                <h3>取得 groupId</h3>
-                <p>把 Bot 加入群組，從 Webhook 資料中取得群組 ID</p>
-            </div>
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">🔀</div>
-                <h3>userId vs groupId 差異</h3>
-                <p>理解兩者的用途差異，知道何時用哪一個</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ======================== Slide 4: 為什麼需要 User ID ======================== -->
+<!-- ======================== Slide 3: 為什麼需要 User ID ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>💡 為什麼需要 User ID？</h2>
-        <p style="font-size: 22px; margin-bottom: 20px;">Line Bot 有兩種傳訊息的方式，差別在於「誰先開口」：</p>
+        <p style="font-size: 22px; margin-bottom: 20px;">Line Bot 有兩種傳訊息的方式：</p>
 
         <div class="two-col">
             <div class="col">
                 <h3 style="color: #1565c0;">💬 回覆（Reply）</h3>
-                <p><strong>情境：</strong>使用者先傳訊息給 Bot，Bot 回覆</p>
-                <p><strong>需要：</strong><code>replyToken</code>（自動夾帶，不用另外找）</p>
-                <p><strong>限制：</strong>只能在使用者傳訊後的短時間內回覆</p>
-                <p style="color: #1565c0; font-weight: 600;">不需要知道 userId！</p>
+                <p><strong>使用者先說話</strong> → Bot 回覆</p>
+                <p>不需要知道 userId</p>
+                <p>用 <code>replyToken</code> 就能回</p>
+                <p style="color: #1565c0; font-weight: 600; font-size: 22px;">像是「有人問你，你回答」</p>
             </div>
             <div class="col">
                 <h3 style="color: #e65100;">📣 推播（Push）</h3>
-                <p><strong>情境：</strong>Bot 主動傳訊息給使用者（使用者沒先說話）</p>
-                <p><strong>需要：</strong><code>userId</code> 或 <code>groupId</code>（必須事先取得）</p>
-                <p><strong>限制：</strong>免費帳號每月 500 則</p>
-                <p style="color: #e65100; font-weight: 600;">必須知道 userId！</p>
+                <p><strong>Bot 主動傳訊息</strong>（使用者沒先說話）</p>
+                <p>必須知道 userId 或 groupId</p>
+                <p>用 <code>pushText(userId, '...')</code></p>
+                <p style="color: #e65100; font-weight: 600; font-size: 22px;">像是「你主動傳訊息給朋友」</p>
             </div>
         </div>
 
         <div class="box warning">
-            <strong>⚠️ 常見誤解：</strong><br>
-            - <code>userId</code> <strong>不是</strong>你的 LINE ID（就是加好友那個 @xxx）<br>
-            - <code>userId</code> 是一串 <code>U</code> 開頭、共 33 個字元的字串，例如 <code>U1234567890abcdef1234567890abcdef</code><br>
-            - 同一個人在不同的 Line Bot Channel 會有<strong>不同的 userId</strong>
+            <strong>⚠️ userId 不是 LINE ID！</strong><br>
+            <code>userId</code> 是系統產生的 <code>U</code> 開頭長字串（例如 <code>U1234567890abcdef...</code>），跟你設定的 LINE ID（@xxx）完全不同。只能透過程式取得，沒辦法自己查。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 5: 方法一 試算表 ======================== -->
+<!-- ======================== Slide 4: 建立 GAS 專案 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">1</span> 方法一：從試算表查看</h2>
-        <p>如果你在實作 11 已經做好「訊息收集器」，最簡單的方法就是直接從試算表找！</p>
+        <h2><span class="step-number">1</span> 建立新的 GAS 專案</h2>
 
-        <h3>Step 1-1：打開訊息收集器的試算表</h3>
+        <h3>Step 1：開啟 Google Apps Script</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>打開你在實作 11 建立的 Google 試算表（訊息收集器會把所有收到的訊息存在這裡）<br>
-            <span class="result">👀 結果：</span>你會看到試算表裡有好幾列資料，每一列代表一則收到的訊息
+            <span class="action">👆 動作：</span>打開瀏覽器，前往 <a href="https://script.google.com" target="_blank">script.google.com</a><br>
+            <span class="action">👆 動作：</span>點擊左上角「<strong>新專案</strong>」<br>
+            <span class="result">👀 結果：</span>會打開一個新的 GAS 編輯器，裡面有一個空的 <code>myFunction()</code>
         </div>
 
-        <h3>Step 1-2：找到 userId 欄位</h3>
+        <h3>Step 2：改專案名稱</h3>
         <div class="micro-step">
-            <span class="position">📍 位置：</span>試算表的<strong>欄標題</strong>（第一列）<br>
-            <span class="action">👆 動作：</span>找到名為「<code>userId</code>」或「<code>來源ID</code>」的那一欄<br>
-            <span class="result">👀 結果：</span>該欄下方會有一串 <code>U</code> 開頭的長字串
+            <span class="position">📍 位置：</span>左上角「未命名的專案」<br>
+            <span class="action">👆 動作：</span>點擊它，改名為「<strong>取得 User ID</strong>」<br>
+            <span class="result">👀 結果：</span>專案名稱變成「取得 User ID」
         </div>
 
-        <h3>Step 1-3：複製 userId</h3>
+        <h3>Step 3：貼上程式碼</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>點擊含有 <code>U</code> 開頭字串的儲存格，按 <code>Ctrl+C</code> 複製<br>
-            <span class="result">👀 結果：</span>你已經拿到你的 userId 了！把它貼到其他 GAS 專案的 <code>LINE_USER_ID</code> 設定值中即可
+            <span class="action">👆 動作：</span>把編輯器裡原本的 <code>myFunction()</code> 全部刪除<br>
+            <span class="action">👆 動作：</span>打開你下載的 <code>實作12_取得Line_User_ID.gs</code>，用記事本開啟<br>
+            <span class="action">👆 動作：</span><code>Ctrl+A</code> 全選 → <code>Ctrl+C</code> 複製 → 回到 GAS 編輯器 <code>Ctrl+V</code> 貼上<br>
+            <span class="result">👀 結果：</span>編輯器裡出現完整的程式碼
         </div>
 
         <div class="box info">
-            <strong>💡 這是最推薦的方法！</strong>因為不需要修改任何程式碼，直接從已經存好的資料中查找即可。如果試算表裡沒有資料，先用手機傳一則訊息給你的 Line Bot。
+            <strong>💡 小提示：</strong>也可以點簡報上方的「下載程式碼」按鈕取得 .gs 檔案。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 6: 方法二 Logger ======================== -->
+<!-- ======================== Slide 5: 填入 Token ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">2</span> 方法二：用 Logger.log() 記錄</h2>
-        <p>如果你沒有訊息收集器，也可以在任何 Line Bot 的 <code>doPost()</code> 裡面加一行 log。</p>
+        <h2><span class="step-number">2</span> 填入 Channel Access Token</h2>
 
-        <h3>Step 2-1：在 doPost() 開頭加入 Logger</h3>
+        <h3>Step 1：找到設定區</h3>
         <div class="micro-step">
-            <span class="position">📍 位置：</span>你的 Line Bot GAS 專案，找到 <code>doPost(e)</code> 函式<br>
-            <span class="action">👆 動作：</span>在函式的<strong>第一行</strong>加入以下程式碼：
+            <span class="position">📍 位置：</span>程式碼最上方，大約<strong>第 24 行</strong><br>
+            <span class="result">👀 你會看到：</span>
         </div>
 
-        <pre><code>function doPost(e) {
-  // ===== 加入這兩行，把完整的 Webhook 資料印出來 =====
-  var data = JSON.parse(e.postData.contents);
-  Logger.log('Webhook 資料：' + JSON.stringify(data));
+        <pre><code>var LINE_TOKEN = '在此貼上你的 Channel Access Token';</code></pre>
 
-  // 取出 userId
-  var userId = data.events[0].source.userId;
-  Logger.log('userId = ' + userId);
-
-  // ... 你原本的程式碼繼續寫在下面 ...
-}</code></pre>
-
-        <h3>Step 2-2：重新部署</h3>
+        <h3>Step 2：貼上你的 Token</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>點擊右上角 <code>部署</code> → <code>管理部署</code> → 鉛筆圖示 → 版本選「新版本」→ <code>部署</code><br>
-            <span class="result">👀 結果：</span>新版本已上線
+            <span class="action">👆 動作：</span>到 <a href="https://developers.line.biz/console/" target="_blank">LINE Developers Console</a><br>
+            <span class="action">👆 動作：</span>點你的 Bot → <strong>Messaging API</strong> 分頁 → 找到 <strong>Channel access token</strong><br>
+            <span class="action">👆 動作：</span>點「<strong>Issue</strong>」或「<strong>Copy</strong>」複製 Token<br>
+            <span class="action">👆 動作：</span>回到 GAS 編輯器，把 <code>'在此貼上你的 Channel Access Token'</code> 替換成你的 Token<br>
+            <span class="result">👀 結果：</span>看起來像這樣（Token 很長，這是正常的）：
         </div>
 
-        <h3>Step 2-3：傳訊息並查看 Log</h3>
+        <pre><code>var LINE_TOKEN = 'xYz123abc456def789ghi...（很長一串）';</code></pre>
+
+        <h3>Step 3：儲存</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>用手機傳一則訊息給你的 Line Bot<br>
-            <span class="action">👆 動作：</span>回到 GAS 編輯器，點擊左側「⏱ 執行項目」<br>
-            <span class="result">👀 結果：</span>找到最近一筆 <code>doPost</code> 的執行記錄，展開就能看到 <code>userId = U...</code>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>上方會短暫顯示「已儲存專案」
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 部署 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 部署為網頁應用程式</h2>
+
+        <h3>Step 1：點「部署」</h3>
+        <div class="micro-step">
+            <span class="position">📍 位置：</span>GAS 編輯器<strong>右上角</strong><br>
+            <span class="action">👆 動作：</span>點「<strong>部署</strong>」→「<strong>新增部署作業</strong>」<br>
+            <span class="result">👀 結果：</span>跳出一個部署設定視窗
+        </div>
+
+        <h3>Step 2：設定部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>左邊齒輪圖示 → 選「<strong>網頁應用程式</strong>」<br>
+            <span class="action">👆 動作：</span>「執行身分」選「<strong>我</strong>」<br>
+            <span class="action">👆 動作：</span>「誰可以存取」選「<strong>所有人</strong>」<br>
+            <span class="action">👆 動作：</span>按「<strong>部署</strong>」<br>
+            <span class="result">👀 結果：</span>第一次會跳出授權請求，點「審查權限」→ 選你的帳號 → 「允許」
+        </div>
+
+        <h3>Step 3：複製部署網址</h3>
+        <div class="micro-step">
+            <span class="result">👀 結果：</span>部署成功後，會顯示一個「網頁應用程式」的<strong>網址</strong><br>
+            <span class="action">👆 動作：</span>點「<strong>複製</strong>」把網址複製下來<br>
+            <span class="result">📋 網址格式：</span><code>https://script.google.com/macros/s/AKfy.../exec</code>
         </div>
 
         <div class="box warning">
-            <strong>⚠️ 注意：</strong>Logger.log 的記錄只會保留一段時間。看到 userId 後，趕快複製下來存好！確認拿到後，可以把這兩行 Logger 刪除，避免影響效能。
+            <strong>⚠️ 重要：</strong>這個網址等一下要貼到 LINE Developers Console 當 Webhook URL。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 7: 方法三 群組 groupId ======================== -->
+<!-- ======================== Slide 7: 設定 Webhook ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">3</span> 方法三：取得群組 groupId</h2>
-        <p>如果你想讓 Bot 推播訊息到<strong>群組</strong>（而不是個人），就需要 <code>groupId</code>。</p>
+        <h2><span class="step-number">4</span> 設定 Line Bot Webhook</h2>
 
-        <h3>Step 3-1：把 Bot 加入群組</h3>
+        <h3>Step 1：打開 LINE Developers Console</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>在 LINE 手機 App 中，建立一個群組（或使用現有群組）<br>
-            <span class="action">👆 動作：</span>在群組中點擊「邀請」，把你的 Line Bot 加入群組<br>
-            <span class="result">👀 結果：</span>群組中會顯示 Bot 已加入
+            <span class="action">👆 動作：</span>到 <a href="https://developers.line.biz/console/" target="_blank">LINE Developers Console</a> → 點你的 Bot<br>
+            <span class="action">👆 動作：</span>切到「<strong>Messaging API</strong>」分頁<br>
+            <span class="result">👀 結果：</span>你會看到 Webhook settings 區塊
         </div>
 
-        <h3>Step 3-2：在群組中傳一則訊息</h3>
+        <h3>Step 2：記下原本的 Webhook URL</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>在群組中<strong>隨便傳一則訊息</strong>（任何文字都行）<br>
-            <span class="result">👀 結果：</span>這則訊息會觸發 Bot 的 <code>doPost()</code>
+            <span class="action">👆 動作：</span>如果 Webhook URL 已經有設定網址，<strong>先複製下來存到記事本</strong>！等下取得 ID 後要改回來<br>
+            <span class="result">👀 結果：</span>你已備份原本的 Webhook URL
         </div>
 
-        <h3>Step 3-3：從 Logger 或試算表取得 groupId</h3>
+        <h3>Step 3：貼上新的 Webhook URL</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>查看 Logger 或試算表中的 Webhook 資料<br>
-            <span class="result">👀 結果：</span>你會看到 <code>source</code> 欄位中有 <code>groupId</code>，格式為 <code>C</code> 開頭的長字串
+            <span class="action">👆 動作：</span>點「<strong>Edit</strong>」，把剛才複製的 GAS 部署網址貼進去<br>
+            <span class="action">👆 動作：</span>按「<strong>Save</strong>」→ 確認「<strong>Use webhook</strong>」是開啟的<br>
+            <span class="result">👀 結果：</span>Webhook URL 已更新
         </div>
-
-        <pre><code>// 群組訊息的 Webhook 資料結構
-{
-  "events": [{
-    "type": "message",
-    "source": {
-      "type": "group",              // ← 注意這裡是 "group"
-      "groupId": "Cab1234567890...", // ← 這就是 groupId
-      "userId": "U1234567890..."    // ← 傳訊息的人的 userId
-    },
-    "message": {
-      "type": "text",
-      "text": "你好"
-    }
-  }]
-}</code></pre>
 
         <div class="box info">
-            <strong>💡 重點：</strong>群組訊息的 <code>source.type</code> 是 <code>"group"</code>，而且同時包含 <code>groupId</code>（群組的 ID）和 <code>userId</code>（傳訊息那個人的 ID）。推播到群組時，用 <code>groupId</code> 即可。
+            <strong>💡 Verify 測試：</strong>可以點「<strong>Verify</strong>」按鈕，如果出現「<strong>Success</strong>」代表連線成功。出現錯誤也沒關係，用手機傳訊息測試即可。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 8: userId vs groupId 差異 ======================== -->
+<!-- ======================== Slide 8: 測試 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>🔀 userId vs groupId 差異比較</h2>
-        <p style="font-size: 22px; margin-bottom: 20px;">兩者用途不同，搞清楚什麼時候用哪一個：</p>
+        <h2><span class="step-number">5</span> 傳訊息測試 — 取得你的 ID</h2>
 
-        <table>
-            <thead>
-                <tr><th>比較項目</th><th>userId</th><th>groupId</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>格式</strong></td>
-                    <td><code>U</code> 開頭，33 個字元</td>
-                    <td><code>C</code> 開頭，33 個字元</td>
-                </tr>
-                <tr>
-                    <td><strong>代表</strong></td>
-                    <td>一個 LINE 使用者</td>
-                    <td>一個 LINE 群組</td>
-                </tr>
-                <tr>
-                    <td><strong>推播效果</strong></td>
-                    <td>只有那個人收到訊息</td>
-                    <td>群組裡<strong>所有人</strong>都看到</td>
-                </tr>
-                <tr>
-                    <td><strong>取得方式</strong></td>
-                    <td>使用者傳訊息時，從 <code>source.userId</code> 取得</td>
-                    <td>在群組中傳訊息時，從 <code>source.groupId</code> 取得</td>
-                </tr>
-                <tr>
-                    <td><strong>唯一性</strong></td>
-                    <td>同一人在不同 Channel 有不同 userId</td>
-                    <td>同一群組在不同 Channel 有不同 groupId</td>
-                </tr>
-                <tr>
-                    <td><strong>常見用途</strong></td>
-                    <td>個人通知、個人查詢結果</td>
-                    <td>班級通知、團隊公告</td>
-                </tr>
-            </tbody>
-        </table>
+        <h3>Step 1：用手機傳訊息</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開手機 LINE App，找到你的 Bot<br>
+            <span class="action">👆 動作：</span>傳任何訊息（打「你好」就行）<br>
+            <span class="result">👀 結果：</span>Bot 會<strong>立刻回覆你的 userId</strong>！
+        </div>
 
-        <h3>程式碼中怎麼用？</h3>
-        <pre><code>// 推播給個人
-pushText('U1234567890abcdef...', '你好，這是個人訊息');
+        <h3>Bot 回覆的訊息長這樣：</h3>
+        <pre><code>📋 你的 Line ID 資訊
+━━━━━━━━━━━━━━━
 
-// 推播到群組
-pushText('Cab1234567890abcdef...', '大家好，這是群組公告');
+👤 你的 userId：
+U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6
 
-// 兩個函式的用法完全一樣！
-// 差別只在於第一個參數放 userId 還是 groupId</code></pre>
+💡 這是個人聊天
+💡 把上面的 userId 複製起來
+💡 貼到其他實作的 LINE_USER_ID 設定中
+
+━━━━━━━━━━━━━━━
+✅ 複製 ID 後，記得把 Webhook
+改回原本的網址喔！</code></pre>
+
+        <h3>Step 2：複製 userId</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 LINE 中<strong>長按</strong>那個 <code>U</code> 開頭的字串 → 點「複製」<br>
+            <span class="action">👆 動作：</span>存到記事本或直接貼到其他 GAS 專案的 <code>LINE_USER_ID</code> 設定裡<br>
+            <span class="result">👀 結果：</span>你已經拿到 userId 了！
+        </div>
+
+        <div class="box success">
+            <strong>🎉 就這麼簡單！</strong>傳個「你好」就拿到 ID 了。
+        </div>
     </div>
 </div>
 
-<!-- ======================== Slide 9: 注意事項 ======================== -->
+<!-- ======================== Slide 9: 取得 groupId ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2>⚠️ 注意事項</h2>
+        <h2><span class="step-number">6</span> 額外：取得群組 groupId</h2>
+        <p>如果你想讓 Bot 推播到<strong>群組</strong>，也只要一個動作：</p>
+
+        <h3>Step 1：把 Bot 加入群組</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 LINE 群組中 → 點「邀請」→ 找到你的 Bot → 邀請加入<br>
+            <span class="result">👀 結果：</span>Bot 出現在群組成員中
+        </div>
+
+        <h3>Step 2：在群組中傳一則訊息</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在群組裡<strong>隨便打一句話</strong><br>
+            <span class="result">👀 結果：</span>Bot 會回覆 userId <strong>和</strong> groupId！
+        </div>
+
+        <pre><code>📋 你的 Line ID 資訊
+━━━━━━━━━━━━━━━
+
+👤 你的 userId：
+U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6
+
+👥 群組 groupId：
+Cab1234567890abcdef1234567890abcd
+
+💡 推播給個人 → 用 userId
+💡 推播到群組 → 用 groupId</code></pre>
+
+        <div class="box info">
+            <strong>💡 何時用哪個？</strong><br>
+            <strong>userId</strong>：推播給個人（例如：通知你自己、查詢結果回覆）<br>
+            <strong>groupId</strong>：推播到群組（例如：班級通知、團隊公告）
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 善後 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 取得 ID 後 — 記得改回 Webhook</h2>
+
+        <div class="box warning" style="font-size: 22px;">
+            <strong>⚠️ 很重要！</strong>取得 userId 後，記得把 Webhook URL <strong>改回原本的網址</strong>。<br>
+            否則你的 Bot 會一直只回覆 ID，其他功能都不會動了！
+        </div>
+
+        <h3>Step 1：改回 Webhook URL</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>到 LINE Developers Console → Messaging API → Webhook settings<br>
+            <span class="action">👆 動作：</span>把 Webhook URL 改回你之前備份的那個網址<br>
+            <span class="action">👆 動作：</span>按 Save<br>
+            <span class="result">👀 結果：</span>Bot 恢復原本的功能
+        </div>
+
+        <h3 style="margin-top: 30px;">你拿到的 ID 要怎麼用？</h3>
+        <p>把 userId 貼到其他實作的程式碼裡面：</p>
+
+        <pre><code>// 在其他實作的「設定區」，找到這行：
+var LINE_USER_ID = '在此貼上你的 User ID';
+
+// 把你拿到的 userId 貼進去：
+var LINE_USER_ID = 'U1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6';</code></pre>
+
+        <div class="box info">
+            <strong>💡 userId 不會過期！</strong>只要那個人沒有封鎖你的 Bot，userId 就永遠有效。存好一次就夠了。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 程式碼解說 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📖 程式碼解說</h2>
+        <p>整個程式碼只做一件事：收到訊息 → 回覆 ID。超級簡單！</p>
+
+        <h3>核心邏輯（doPost 函式）</h3>
+        <pre><code>function doPost(e) {
+  // 1. 解析 LINE 傳來的資料
+  var data = JSON.parse(e.postData.contents);
+  var event = data.events[0];
+  var source = event.source;
+
+  // 2. 組合回覆訊息
+  var reply = '👤 你的 userId：\n' + source.userId;
+
+  // 3. 如果是群組，額外顯示 groupId
+  if (source.type === 'group') {
+    reply += '\n👥 群組 groupId：\n' + source.groupId;
+  }
+
+  // 4. 回覆給使用者
+  replyLine(event.replyToken, [{ type: 'text', text: reply }]);
+}</code></pre>
 
         <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="concept-card">
-                <h3 style="color: #e53935;">❌ userId 不等於 LINE ID</h3>
-                <p>你在 LINE 設定中看到的「LINE ID」（例如 <code>@mylineid</code>）是給好友搜尋用的，跟程式用的 <code>userId</code> 完全不同。</p>
-                <p><strong>LINE ID：</strong>你自己設定的，可讀的暱稱</p>
-                <p><strong>userId：</strong>系統自動產生的 U 開頭字串，無法修改</p>
+                <h3>source.userId</h3>
+                <p>傳訊息的那個人的 ID。不管是個人聊天還是群組，都會有這個值。</p>
             </div>
             <div class="concept-card">
-                <h3 style="color: #e53935;">❌ 不同 Channel 的 userId 不同</h3>
-                <p>同一個人對你的 Bot A 和 Bot B，會有<strong>兩個不同的 userId</strong>。</p>
-                <p>所以從 Bot A 拿到的 userId，不能拿去 Bot B 用！每個 Bot（Channel）都要各自收集 userId。</p>
+                <h3>source.groupId</h3>
+                <p>只有在<strong>群組中</strong>傳訊息時才會有。個人聊天不會有這個值。</p>
             </div>
-            <div class="concept-card">
-                <h3 style="color: #1565c0;">💡 userId 不會過期</h3>
-                <p>一旦取得了 userId，只要那個人沒有封鎖你的 Bot，這個 userId 就會一直有效。可以存在程式碼的常數裡面。</p>
-            </div>
-            <div class="concept-card">
-                <h3 style="color: #1565c0;">💡 Bot 需要開啟「加入群組」</h3>
-                <p>要取得 groupId，Bot 必須能被邀請加入群組。到 LINE Developers Console → Bot 設定 → 確認「Allow bot to join group chats」是開啟的。</p>
-            </div>
-        </div>
-
-        <div class="box warning">
-            <strong>⚠️ 安全提醒：</strong>userId 和 groupId 是敏感資訊，不要公開分享。雖然光有 userId 不能做什麼壞事（還需要 Channel Access Token），但為了安全起見，建議妥善保管。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 10: 完成頁 ======================== -->
+<!-- ======================== Slide 12: 完成頁 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
-        <div style="font-size: 80px; margin-bottom: 20px;">🔍</div>
+        <div style="font-size: 80px; margin-bottom: 20px;">🎉</div>
         <h1 style="font-size: 42px;">實作 12 完成！</h1>
-        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會三種取得 User ID 的方法了！</p>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經拿到 userId 和 groupId 了！</p>
 
         <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(3, 1fr);">
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">📊</div>
-                <h3>試算表查看</h3>
-                <p>最簡單直接的方法</p>
+                <div style="font-size: 36px;">📝</div>
+                <h3>建了一個 GAS</h3>
+                <p>ID 查詢 Bot</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">📋</div>
-                <h3>Logger.log()</h3>
-                <p>從執行記錄取得</p>
+                <div style="font-size: 36px;">💬</div>
+                <h3>傳訊息就拿到 ID</h3>
+                <p>超簡單！</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">👥</div>
-                <h3>groupId</h3>
-                <p>群組推播必備</p>
+                <h3>也能拿 groupId</h3>
+                <p>在群組中傳訊息即可</p>
             </div>
         </div>
 
@@ -447,10 +482,10 @@ pushText('Cab1234567890abcdef...', '大家好，這是群組公告');
         </div>
 
         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a class="nav-btn" href="../GAS程式碼/實作12_取得Line_User_ID.gs" download style="background: #1b5e20; border-color: #1b5e20; font-size: 16px; padding: 10px 24px;">&#11015; 下載程式碼</a>
             <a href="篇3_實作13_活動報名即時通知.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
-        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進到實作 13！</p>
     </div>
 </div>
 
