@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft JhengHei', Arial, sans-serif; padding: 16px; background: #f5f5f5; }
+    h2 { font-size: 18px; color: #1b5e20; margin-bottom: 14px; text-align: center; }
+
+    .section {
+      background: white; border-radius: 12px; padding: 16px;
+      margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .section-title { font-size: 14px; font-weight: 700; color: #555; margin-bottom: 8px; }
+    .info-text { font-size: 13px; color: #666; line-height: 1.6; }
+    .info-value { font-size: 15px; font-weight: 600; color: #333; margin-top: 4px; }
+    .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .keyword-tag {
+      background: #e8f5e9; color: #2e7d32;
+      padding: 4px 10px; border-radius: 16px; font-size: 12px;
+    }
+
+    .style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .style-card {
+      padding: 10px; border-radius: 10px; border: 2px solid #e0e0e0;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .style-card:hover {
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .style-card.selected {
+      border-color: #1b5e20; box-shadow: 0 0 0 2px #1b5e20;
+    }
+    .style-preview {
+      width: 100%; height: 40px; border-radius: 6px; margin-bottom: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700;
+    }
+    .style-name { font-size: 12px; font-weight: 600; color: #333; }
+
+    .btn-generate {
+      width: 100%; padding: 14px; background: #1b5e20; color: white;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.3s; margin-top: 8px;
+    }
+    .btn-generate:hover { background: #2e7d32; transform: translateY(-2px); }
+    .btn-generate:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    .status {
+      margin-top: 12px; padding: 12px; border-radius: 10px;
+      font-size: 13px; line-height: 1.6; display: none;
+    }
+    .status.loading { display: block; background: #fff3cd; color: #856404; }
+    .status.success { display: block; background: #d4edda; color: #155724; }
+    .status.error { display: block; background: #f8d7da; color: #721c24; }
+
+    .result-link {
+      display: inline-block; margin-top: 8px; padding: 8px 16px;
+      background: #1b5e20; color: white; border-radius: 20px;
+      text-decoration: none; font-size: 13px; font-weight: 600;
+    }
+
+    .hint { font-size: 11px; color: #999; margin-top: 14px; text-align: center; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <h2>🎨 AI 簡報生成器</h2>
+
+  <!-- 目前試算表資料 -->
+  <div class="section">
+    <div class="section-title">📝 試算表資料</div>
+    <div class="info-text">A1 主題：</div>
+    <div class="info-value" id="topicDisplay">讀取中...</div>
+    <div class="info-text" style="margin-top: 8px;">B 欄關鍵字：</div>
+    <div class="keywords" id="keywordsDisplay"></div>
+  </div>
+
+  <!-- 風格選擇 -->
+  <div class="section">
+    <div class="section-title">🎨 選擇簡報風格（C1 或點選）</div>
+    <div class="style-grid">
+
+      <div class="style-card selected" data-style="1" onclick="selectStyle(1)">
+        <div class="style-preview" style="background: #1a237e; color: #fff;">Aa</div>
+        <div class="style-name">📘 專業商務</div>
+      </div>
+
+      <div class="style-card" data-style="2" onclick="selectStyle(2)">
+        <div class="style-preview" style="background: #1b5e20; color: #fff;">Aa</div>
+        <div class="style-name">🌿 清新自然</div>
+      </div>
+
+      <div class="style-card" data-style="3" onclick="selectStyle(3)">
+        <div class="style-preview" style="background: #212121; color: #00e5ff;">Aa</div>
+        <div class="style-name">🚀 科技未來</div>
+      </div>
+
+      <div class="style-card" data-style="4" onclick="selectStyle(4)">
+        <div class="style-preview" style="background: #e65100; color: #fff;">Aa</div>
+        <div class="style-name">🧡 溫暖教育</div>
+      </div>
+
+      <div class="style-card" data-style="5" onclick="selectStyle(5)">
+        <div class="style-preview" style="background: #212121; color: #fff;">Aa</div>
+        <div class="style-name">⬛ 簡約黑白</div>
+      </div>
+
+      <div class="style-card" data-style="6" onclick="selectStyle(6)">
+        <div class="style-preview" style="background: #6a1b9a; color: #fff;">Aa</div>
+        <div class="style-name">💜 活力繽紛</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 生成按鈕 -->
+  <button class="btn-generate" id="generateBtn" onclick="handleGenerate()">
+    🚀 生成簡報
+  </button>
+
+  <!-- 狀態顯示 -->
+  <div class="status" id="statusBox"></div>
+
+  <div class="hint">
+    💡 修改 A1 主題或 B 欄關鍵字後<br>重新開啟此面板即可更新顯示
+  </div>
+
+  <script>
+    var selectedStyle = 1;
+
+    // 載入時讀取試算表資料
+    google.script.run
+      .withSuccessHandler(function(data) {
+        document.getElementById('topicDisplay').textContent =
+          data.topic || '（尚未填寫，請在 A1 輸入主題）';
+
+        var kwDiv = document.getElementById('keywordsDisplay');
+        if (data.keywords.length > 0) {
+          kwDiv.innerHTML = data.keywords.map(function(kw) {
+            return '<span class="keyword-tag">' + kw + '</span>';
+          }).join('');
+        } else {
+          kwDiv.innerHTML = '<span class="info-text" style="color:#999;">（選填，可在 B1、B2... 輸入）</span>';
+        }
+
+        if (data.styleNum >= 1 && data.styleNum <= 6) {
+          selectStyle(data.styleNum);
+        }
+      })
+      .getSheetData();
+
+    function selectStyle(num) {
+      selectedStyle = num;
+      document.querySelectorAll('.style-card').forEach(function(card) {
+        card.classList.remove('selected');
+      });
+      document.querySelector('[data-style="' + num + '"]').classList.add('selected');
+    }
+
+    function handleGenerate() {
+      var btn = document.getElementById('generateBtn');
+      var status = document.getElementById('statusBox');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 生成中，請稍候...';
+
+      status.className = 'status loading';
+      status.innerHTML = '🤖 正在請 AI 生成簡報大綱...<br>⏱️ 預計需要 10~30 秒';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          btn.disabled = false;
+          btn.textContent = '🚀 生成簡報';
+
+          if (result && result.success) {
+            status.className = 'status success';
+            status.innerHTML = '✅ 簡報生成完成！<br>'
+              + '📄 ' + result.title + '（' + result.pages + ' 頁）<br>'
+              + '<a href="' + result.url + '" target="_blank" class="result-link">📎 開啟簡報</a>';
+          } else {
+            status.className = 'status error';
+            status.innerHTML = '❌ 生成失敗：' + (result ? result.message : '未知錯誤');
+          }
+        })
+        .withFailureHandler(function(error) {
+          btn.disabled = false;
+          btn.textContent = '🚀 生成簡報';
+          status.className = 'status error';
+          status.innerHTML = '❌ 發生錯誤：' + error.message;
+        })
+        .generatePresentation(selectedStyle);
+    }
+  </script>
+
+</body>
+</html>
