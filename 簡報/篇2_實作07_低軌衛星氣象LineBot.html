@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛰️ 實作 7 — 低軌衛星氣象 Line Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1b5e20 0%, #004d40 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255,255,255,0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 60px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #1b5e20; font-size: 52px; margin-bottom: 24px; text-align: center; }
+        h2 { color: #1b5e20; font-size: 36px; margin-bottom: 30px; border-bottom: 3px solid #1b5e20; padding-bottom: 12px; }
+        h3 { color: #2e7d32; font-size: 24px; margin: 25px 0 12px 0; }
+        p, li { font-size: 20px; line-height: 1.8; color: #444; margin-bottom: 12px; }
+        ul, ol { padding-left: 30px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.92em; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 17px; line-height: 1.6; font-family: 'Consolas', monospace; }
+        pre code { background: none; color: inherit; padding: 0; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #1b5e20; color: white; padding: 12px 16px; text-align: left; font-size: 16px; }
+        td { padding: 10px 16px; border-bottom: 1px solid #e0e0e0; font-size: 16px; }
+        tr:hover { background: #f5f5f5; }
+        .box { padding: 20px 25px; border-radius: 12px; margin: 20px 0; border-left: 6px solid; font-size: 18px; line-height: 1.7; }
+        .info { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; }
+        .concept-card { background: #f1f8e9; padding: 25px; border-radius: 15px; border: 2px solid #c8e6c9; transition: transform 0.3s; }
+        .concept-card:hover { transform: translateY(-5px); border-color: #4caf50; }
+        .indicators { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4000; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 30px; backdrop-filter: blur(5px); }
+        .dot { width: 12px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #69f0ae; transform: scale(1.3); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .col { background: #f8faf8; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #1b5e20; color: white; border-radius: 50%; font-weight: 700; font-size: 18px; margin-right: 10px; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; margin: 4px; }
+        .badge-green { background: #c8e6c9; color: #2e7d32; }
+        .badge-blue { background: #bbdefb; color: #1565c0; }
+        .badge-orange { background: #ffe0b2; color: #e65100; }
+        .flow-step { display: inline-flex; align-items: center; gap: 8px; background: #f1f8e9; padding: 10px 18px; border-radius: 12px; border: 2px solid #c8e6c9; font-size: 16px; font-weight: 600; }
+        .flow-arrow { font-size: 24px; color: #1b5e20; margin: 0 5px; }
+        .micro-step { background: #f8faf8; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+        .micro-step strong { color: #1b5e20; }
+        .explain-list { list-style: none; padding-left: 0; }
+        .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
+        .explain-list li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<script src="password-gate.js"></script>
+    <div class="nav-bar">
+        <div class="nav-title">🛰️ 實作 7：低軌衛星氣象 Line Bot</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">🏠 總覽</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">🖥️ 全螢幕</button>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+<!-- ======================== Slide 1: 封面 ======================== -->
+<div class="slide active">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 100px; margin-bottom: 20px;">🛰️</div>
+        <h1 style="font-size: 58px; margin-bottom: 16px;">低軌衛星氣象 Line Bot</h1>
+        <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
+            互動式選單查詢天氣、洋流、衛星雲圖
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
+            <span class="badge badge-green">Webhook</span>
+            <span class="badge badge-blue">OpenWeatherMap</span>
+            <span class="badge badge-orange">Stormglass</span>
+            <span class="badge badge-green">互動選單</span>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <div class="flow-step">💬 輸入「低軌衛星」</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📋 選擇功能</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📍 選擇地區</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">📊 取得資料</div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="../GAS程式碼/實作07_低軌衛星氣象LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+        </div>
+        <p style="font-size: 16px; color: #999; margin-top: 30px;">第二篇 — 實作 7 / 互動式氣象查詢 Line Bot</p>
+    </div>
+</div>
+
+<!-- ======================== Slide 2: 前置須知 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📋 開始前，請確認</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">⏱️</div>
+                <h3>預估時間</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">45 分鐘</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📊</div>
+                <h3>難度</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #e65100;">★★★☆☆ 中等</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📁</div>
+                <h3>程式碼檔案</h3>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+            </div>
+        </div>
+        <h3 style="margin-top: 30px;">前置條件</h3>
+        <table>
+            <thead><tr><th>條件</th><th>說明</th><th>在哪裡完成的</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Line Bot 已建立</strong></td><td>已經有 Channel Access Token</td><td>實作 6</td></tr>
+                <tr><td><strong>GAS 基礎</strong></td><td>會建立專案、貼程式碼、執行</td><td>實作 0-5</td></tr>
+                <tr><td><strong>OpenWeatherMap 帳號</strong></td><td>免費註冊取得 API Key</td><td>本實作教你註冊</td></tr>
+                <tr><td><strong>Stormglass 帳號</strong></td><td>免費註冊取得 API Key</td><td>本實作教你註冊</td></tr>
+            </tbody>
+        </table>
+        <div class="box info">
+            <strong>💡 跟實作 6 的差別：</strong>實作 6 是「推播型」（程式主動推訊息給你），這個實作是「互動型」（你傳訊息給 Bot，Bot 回覆你）。核心差異是多了 <code>doPost()</code> 和 Webhook 部署。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 3: 功能介紹 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎯 這個 Bot 能做什麼？</h2>
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px;">🌤️</div>
+                <h3>天氣查詢</h3>
+                <p>溫度、體感溫度、濕度、風速、雲量、日出日落</p>
+                <p style="font-size: 14px; color: #888;">API：OpenWeatherMap（免費 60次/分鐘）</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px;">🌊</div>
+                <h3>洋流查詢</h3>
+                <p>浪高、浪向、水溫、洋流速度、海平面</p>
+                <p style="font-size: 14px; color: #888;">API：Stormglass（免費 10次/天）</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px;">🛰️</div>
+                <h3>衛星雲圖</h3>
+                <p>Windy、向日葵衛星、Zoom Earth、NASA</p>
+                <p style="font-size: 14px; color: #888;">提供即時衛星影像連結</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 48px;">📊</div>
+                <h3>查詢記錄</h3>
+                <p>自動將天氣、海洋資料記錄到 Google 試算表</p>
+                <p style="font-size: 14px; color: #888;">自動建立 4 個工作表</p>
+            </div>
+        </div>
+        <div class="box info">
+            <strong>💡 8 個預設地區 + 自訂地點：</strong>台北、台中、高雄、花蓮、澎湖、金門、台東、墾丁。也可以自行輸入任何城市名稱（中英文都行），系統會用 Geocoding API 自動轉換成座標查詢！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 4: 步驟1 註冊 API ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">1</span> 註冊兩個免費 API</h2>
+        <p>這個 Bot 需要兩組免費的 API Key，都只要 Email 註冊就能拿到。</p>
+
+        <h3>API-1：OpenWeatherMap（天氣資料）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開瀏覽器，前往 <code>https://openweathermap.org/api</code><br>
+            <span class="action">👆 動作：</span>點擊右上角 <strong>Sign Up</strong>，用 Email 註冊帳號<br>
+            <span class="action">👆 動作：</span>註冊完成後，到你的信箱<strong>點確認信</strong><br>
+            <span class="action">👆 動作：</span>登入後，點擊上方「<strong>API keys</strong>」分頁<br>
+            <span class="result">👀 結果：</span>頁面上顯示一組 API Key，複製它存到記事本
+        </div>
+
+        <h3>API-2：Stormglass（洋流/海洋資料）</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>前往 <code>https://stormglass.io/</code><br>
+            <span class="action">👆 動作：</span>點擊 <strong>Sign Up Free</strong> 或 <strong>Get API Key</strong><br>
+            <span class="action">👆 動作：</span>用 Email 註冊並確認<br>
+            <span class="result">👀 結果：</span>Dashboard 頁面顯示你的 API Key，複製它存到記事本
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 免費額度說明：</strong><br>
+            - OpenWeatherMap：每分鐘 60 次請求（非常充裕）<br>
+            - Stormglass：每天 10 次請求（省著用，測試時注意）<br>
+            - 兩組 API Key 都<strong>不要分享給別人</strong>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 步驟2 建立專案 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">2</span> 建立 GAS 專案</h2>
+
+        <h3>Step 2-1：建立試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>開啟 Google 試算表，建立新的試算表，取名「低軌衛星氣象」<br>
+            <span class="action">👆 動作：</span>從網址列複製 <strong>Sheet ID</strong>（介於 <code>/d/</code> 和 <code>/edit</code> 之間的那串長字串）<br>
+            <span class="result">👀 結果：</span>記事本現在有 3 組 Key：LINE_TOKEN、OpenWeather Key、Stormglass Key、Sheet ID
+        </div>
+
+        <h3>Step 2-2：開啟 Apps Script</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>上方選單 →「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」<br>
+            <span class="result">👀 結果：</span>GAS 編輯器開啟
+        </div>
+
+        <h3>Step 2-3：貼上程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>全選刪除預設程式碼（<code>Ctrl+A</code> → <code>Delete</code>）<br>
+            <span class="action">👆 動作：</span>貼上完整的實作7 程式碼（<code>Ctrl+V</code>）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 6: 步驟3 設定值 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">3</span> 修改 4 個設定值</h2>
+        <p>在程式碼最上方找到設定區，依序貼上你的 4 組設定值：</p>
+
+        <pre><code>var LINE_TOKEN = '在此貼上你的 Line Channel Access Token';
+var OPENWEATHER_API_KEY = '在此貼上你的 OpenWeatherMap API Key';
+var STORMGLASS_API_KEY = '在此貼上你的 Stormglass API Key';
+var SHEET_ID = '在此貼上你的 Google Sheet ID';</code></pre>
+
+        <table>
+            <thead><tr><th>設定項目</th><th>哪裡取得</th><th>格式範例</th></tr></thead>
+            <tbody>
+                <tr><td><strong>LINE_TOKEN</strong></td><td>LINE Developers 後台</td><td>一串很長的英數字</td></tr>
+                <tr><td><strong>OPENWEATHER_API_KEY</strong></td><td>步驟 1 註冊的</td><td><code>32 位英數字</code></td></tr>
+                <tr><td><strong>STORMGLASS_API_KEY</strong></td><td>步驟 1 註冊的</td><td>一串 UUID 格式</td></tr>
+                <tr><td><strong>SHEET_ID</strong></td><td>試算表網址中間那段</td><td><code>1BxiMVs0XRA5...</code></td></tr>
+            </tbody>
+        </table>
+
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>4 個值都貼好後，按 <code>Ctrl+S</code> 儲存
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 常見錯誤：</strong>引號不要刪掉！只替換引號<strong>裡面</strong>的中文字。確認前後都是英文單引號 <code>' '</code>。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 7: 步驟4 測試 API ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">4</span> 測試 API 連線</h2>
+        <p>部署之前，先確認 API Key 都有填對。</p>
+
+        <h3>Step 4-1：測試天氣 API</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>函式下拉選單 → 選 <code>testWeatherAPI</code> → 點 <strong>▶ 執行</strong><br>
+            <span class="result">⏱️ 等待：</span>第一次會跳出授權 → 審查權限 → 選帳號 → 進階 → 前往 → 允許<br>
+            <span class="action">👆 動作：</span>看底部的「執行記錄」
+        </div>
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功</h3>
+                <p>記錄顯示：<br><code>✅ 天氣 API 測試成功！</code><br><code>地點：Taipei</code><br><code>溫度：26°C</code></p>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗</h3>
+                <p>記錄顯示紅色錯誤<br>→ 檢查 OPENWEATHER_API_KEY 是否正確<br>→ 新註冊的 Key 可能需等 10 分鐘生效</p>
+            </div>
+        </div>
+
+        <h3>Step 4-2：測試海洋 API</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>函式下拉選單 → 選 <code>testOceanAPI</code> → 點 <strong>▶ 執行</strong><br>
+            <span class="result">👀 結果：</span>記錄顯示「✅ 海洋 API 測試成功！浪高：X m」就是成功
+        </div>
+
+        <div class="box info">
+            <strong>💡 注意：</strong>Stormglass 免費版每天只有 10 次，測試時省著用！天氣 API 不用擔心，額度很充裕。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 8: 步驟5 部署 Webhook ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">5</span> 部署為網頁應用程式</h2>
+        <p>這是關鍵步驟！要讓 Line Bot 能「聽到」使用者的訊息，必須部署為 Web App。</p>
+
+        <h3>Step 5-1：開始部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>GAS 編輯器右上角 → 點「<strong>部署</strong>」→「<strong>新增部署作業</strong>」<br>
+            <span class="result">👀 結果：</span>彈出部署設定面板
+        </div>
+
+        <h3>Step 5-2：設定部署</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>左側「類型」旁邊的<strong>齒輪圖示</strong> → 選擇「<strong>網頁應用程式</strong>」<br>
+            <span class="action">👆 動作：</span>依照下表設定：
+        </div>
+        <table>
+            <thead><tr><th>欄位</th><th>設定值</th></tr></thead>
+            <tbody>
+                <tr><td>說明</td><td>低軌衛星氣象 Bot v1</td></tr>
+                <tr><td>執行身分</td><td><strong>我</strong>（你的帳號名稱）</td></tr>
+                <tr><td>誰可以存取</td><td><strong>所有人</strong></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Step 5-3：複製部署網址</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點「<strong>部署</strong>」按鈕<br>
+            <span class="result">👀 結果：</span>出現「部署作業已更新」畫面，有一串 <code>https://script.google.com/macros/s/...</code> 的網址<br>
+            <span class="action">👆 動作：</span>點「<strong>複製</strong>」按鈕，把這串網址存到記事本
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 「誰可以存取」一定要選「所有人」！</strong>不然 Line 伺服器無法呼叫你的程式。這不代表任何人可以看你的程式碼，只是允許 Line API 傳資料給你的 Bot。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 9: 步驟6 設定 Webhook ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 設定 Line Webhook</h2>
+        <p>把部署網址告訴 Line，這樣使用者傳訊息時，Line 才會轉給你的 GAS 處理。</p>
+
+        <h3>Step 6-1：進入 LINE Developers</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>前往 <code>https://developers.line.biz/console/</code><br>
+            <span class="action">👆 動作：</span>點擊你的 <strong>Provider</strong> → 點擊你的 <strong>Bot Channel</strong>
+        </div>
+
+        <h3>Step 6-2：貼上 Webhook URL</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>切換到「<strong>Messaging API</strong>」分頁<br>
+            <span class="action">👆 動作：</span>往下找到「<strong>Webhook URL</strong>」區域<br>
+            <span class="action">👆 動作：</span>點「<strong>Edit</strong>」→ 貼上剛才複製的部署網址 → 點「<strong>Update</strong>」
+        </div>
+
+        <h3>Step 6-3：啟用 Webhook</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>把「<strong>Use webhook</strong>」的開關切到<strong>開啟</strong>（綠色）<br>
+            <span class="action">👆 動作：</span>點「<strong>Verify</strong>」按鈕測試連線<br>
+            <span class="result">👀 結果：</span>顯示「<strong>Success</strong>」就表示設定正確！
+        </div>
+
+        <h3>Step 6-4：關閉自動回覆</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到「<strong>Auto-reply messages</strong>」→ 點「<strong>Edit</strong>」<br>
+            <span class="action">👆 動作：</span>把「自動回應訊息」設為<strong>停用</strong><br>
+            <span class="result">👀 原因：</span>不關的話，Bot 會同時回覆預設訊息和你的程式回覆，造成重複
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 10: 步驟7 測試 Bot ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">7</span> 測試 Line Bot</h2>
+
+        <h3>Step 7-1：傳訊息測試</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開手機 Line，找到你的 Bot（在好友列表中）<br>
+            <span class="action">👆 動作：</span>輸入「<strong>低軌衛星</strong>」送出<br>
+            <span class="result">👀 結果：</span>Bot 回覆主選單，列出 5 個功能
+        </div>
+
+        <h3>Step 7-2：測試天氣查詢</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>輸入「<strong>1</strong>」（查詢天氣）<br>
+            <span class="result">👀 結果：</span>Bot 回覆地區選單<br>
+            <span class="action">👆 動作：</span>輸入「<strong>1</strong>」（台北）<br>
+            <span class="result">👀 結果：</span>Bot 回覆台北的完整天氣資訊（溫度、濕度、風速等）
+        </div>
+
+        <h3>Step 7-3：測試衛星雲圖</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>輸入「<strong>低軌衛星</strong>」回到選單<br>
+            <span class="action">👆 動作：</span>輸入「<strong>3</strong>」<br>
+            <span class="result">👀 結果：</span>Bot 回覆 4 個衛星雲圖連結
+        </div>
+
+        <div class="two-col">
+            <div class="col">
+                <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
+                <ul>
+                    <li>輸入「低軌衛星」→ 收到主選單</li>
+                    <li>輸入數字 → 正確回應功能</li>
+                    <li>天氣資料有溫度、濕度等數值</li>
+                    <li>試算表自動新增工作表和記錄</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h3 style="color: #e53935;">❌ 失敗的可能</h3>
+                <ul>
+                    <li><strong>完全沒回應</strong> → Webhook URL 或部署有問題</li>
+                    <li><strong>回覆預設訊息</strong> → 沒關自動回覆</li>
+                    <li><strong>天氣取得失敗</strong> → API Key 有誤</li>
+                    <li>→ 看下一頁的問題排解</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 常見問題排解 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>❓ 常見問題排解</h2>
+
+        <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+            <div class="concept-card">
+                <h3 style="color: #e53935;">Bot 完全沒回應</h3>
+                <ul style="font-size: 16px;">
+                    <li>確認 Webhook URL 有貼對（步驟 6）</li>
+                    <li>確認「Use webhook」是<strong>開啟</strong>狀態</li>
+                    <li>確認部署時「誰可以存取」選了「<strong>所有人</strong>」</li>
+                    <li>修改程式碼後要<strong>重新部署</strong>（部署 → 管理部署作業 → 編輯 → 版本選「新版本」→ 部署）</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">天氣資料取得失敗</h3>
+                <ul style="font-size: 16px;">
+                    <li>先跑 <code>testWeatherAPI</code> 確認 API 連線</li>
+                    <li>新註冊的 OpenWeatherMap Key 要等 <strong>10~30 分鐘</strong>生效</li>
+                    <li>確認 Key 前後沒有多餘空格</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">洋流資料取得失敗</h3>
+                <ul style="font-size: 16px;">
+                    <li>Stormglass 免費版<strong>每天只有 10 次</strong></li>
+                    <li>用完了要等隔天才會重置</li>
+                    <li>測試時建議只查天氣，省洋流額度</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">修改程式碼後沒生效</h3>
+                <ul style="font-size: 16px;">
+                    <li>Webhook 的程式碼修改後<strong>必須重新部署</strong></li>
+                    <li>部署 → 管理部署作業 → 右上角✏️ → 版本選「新版本」→ 部署</li>
+                    <li>這是最常忘記的步驟！</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 程式碼解析 核心架構 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 — 核心架構</h2>
+        <p>這個 Bot 的架構是「<strong>狀態機</strong>」— 根據使用者目前的狀態，決定怎麼處理訊息。</p>
+
+        <h3>doPost() — Webhook 入口</h3>
+        <pre><code>function doPost(e) {
+  var events = JSON.parse(e.postData.contents).events;
+  for (var i = 0; i &lt; events.length; i++) {
+    if (events[i].type === 'message') {
+      handleMessage(events[i]);  // 處理每則訊息
+    }
+  }
+}</code></pre>
+
+        <h3>handleMessage() — 狀態判斷</h3>
+        <pre><code>function handleMessage(event) {
+  var userMessage = event.message.text.trim();
+  var userId = event.source.userId;
+  var userState = getUserState(userId);  // 從試算表讀取狀態
+
+  if (userMessage === '低軌衛星') {
+    replyMessages = getMainMenu();         // → 主選單
+  } else if (userState.state === 'MAIN_MENU') {
+    replyMessages = handleMainMenuSelection(...);  // → 功能選擇
+  } else if (userState.state === 'SELECT_LOCATION') {
+    replyMessages = handleLocationSelection(...);  // → 地區選擇
+  }
+
+  replyToLine(replyToken, replyMessages);  // 回覆
+}</code></pre>
+
+        <div class="box info">
+            <strong>💡 狀態機是什麼？</strong>就像「多步驟對話」：Bot 記住你在哪一步（用試算表記錄），根據你目前的步驟決定下一步要做什麼。這樣才能實現「先選功能 → 再選地區」的互動流程。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 13: 重點回顧 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>📝 重點回顧</h2>
+        <table>
+            <thead><tr><th>技能</th><th>實作 6 學過</th><th>實作 7 新增</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Line Bot</strong></td><td>推播訊息（push）</td><td><strong>Webhook 回覆</strong>（doPost + reply）</td></tr>
+                <tr><td><strong>API 呼叫</strong></td><td>Line Messaging API</td><td><strong>2 個外部 API</strong>（OpenWeatherMap + Stormglass）</td></tr>
+                <tr><td><strong>部署</strong></td><td>（未涉及）</td><td><strong>部署為網頁應用程式</strong> + 設定 Webhook URL</td></tr>
+                <tr><td><strong>互動設計</strong></td><td>（未涉及）</td><td><strong>狀態機</strong>（多步驟對話）+ 選單系統</td></tr>
+                <tr><td><strong>試算表</strong></td><td>（未涉及）</td><td><strong>自動建立工作表</strong> + 記錄查詢與資料</td></tr>
+                <tr><td><strong>地理編碼</strong></td><td>（未涉及）</td><td><strong>Geocoding API</strong>（地名 → 座標）</td></tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin-top: 25px;">本實作的函式一覽</h3>
+        <table>
+            <thead><tr><th>函式</th><th>用途</th></tr></thead>
+            <tbody>
+                <tr><td><code>doPost(e)</code></td><td>Webhook 入口，接收 Line 傳來的訊息</td></tr>
+                <tr><td><code>handleMessage(event)</code></td><td>根據狀態判斷該做什麼</td></tr>
+                <tr><td><code>getWeatherData(lat, lon)</code></td><td>呼叫 OpenWeatherMap API</td></tr>
+                <tr><td><code>getOceanData(lat, lon)</code></td><td>呼叫 Stormglass API</td></tr>
+                <tr><td><code>getUserState / setUserState</code></td><td>從試算表讀寫使用者狀態</td></tr>
+                <tr><td><code>replyToLine(token, messages)</code></td><td>Webhook 回覆訊息</td></tr>
+                <tr><td><code>testWeatherAPI / testOceanAPI</code></td><td>測試 API 連線</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 完成頁 ======================== -->
+<div class="slide">
+    <div class="content-card" style="text-align: center;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🛰️</div>
+        <h1 style="font-size: 42px;">實作 7 完成！</h1>
+        <p style="font-size: 22px; color: #555; margin-bottom: 25px;">你已經學會建立互動式氣象查詢 Line Bot！</p>
+
+        <div class="concept-grid" style="margin-bottom: 30px; grid-template-columns: repeat(4, 1fr);">
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌐</div>
+                <h3>Webhook</h3>
+                <p>doPost 接收訊息</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌤️</div>
+                <h3>天氣 API</h3>
+                <p>OpenWeatherMap</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🌊</div>
+                <h3>洋流 API</h3>
+                <p>Stormglass</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">📋</div>
+                <h3>互動選單</h3>
+                <p>狀態機設計</p>
+            </div>
+        </div>
+
+        <div class="box success" style="text-align: left; max-width: 700px; margin: 0 auto 30px;">
+            <strong>🎯 下一站預告 — 實作 8：早安圖 Line Bot 圖片推播</strong>
+            <ul>
+                <li>從 Google Drive 讀取圖片</li>
+                <li>Line Bot 自動推播早安圖</li>
+                <li>設定每日排程自動發送</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <a href="../GAS程式碼/實作07_低軌衛星氣象LineBot.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="篇2_實作08_早安圖LineBot圖片推播.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
+            <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
+        </div>
+    </div>
+</div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const c = document.getElementById('indicatorContainer'); c.innerHTML = ''; slides.forEach((_, i) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => goToSlide(i); c.appendChild(d); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); }
+        function changeSlide(dir) { showSlide(currentSlide + dir); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

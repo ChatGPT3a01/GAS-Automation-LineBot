@@ -48,7 +48,7 @@ git add -A && git commit -m "描述" && git push origin master
 | 4 | `篇1_實作04_HTML網頁表單.html` | `實作04_HTML網頁表單.gs` + `04_HTML表單_前端.html` |
 | 5 | `篇1_實作05_擴充選單與自訂按鈕.html` | `實作05_擴充選單與自訂按鈕.gs` |
 | 6 | `篇2_實作06_LineBot建立與推播.html` | `實作06_LineBot建立與推播.gs` |
-| 7 | `篇2_實作07_天氣預報LineBot推播.html` | `實作07_天氣預報LineBot推播.gs` |
+| 7 | `篇2_實作07_低軌衛星氣象LineBot.html` | `實作07_低軌衛星氣象LineBot.gs` |
 | 8 | `篇2_實作08_早安圖LineBot圖片推播.html` | `實作08_早安圖LineBot圖片推播.gs` |
 | 9 | `篇2_實作09_AI自動生成簡報.html` | `實作09_AI自動生成簡報.gs` |
 | 10 | `篇2_實作10_RSS新聞推播機器人.html` | `實作10_RSS新聞推播機器人.gs` |
