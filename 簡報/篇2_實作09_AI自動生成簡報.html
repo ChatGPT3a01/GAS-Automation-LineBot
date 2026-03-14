@@ -56,6 +56,8 @@
         .explain-list { list-style: none; padding-left: 0; }
         .explain-list li { padding: 8px 0; border-bottom: 1px dashed #e0e0e0; }
         .explain-list li:last-child { border-bottom: none; }
+        .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+        .style-card-demo { padding: 16px; border-radius: 12px; text-align: center; color: #fff; font-weight: 700; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -78,22 +80,22 @@
         <div style="font-size: 100px; margin-bottom: 20px;">🎨</div>
         <h1 style="font-size: 58px; margin-bottom: 16px;">AI 自動生成簡報</h1>
         <p style="font-size: 28px; color: #555; margin-bottom: 30px;">
-            Gemini AI 生成大綱 → SlidesApp 建立 Google 簡報 → 自動排版
+            試算表填主題 + 關鍵字 → AI 生成大綱 → 一鍵建立 Google 簡報
         </p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px;">
             <span class="badge badge-green">SlidesApp</span>
             <span class="badge badge-blue">Gemini API</span>
-            <span class="badge badge-orange">JSON 解析</span>
-            <span class="badge badge-green">自動排版</span>
+            <span class="badge badge-orange">6 種風格</span>
+            <span class="badge badge-green">側邊欄 UI</span>
         </div>
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
-            <div class="flow-step">💡 輸入主題</div>
+            <div class="flow-step">📝 試算表填資料</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">🎨 選擇風格</div>
             <span class="flow-arrow">→</span>
             <div class="flow-step">🤖 AI 生成大綱</div>
             <span class="flow-arrow">→</span>
-            <div class="flow-step">📊 建立簡報</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-step">🎨 自動排版</div>
+            <div class="flow-step">📊 自動建立簡報</div>
         </div>
         <div style="margin-top: 20px;">
             <a href="../GAS程式碼/實作09_AI自動生成簡報.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;">📥 下載程式碼</a>
@@ -112,7 +114,7 @@
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">⏱️</div>
                 <h3>預估時間</h3>
-                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">45 分鐘</p>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">30 分鐘</p>
             </div>
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">📊</div>
@@ -122,7 +124,8 @@
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">📁</div>
                 <h3>程式碼檔案</h3>
-                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">1 個</p>
+                <p style="font-size: 28px; font-weight: 700; color: #1b5e20;">2 個</p>
+                <p style="font-size: 14px; color: #666;">.gs + .html</p>
             </div>
         </div>
 
@@ -139,7 +142,7 @@
         </table>
 
         <div class="box info">
-            <strong>💡 本實作的特色：</strong>這是一個「純 GAS + AI」的實作，不需要 Line Bot。你輸入一個主題，AI 幫你寫大綱，GAS 幫你排版，最後產出一份完整的 Google 簡報！
+            <strong>💡 本實作的特色：</strong>這是一個「純 GAS + AI」的實作，不需要 Line Bot。你在試算表填入主題和關鍵字，選擇喜歡的風格，AI 幫你寫大綱，GAS 幫你排版，最後產出一份完整的 Google 簡報！
         </div>
     </div>
 </div>
@@ -159,27 +162,27 @@
             <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
                 <h3>SlidesApp.create()</h3>
-                <p>用 GAS 建立全新的 Google 簡報檔案，並取得簡報物件</p>
+                <p>用 GAS 建立全新的 Google 簡報，自動產生封面、內容、結尾頁</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">📝</div>
-                <h3>insertTextBox / insertShape</h3>
-                <p>在投影片上插入文字方塊和形狀，設定位置、大小、樣式</p>
+                <div style="font-size: 48px; margin-bottom: 10px;">🎨</div>
+                <h3>6 種簡報風格</h3>
+                <p>用物件儲存配色方案，讓同一份程式碼能產出不同風格的簡報</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">🔄</div>
-                <h3>JSON 解析與迴圈</h3>
-                <p>解析 AI 回傳的 JSON 大綱，用迴圈自動建立每一頁投影片</p>
+                <div style="font-size: 48px; margin-bottom: 10px;">🖥️</div>
+                <h3>HTML 側邊欄</h3>
+                <p>用 <code>HtmlService</code> 建立圖形化操作介面，不用記函式名稱</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 4: AI + GAS 能做什麼 ======================== -->
+<!-- ======================== Slide 4: 新舊對比 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>🤖 AI + GAS 能做什麼？</h2>
-        <p style="font-size: 22px; margin-bottom: 20px;">想像一下：你只要打幾個字說「我想做一份關於 XX 的簡報」，幾秒鐘後，一份完整的 Google 簡報就出現在你的雲端硬碟裡！</p>
+        <p style="font-size: 22px; margin-bottom: 20px;">你只要在試算表填幾個字，幾秒鐘後，一份完整的 Google 簡報就出現在你的雲端硬碟裡！</p>
 
         <div class="two-col">
             <div class="col">
@@ -196,34 +199,76 @@
             <div class="col">
                 <h3 style="color: #2e7d32;">🚀 AI + GAS 做法</h3>
                 <ol>
-                    <li>輸入主題（例如「人工智慧入門」）</li>
-                    <li>AI 自動生成大綱</li>
-                    <li>GAS 自動建立簡報</li>
-                    <li>自動排版、設定顏色</li>
-                    <li>完成！打開雲端硬碟就能看到</li>
+                    <li>A1 填主題、B 欄填關鍵字</li>
+                    <li>開啟側邊欄，選風格</li>
+                    <li>點「🚀 生成簡報」</li>
+                    <li>AI 自動寫大綱 + GAS 自動排版</li>
+                    <li>完成！點連結就能看到簡報</li>
                 </ol>
-                <p style="color: #2e7d32; font-weight: 600;">⏱️ 花費：10 秒鐘</p>
+                <p style="color: #2e7d32; font-weight: 600;">⏱️ 花費：10~30 秒</p>
+            </div>
+        </div>
+
+        <h3>試算表填寫方式</h3>
+        <table>
+            <thead><tr><th>欄位</th><th>內容</th><th>範例</th></tr></thead>
+            <tbody>
+                <tr><td><strong>A1</strong></td><td>簡報主題（必填）</td><td>人工智慧入門</td></tr>
+                <tr><td><strong>B1</strong></td><td>關鍵字 / 重點 1（選填）</td><td>機器學習</td></tr>
+                <tr><td><strong>B2</strong></td><td>關鍵字 / 重點 2（選填）</td><td>深度學習</td></tr>
+                <tr><td><strong>B3</strong></td><td>關鍵字 / 重點 3（選填）</td><td>教育應用</td></tr>
+                <tr><td><strong>C1</strong></td><td>風格編號 1~6（選填，預設 1）</td><td>2</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================== Slide 5: 6 種風格介紹 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🎨 6 種簡報風格</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">在 C1 輸入編號 1~6，或在側邊欄點選，就能切換簡報的配色風格。</p>
+
+        <div class="style-grid">
+            <div class="style-card-demo" style="background: #1a237e;">
+                <div style="font-size: 28px; margin-bottom: 8px;">📘</div>
+                <div>1. 專業商務</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">深藍白底，正式場合</div>
+            </div>
+            <div class="style-card-demo" style="background: #1b5e20;">
+                <div style="font-size: 28px; margin-bottom: 8px;">🌿</div>
+                <div>2. 清新自然</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">綠色系，清爽舒適</div>
+            </div>
+            <div class="style-card-demo" style="background: #212121; color: #00e5ff;">
+                <div style="font-size: 28px; margin-bottom: 8px;">🚀</div>
+                <div>3. 科技未來</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">暗黑霓虹，科技感</div>
+            </div>
+            <div class="style-card-demo" style="background: #e65100;">
+                <div style="font-size: 28px; margin-bottom: 8px;">🧡</div>
+                <div>4. 溫暖教育</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">橘色系，親切溫暖</div>
+            </div>
+            <div class="style-card-demo" style="background: #212121;">
+                <div style="font-size: 28px; margin-bottom: 8px;">⬛</div>
+                <div>5. 簡約黑白</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">極簡風，經典不敗</div>
+            </div>
+            <div class="style-card-demo" style="background: #6a1b9a;">
+                <div style="font-size: 28px; margin-bottom: 8px;">💜</div>
+                <div>6. 活力繽紛</div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">紫色系，活潑有趣</div>
             </div>
         </div>
 
         <div class="box info">
-            <strong>💡 本實作的流程：</strong><br>
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
-                <div class="flow-step">1️⃣ 設定主題</div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">2️⃣ AI 寫大綱</div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">3️⃣ 解析 JSON</div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">4️⃣ 建立簡報</div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">5️⃣ 自動排版</div>
-            </div>
+            <strong>💡 風格是什麼？</strong>每種風格就是一組「配色方案」，包含封面背景色、標題色、內容頁底色、裝飾條顏色等。程式碼用一個 <code>STYLES</code> 物件來儲存這 6 組配色，切換風格只是切換配色參數，不需要改程式邏輯。
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 5: 取得 Gemini API Key ======================== -->
+<!-- ======================== Slide 6: 步驟1 取得 Gemini API Key ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2><span class="step-number">1</span> 取得 Gemini API Key</h2>
@@ -244,7 +289,7 @@
 
         <h3>Step 1-3：複製並保存</h3>
         <div class="micro-step">
-            <span class="action">👆 動作：</span>點擊 API Key 旁邊的<strong>複製圖示</strong>，把這串金鑰存到安全的地方<br>
+            <span class="action">👆 動作：</span>點擊 API Key 旁邊的<strong>複製圖示</strong>，把這串金鑰存到安全的地方（記事本）<br>
             <span class="result">👀 結果：</span>等一下要貼到 GAS 程式碼裡面
         </div>
 
@@ -257,381 +302,425 @@
     </div>
 </div>
 
-<!-- ======================== Slide 6: 呼叫 Gemini API ======================== -->
+<!-- ======================== Slide 7: 步驟2 建立 GAS 專案 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">2</span> 呼叫 Gemini API</h2>
-        <p>用 <code>UrlFetchApp.fetch()</code> 向 Gemini API 發送請求，就像在跟 AI 聊天一樣。</p>
+        <h2><span class="step-number">2</span> 建立 GAS 專案</h2>
 
-        <h3>API 呼叫的基本結構</h3>
-        <pre><code>// ===== 呼叫 Gemini AI =====
-function callGemini(prompt) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-          + 'gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+        <h3>Step 2-1：建立試算表</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>打開 Google 試算表，建立一個新的試算表<br>
+            <span class="action">👆 動作：</span>幫試算表取個名字，例如「AI 簡報生成器」<br>
+            <span class="result">👀 結果：</span>你有一個空白的 Google 試算表
+        </div>
 
-  var payload = {
-    contents: [{
-      parts: [{ text: prompt }]
-    }]
-  };
+        <h3>Step 2-2：先填好試算表資料</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在儲存格中填入以下內容：<br>
+            <table style="margin-top: 10px; font-size: 15px;">
+                <tr><td style="background: #e8f5e9; font-weight: 700;">A1</td><td>人工智慧入門</td><td style="color: #888;">← 你想要的主題</td></tr>
+                <tr><td style="background: #e8f5e9; font-weight: 700;">B1</td><td>機器學習</td><td style="color: #888;">← 關鍵字 1</td></tr>
+                <tr><td style="background: #e8f5e9; font-weight: 700;">B2</td><td>深度學習</td><td style="color: #888;">← 關鍵字 2</td></tr>
+                <tr><td style="background: #e8f5e9; font-weight: 700;">B3</td><td>教育應用</td><td style="color: #888;">← 關鍵字 3</td></tr>
+                <tr><td style="background: #fff3cd; font-weight: 700;">C1</td><td>1</td><td style="color: #888;">← 風格編號 1~6（選填）</td></tr>
+            </table>
+        </div>
 
-  var options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  var response = UrlFetchApp.fetch(url, options);
-  var json = JSON.parse(response.getContentText());
-
-  // 取出 AI 回覆的文字
-  return json.candidates[0].content.parts[0].text;
-}</code></pre>
-
-        <h3>逐行解釋</h3>
-        <ul class="explain-list">
-            <li><code>url</code> — Gemini API 的網址，末尾要附上你的 API Key</li>
-            <li><code>payload</code> — 要傳送給 AI 的內容，包含你的提示詞（prompt）</li>
-            <li><code>options</code> — HTTP 請求的設定：用 POST 方法、JSON 格式</li>
-            <li><code>UrlFetchApp.fetch()</code> — 發送請求，拿到 AI 的回覆</li>
-            <li><code>json.candidates[0].content.parts[0].text</code> — 從回覆中取出 AI 的文字</li>
-        </ul>
+        <h3>Step 2-3：開啟 Apps Script</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>上方選單 →「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」<br>
+            <span class="result">👀 結果：</span>新分頁開啟 GAS 編輯器，畫面上有預設的空白程式碼
+        </div>
     </div>
 </div>
 
-<!-- ======================== Slide 7: 設計 Prompt ======================== -->
+<!-- ======================== Slide 8: 步驟3 貼上程式碼 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">3</span> 設計 Prompt — 讓 AI 回傳 JSON</h2>
-        <p>Prompt 設計的關鍵：<strong>要求 AI 用 JSON 格式回覆</strong>，這樣程式才能解析。</p>
+        <h2><span class="step-number">3</span> 貼上程式碼（2 個檔案）</h2>
+        <p>本實作需要 <strong>2 個檔案</strong>：一個 <code>.gs</code> 程式碼 + 一個 <code>.html</code> 側邊欄介面。</p>
 
-        <h3>我們的 Prompt 範本</h3>
-        <pre><code>// ===== 產生簡報大綱的 Prompt =====
-function buildPrompt(topic) {
-  return '請幫我製作一份關於「' + topic + '」的簡報大綱。\n'
-       + '回覆格式必須是純 JSON（不要加 markdown 標記），結構如下：\n'
-       + '{\n'
-       + '  "title": "簡報標題",\n'
-       + '  "subtitle": "副標題",\n'
-       + '  "slides": [\n'
-       + '    {\n'
-       + '      "heading": "這一頁的標題",\n'
-       + '      "bullets": ["重點1", "重點2", "重點3"]\n'
-       + '    }\n'
-       + '  ]\n'
-       + '}\n'
-       + '請產生 5~8 頁內容頁，每頁 3~4 個重點。';
-}</code></pre>
+        <h3>Step 3-1：貼上 GAS 程式碼</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在 GAS 編輯器中，<strong>全選</strong>預設程式碼（<code>Ctrl+A</code>）→ <strong>刪除</strong><br>
+            <span class="action">👆 動作：</span>把下載的 <code>實作09_AI自動生成簡報.gs</code> 的完整內容<strong>貼上</strong>（<code>Ctrl+V</code>）<br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>左側檔案列表顯示 <code>程式碼.gs</code>，內容已更新
+        </div>
 
-        <h3>為什麼用 JSON？</h3>
-        <div class="two-col">
-            <div class="col">
-                <h3 style="color: #e53935;">❌ 純文字回覆</h3>
-                <p>AI 回覆自由格式文字，程式很難拆解每一頁的標題和內容在哪裡。</p>
-            </div>
-            <div class="col">
-                <h3 style="color: #2e7d32;">✅ JSON 結構化回覆</h3>
-                <p>AI 回覆固定格式的 JSON，程式用 <code>JSON.parse()</code> 就能精準取得每筆資料。</p>
-            </div>
+        <h3>Step 3-2：新增 HTML 檔案</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在左側「檔案」區域，找到 <code>+</code>（加號按鈕），點擊它<br>
+            <span class="action">👆 動作：</span>選擇「<strong>HTML</strong>」<br>
+            <span class="action">👆 動作：</span>系統會要求你輸入檔案名稱，輸入：<code>09_簡報風格選擇</code>（不需要打 .html）<br>
+            <span class="result">👀 結果：</span>左側出現一個新的 <code>09_簡報風格選擇.html</code> 檔案，內容是預設的 HTML 範本
+        </div>
+
+        <h3>Step 3-3：貼上 HTML 內容</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span><strong>全選</strong>預設的 HTML 內容（<code>Ctrl+A</code>）→ <strong>刪除</strong><br>
+            <span class="action">👆 動作：</span>把下載的 <code>09_簡報風格選擇.html</code> 的完整內容<strong>貼上</strong><br>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存<br>
+            <span class="result">👀 結果：</span>HTML 檔案已更新，這是側邊欄的介面
         </div>
 
         <div class="box info">
-            <strong>💡 Prompt 技巧：</strong>明確告訴 AI「回覆格式必須是純 JSON，不要加 markdown 標記」，這樣 AI 就不會在 JSON 前後加上 <code>```json</code> 等標記，程式解析時就不會出錯。
+            <strong>💡 確認檔案結構：</strong>左側檔案列表應該有 2 個檔案：<br>
+            📄 <code>程式碼.gs</code> — 主要程式邏輯<br>
+            📄 <code>09_簡報風格選擇.html</code> — 側邊欄操作介面
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 8: SlidesApp 基礎 ======================== -->
+<!-- ======================== Slide 9: 步驟4 設定 API Key ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">4</span> SlidesApp 基礎</h2>
-        <p>GAS 內建 <code>SlidesApp</code> 可以用程式碼操作 Google Slides，就像你手動編輯簡報一樣。</p>
+        <h2><span class="step-number">4</span> 設定 API Key</h2>
 
-        <h3>SlidesApp 常用方法</h3>
-        <table>
-            <thead>
-                <tr><th>方法</th><th>功能</th><th>範例</th></tr>
-            </thead>
-            <tbody>
-                <tr><td><code>SlidesApp.create()</code></td><td>建立新簡報</td><td><code>var pres = SlidesApp.create('標題');</code></td></tr>
-                <tr><td><code>pres.appendSlide()</code></td><td>新增一頁空白投影片</td><td><code>var slide = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);</code></td></tr>
-                <tr><td><code>slide.insertTextBox()</code></td><td>插入文字方塊</td><td><code>slide.insertTextBox('文字', 左, 上, 寬, 高);</code></td></tr>
-                <tr><td><code>slide.insertShape()</code></td><td>插入形狀</td><td><code>slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 左, 上, 寬, 高);</code></td></tr>
-                <tr><td><code>slide.getBackground()</code></td><td>取得背景設定</td><td><code>slide.getBackground().setSolidFill('#1b5e20');</code></td></tr>
-            </tbody>
-        </table>
+        <h3>Step 4-1：找到設定區</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊左側的 <code>程式碼.gs</code> 檔案（切回主程式）<br>
+            <span class="action">👆 動作：</span>找到程式碼最上方的設定區，大約在第 48~49 行
+        </div>
 
-        <h3>座標系統</h3>
-        <div class="box info">
-            <strong>💡 Google Slides 的座標：</strong><br>
-            - 預設投影片大小：<strong>720 x 405</strong> 點（10 x 5.625 英吋，16:9 比例）<br>
-            - 左上角是 <code>(0, 0)</code>，往右是 X 增加，往下是 Y 增加<br>
-            - <code>insertTextBox('文字', 50, 30, 620, 50)</code> 表示：<br>
-            &nbsp;&nbsp;距左邊 50 點、距上方 30 點、寬 620 點、高 50 點
+        <h3>Step 4-2：貼上 API Key</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>找到這一行：<br>
+            <pre style="font-size: 16px; padding: 12px;"><code>var GEMINI_API_KEY = '在此貼上你的 Gemini API Key';</code></pre>
+            <span class="action">👆 動作：</span>把引號裡面的中文字刪掉，貼上你的 API Key<br>
+            <span class="result">👀 結果：</span>變成類似 <code>var GEMINI_API_KEY = 'AIzaSyB...';</code>
+        </div>
+
+        <h3>Step 4-3：確認模型名稱</h3>
+        <div class="micro-step">
+            <span class="action">👀 確認：</span>下一行的模型名稱保持預設即可：<br>
+            <pre style="font-size: 16px; padding: 12px;"><code>var GEMINI_MODEL = 'gemini-2.5-flash';</code></pre>
+            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存
+        </div>
+
+        <div class="box warning">
+            <strong>⚠️ 常見錯誤：</strong><br>
+            - ❌ 引號被刪掉了 → 要保留前後的<strong>單引號</strong><br>
+            - ❌ 多了空格 → API Key 前後不要有多餘空格<br>
+            - ❌ 用了中文引號「」→ 要用英文單引號 <code>' '</code>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 9: 建立封面頁 ======================== -->
+<!-- ======================== Slide 10: 步驟5 啟用擴充選單 ======================== -->
 <div class="slide">
     <div class="content-card">
-        <h2><span class="step-number">5</span> 建立封面頁</h2>
-        <p>封面頁需要：深色背景 + 大標題 + 副標題，讓簡報看起來專業。</p>
+        <h2><span class="step-number">5</span> 啟用擴充選單</h2>
+        <p>程式碼中有 <code>onOpen()</code> 函式，會在試算表開啟時自動在上方加入「🎨 AI 簡報」選單。</p>
 
-        <pre><code>// ===== 建立封面頁 =====
-function createCoverSlide(presentation, title, subtitle) {
-  // 取得第一頁（建立簡報時會自動產生一頁）
-  var slide = presentation.getSlides()[0];
-
-  // 設定深綠色背景
-  slide.getBackground().setSolidFill('#1b5e20');
-
-  // 插入標題文字方塊（置中偏上）
-  var titleBox = slide.insertTextBox(title, 60, 100, 600, 80);
-  var titleStyle = titleBox.getText().getTextStyle();
-  titleStyle.setFontSize(40)
-            .setBold(true)
-            .setForegroundColor('#ffffff');
-  titleBox.getText().getParagraphStyle().setParagraphAlignment(
-    SlidesApp.ParagraphAlignment.CENTER
-  );
-
-  // 插入副標題文字方塊（置中偏下）
-  var subBox = slide.insertTextBox(subtitle, 100, 220, 520, 60);
-  var subStyle = subBox.getText().getTextStyle();
-  subStyle.setFontSize(20)
-          .setForegroundColor('#c8e6c9');
-  subBox.getText().getParagraphStyle().setParagraphAlignment(
-    SlidesApp.ParagraphAlignment.CENTER
-  );
-}</code></pre>
-
-        <h3>逐行解釋</h3>
-        <ul class="explain-list">
-            <li><code>getSlides()[0]</code> — 取得第一頁投影片（索引 0）</li>
-            <li><code>setSolidFill('#1b5e20')</code> — 設定背景為深綠色</li>
-            <li><code>insertTextBox(文字, 左, 上, 寬, 高)</code> — 在指定位置插入文字方塊</li>
-            <li><code>setFontSize(40)</code> — 設定字體大小 40pt</li>
-            <li><code>setBold(true)</code> — 設定粗體</li>
-            <li><code>setForegroundColor('#ffffff')</code> — 設定文字顏色為白色</li>
-        </ul>
-    </div>
-</div>
-
-<!-- ======================== Slide 10: 建立內容頁 ======================== -->
-<div class="slide">
-    <div class="content-card">
-        <h2><span class="step-number">6</span> 建立內容頁 — 迴圈產生多頁</h2>
-        <p>用 <code>for</code> 迴圈，把 AI 生成的每一頁大綱都變成真正的投影片。</p>
-
-        <pre><code>// ===== 建立內容頁（迴圈） =====
-function createContentSlides(presentation, slides) {
-  for (var i = 0; i &lt; slides.length; i++) {
-    var slideData = slides[i];
-
-    // 新增一頁空白投影片
-    var slide = presentation.appendSlide(
-      SlidesApp.PredefinedLayout.BLANK
-    );
-
-    // 插入頁面標題（上方橫條）
-    var headerBg = slide.insertShape(
-      SlidesApp.ShapeType.RECTANGLE, 0, 0, 720, 60
-    );
-    headerBg.getFill().setSolidFill('#1b5e20');
-    headerBg.getBorder().setTransparent();
-
-    var headerText = slide.insertTextBox(
-      slideData.heading, 20, 10, 680, 45
-    );
-    headerText.getText().getTextStyle()
-      .setFontSize(24).setBold(true)
-      .setForegroundColor('#ffffff');
-
-    // 插入重點內容（逐條列出）
-    var bulletText = '';
-    for (var j = 0; j &lt; slideData.bullets.length; j++) {
-      bulletText += '● ' + slideData.bullets[j] + '\n\n';
-    }
-
-    var contentBox = slide.insertTextBox(
-      bulletText, 40, 80, 640, 300
-    );
-    contentBox.getText().getTextStyle()
-      .setFontSize(18)
-      .setForegroundColor('#333333');
-  }
-}</code></pre>
-
-        <div class="box info">
-            <strong>💡 重點：</strong>外層 <code>for</code> 迴圈跑每一頁，內層 <code>for</code> 迴圈跑每一頁的重點條目。這就是為什麼要讓 AI 回傳 JSON 格式 — 程式用 <code>slides[i].heading</code> 和 <code>slides[i].bullets[j]</code> 就能精準取得每一筆資料。
-        </div>
-    </div>
-</div>
-
-<!-- ======================== Slide 11: AI 回傳範例 ======================== -->
-<div class="slide">
-    <div class="content-card">
-        <h2>📋 AI 回傳的 JSON 長什麼樣？</h2>
-        <p>當你呼叫 Gemini API 後，AI 會回傳一段 JSON 文字。以下是一個實際回傳的範例：</p>
-
-        <div class="box info" style="padding: 20px 25px;">
-            <strong>AI 實際回傳的 JSON 範例：</strong>
-            <pre style="margin: 15px 0 0 0; font-size: 16px;"><code>{
-  "title": "人工智慧入門",
-  "subtitle": "從基礎觀念到實際應用",
-  "slides": [
-    {
-      "heading": "什麼是人工智慧？",
-      "bullets": [
-        "AI 是讓電腦模擬人類智慧的技術",
-        "包含機器學習、深度學習、自然語言處理",
-        "已廣泛應用於日常生活"
-      ]
-    },
-    {
-      "heading": "AI 的三大類型",
-      "bullets": [...]
-    }
-  ]
-}</code></pre>
-        </div>
-
-        <h3>每個欄位代表什麼意思？</h3>
-        <ul class="explain-list">
-            <li><code>"title"</code> — 簡報的大標題，會放在封面頁</li>
-            <li><code>"subtitle"</code> — 副標題，放在封面頁標題下方</li>
-            <li><code>"slides"</code> — 一個陣列，每個元素是一頁投影片</li>
-            <li><code>"heading"</code> — 這一頁的標題，會顯示在頁面上方的綠色橫條</li>
-            <li><code>"bullets"</code> — 這一頁的重點列表，每個字串是一個重點條目</li>
-        </ul>
-
-        <div class="box info">
-            <strong>💡 程式怎麼使用這段 JSON？</strong><br>
-            程式就是用 <code>JSON.parse()</code> 把這段文字變成物件，然後用 <code>outline.title</code> 取標題、<code>outline.slides[0].heading</code> 取第一頁標題、<code>outline.slides[0].bullets[0]</code> 取第一頁的第一個重點。
-        </div>
-    </div>
-</div>
-
-<!-- ======================== Slide 12: 完整流程 ======================== -->
-<div class="slide">
-    <div class="content-card">
-        <h2><span class="step-number">7</span> 完整流程測試</h2>
-        <p>把所有功能串起來，一個函式搞定全部！</p>
-
-        <pre><code>// ===== 主函式：一鍵生成簡報 =====
-function generatePresentation() {
-  var topic = '人工智慧入門';  // ← 改成你想要的主題
-
-  // Step 1：用 AI 生成大綱
-  Logger.log('正在請 AI 生成大綱...');
-  var prompt = buildPrompt(topic);
-  var aiReply = callGemini(prompt);
-
-  // Step 2：清理 AI 回覆（移除可能的 markdown 標記）
-  aiReply = aiReply.replace(/```json\n?/g, '')
-                   .replace(/```\n?/g, '')
-                   .trim();
-
-  // Step 3：解析 JSON
-  var outline = JSON.parse(aiReply);
-  Logger.log('大綱標題：' + outline.title);
-  Logger.log('共 ' + outline.slides.length + ' 頁內容');
-
-  // Step 4：建立簡報
-  var pres = SlidesApp.create(outline.title);
-  Logger.log('簡報已建立：' + pres.getUrl());
-
-  // Step 5：建立封面頁
-  createCoverSlide(pres, outline.title, outline.subtitle);
-
-  // Step 6：建立內容頁
-  createContentSlides(pres, outline.slides);
-
-  // 完成！
-  Logger.log('✅ 簡報生成完成！共 ' + (outline.slides.length + 1) + ' 頁');
-  Logger.log('📎 開啟連結：' + pres.getUrl());
-}</code></pre>
-
-        <h3>設定 → 貼碼 → 執行 操作流程</h3>
-
+        <h3>Step 5-1：手動執行 onOpen</h3>
         <div class="micro-step">
-            <strong>Step 1：建立 GAS 專案</strong><br>
-            <span class="action">👆 動作：</span>打開任一 Google 試算表（或新建一個）→ 擴充功能 → Apps Script<br>
-            <span class="result">👀 結果：</span>GAS 編輯器開啟，畫面上有一段預設的空白程式碼
-        </div>
-
-        <div class="micro-step">
-            <strong>Step 2：貼上程式碼</strong><br>
-            <span class="action">👆 動作：</span>全選刪除預設程式碼 → 貼上完整程式碼（從封面頁下載的 <code>.gs</code> 檔案內容）<br>
-            <span class="action">👆 動作：</span>按 <code>Ctrl+S</code> 儲存 → 確認沒有紅色錯誤底線<br>
-            <span class="result">👀 結果：</span>程式碼顯示正常，沒有任何紅色標記
-        </div>
-
-        <div class="micro-step">
-            <strong>Step 3：設定 API Key</strong><br>
-            <span class="action">👆 動作：</span>找到程式碼最上方的設定區<br>
-            <span class="action">👆 動作：</span>把 <code>var GEMINI_API_KEY = '你的_API_Key';</code> 裡的引號內容，換成你在 Google AI Studio 複製的 API Key<br>
-            <span class="action">👆 動作：</span>再次 <code>Ctrl+S</code> 儲存<br>
-            <span class="result">👀 結果：</span>API Key 已正確貼入，引號內是一串 <code>AIzaSy...</code> 開頭的長字串
-        </div>
-
-        <div class="micro-step">
-            <strong>Step 4：修改主題（可選）</strong><br>
-            <span class="action">👆 動作：</span>找到 <code>generatePresentation()</code> 函式中的 <code>var topic = '人工智慧入門';</code><br>
-            <span class="action">👆 動作：</span>可以改成你想要的主題，例如 <code>'Google Apps Script 教學'</code><br>
-            <span class="result">👀 結果：</span>主題文字已修改完成
-        </div>
-
-        <div class="micro-step">
-            <strong>Step 5：執行程式</strong><br>
-            <span class="action">👆 動作：</span>在函式下拉選單中選擇 <code>generatePresentation</code><br>
+            <span class="action">👆 動作：</span>在 GAS 編輯器上方的函式下拉選單，選擇 <code>onOpen</code><br>
             <span class="action">👆 動作：</span>點擊 <strong>▶ 執行</strong><br>
-            <span class="result">👀 結果：</span>第一次會跳出授權視窗 → 按照授權流程操作（選擇帳號 → 進階 → 前往專案 → 允許）<br>
-            <span class="result">⏱️ 等待：</span>10~30 秒（AI 生成大綱 + 建立簡報需要時間）<br>
-            <span class="result">👀 結果：</span>底部狀態列出現「執行完畢」
+            <span class="result">👀 結果：</span>第一次會跳出授權視窗
         </div>
 
+        <h3>Step 5-2：完成授權（只需一次）</h3>
         <div class="micro-step">
-            <strong>Step 6：查看結果</strong><br>
-            <span class="action">👆 動作：</span>點擊左側「⏱ 執行項目」圖示，找到最新的執行記錄<br>
-            <span class="result">👀 結果：</span>看到綠色「已完成」狀態<br>
-            <span class="action">👆 動作：</span>展開記錄，找到「📎 開啟連結：https://docs.google.com/...」<br>
-            <span class="action">👆 動作：</span>點擊這個連結<br>
-            <span class="result">👀 結果：</span>瀏覽器開啟一份全新的 Google 簡報！有封面頁 + 5~8 頁內容頁！
+            <strong>授權第 1 步：</strong>彈出「需要授權」→ 點擊 <code>審查權限</code><br>
+            <strong>授權第 2 步：</strong>選擇你的 Google 帳號<br>
+            <strong>授權第 3 步：</strong>出現「Google 尚未驗證」警告 → 點左下角 <code>進階</code><br>
+            <strong>授權第 4 步：</strong>點 <code>前往「AI 簡報生成器」（不安全）</code><br>
+            <strong>授權第 5 步：</strong>點 <code>允許</code>
         </div>
 
+        <h3>Step 5-3：回到試算表確認</h3>
         <div class="micro-step">
-            <strong>Step 7：到 Google Drive 確認</strong><br>
-            <span class="action">👆 動作：</span>打開 <code>drive.google.com</code><br>
-            <span class="result">👀 結果：</span>根目錄出現一份以 AI 生成標題命名的簡報檔案
+            <span class="action">👆 動作：</span>切換到試算表的分頁（不是 Apps Script）<br>
+            <span class="action">👆 動作：</span><strong>重新整理</strong>試算表頁面（按 <code>F5</code>）<br>
+            <span class="result">👀 結果：</span>上方選單列出現「<strong>🎨 AI 簡報</strong>」選單！<br>
+            <span class="result">⏱️ 等待：</span>如果沒出現，等 3~5 秒讓頁面完全載入
         </div>
 
-        <h3 style="margin-top: 25px;">成功 / 失敗對照</h3>
+        <div class="box info">
+            <strong>💡 以後每次開啟這個試算表，「🎨 AI 簡報」選單都會自動出現！</strong>不需要再手動執行 onOpen。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 11: 步驟6 用側邊欄生成簡報 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2><span class="step-number">6</span> 用側邊欄生成簡報</h2>
+        <p>現在來體驗「一鍵生成」的魔法！</p>
+
+        <h3>Step 6-1：開啟側邊欄</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊上方的「<strong>🎨 AI 簡報</strong>」選單<br>
+            <span class="action">👆 動作：</span>點擊「<strong>🚀 開啟簡報生成器</strong>」<br>
+            <span class="result">👀 結果：</span>右側滑出一個操作面板，顯示：
+            <ul style="margin-top: 8px; font-size: 16px;">
+                <li>你在 A1 填的主題</li>
+                <li>你在 B 欄填的關鍵字（顯示為綠色標籤）</li>
+                <li>6 個風格選項（可點選切換）</li>
+            </ul>
+        </div>
+
+        <h3>Step 6-2：選擇風格</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>在側邊欄中，點擊你喜歡的風格卡片（例如「🌿 清新自然」）<br>
+            <span class="result">👀 結果：</span>被選中的卡片會出現綠色外框
+        </div>
+
+        <h3>Step 6-3：生成簡報</h3>
+        <div class="micro-step">
+            <span class="action">👆 動作：</span>點擊底部的「<strong>🚀 生成簡報</strong>」按鈕<br>
+            <span class="result">⏱️ 等待：</span>按鈕變成「⏳ 生成中，請稍候...」，黃色提示「正在請 AI 生成大綱，預計 10~30 秒」<br>
+            <span class="result">👀 結果：</span>生成完成後，出現綠色成功訊息 + 「📎 開啟簡報」連結<br>
+            <span class="action">👆 動作：</span>點擊「<strong>📎 開啟簡報</strong>」連結
+        </div>
+
+        <h3>Step 6-4：欣賞成果</h3>
+        <div class="micro-step">
+            <span class="result">👀 結果：</span>瀏覽器開啟一份全新的 Google 簡報！<br>
+            - 🎨 <strong>封面頁</strong>：有標題、副標題、裝飾線、日期<br>
+            - 📝 <strong>內容頁</strong>：5~8 頁，每頁有標題橫條、左側裝飾條、重點列表、頁碼<br>
+            - 🎬 <strong>結尾頁</strong>：Thank You + 結語
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 12: 成功/失敗對照 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>✅ 成功 / ❌ 失敗 對照</h2>
+        <p>生成簡報後，對照以下畫面確認你的結果：</p>
+
         <div class="two-col">
             <div class="col">
                 <h3 style="color: #2e7d32;">✅ 成功的樣子</h3>
                 <ul>
+                    <li>側邊欄顯示<strong>綠色成功訊息</strong></li>
+                    <li>點連結後看到完整簡報</li>
+                    <li>封面頁有你選的風格配色</li>
+                    <li>5~8 頁內容頁，含你的關鍵字</li>
+                    <li>試算表下方自動記錄簡報標題和連結</li>
                     <li>Google Drive 根目錄出現新簡報</li>
-                    <li>封面頁有標題和副標題，深綠色背景</li>
-                    <li>5~8 頁內容頁，每頁有標題和重點條目</li>
-                    <li>執行記錄顯示綠色「已完成」</li>
                 </ul>
             </div>
             <div class="col">
                 <h3 style="color: #e53935;">❌ 失敗怎麼辦</h3>
                 <ul>
-                    <li><strong>API Key 錯誤（403）</strong>→ 到 Google AI Studio 重新複製 API Key</li>
-                    <li><strong>JSON 解析失敗</strong>→ 再執行一次（AI 每次回覆可能不同）</li>
-                    <li><strong>簡報排版不好看</strong>→ 調整 Prompt，限制每頁字數和重點數量</li>
+                    <li><strong>「請在 A1 輸入主題」</strong><br>→ 回試算表確認 A1 有填主題</li>
+                    <li><strong>側邊欄顯示紅色錯誤</strong><br>→ 看錯誤訊息，對照下頁排解</li>
+                    <li><strong>API Key 錯誤（403）</strong><br>→ 到 AI Studio 重新複製 Key</li>
+                    <li><strong>JSON 解析失敗</strong><br>→ 再按一次生成（AI 每次回覆略不同）</li>
                 </ul>
             </div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 試試不同風格！</strong>生成完一份後，回到側邊欄選另一個風格，再按一次「生成簡報」，就會產出另一份不同風格的簡報。你可以比較哪種最好看！
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 13: 常見問題排解 ======================== -->
+<!-- ======================== Slide 13: 程式碼解析1 風格物件 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 1 — 風格物件 STYLES</h2>
+        <p><strong>這段的目的：</strong>用一個物件儲存 6 組配色方案，切換風格只要換一組參數。</p>
+
+        <pre><code>var STYLES = {
+  1: {
+    name: '📘 專業商務',
+    coverBg: '#1a237e',     // 封面背景色
+    headerBg: '#283593',    // 內容頁標題橫條
+    titleColor: '#ffffff',  // 標題文字色
+    subtitleColor: '#90caf9', // 副標題文字色
+    contentBg: '#f5f5f5',   // 內容頁背景
+    bulletColor: '#333333', // 重點文字色
+    accentBar: '#1565c0',   // 左側裝飾條
+    endBg: '#1a237e'        // 結尾頁背景
+  },
+  2: { name: '🌿 清新自然', ... },
+  3: { name: '🚀 科技未來', ... },
+  // ... 共 6 種
+};</code></pre>
+
+        <ul class="explain-list">
+            <li><code>STYLES</code> — 是一個物件，key 是 1~6 的數字，value 是每種風格的配色參數</li>
+            <li><code>STYLES[1]</code> — 取得第 1 種風格（專業商務）的所有配色</li>
+            <li><code>style.coverBg</code> — 取得該風格的封面背景色</li>
+            <li>要新增第 7 種風格？只要在 STYLES 裡加一組 key-value 就好！</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 為什麼用物件？</strong>把配色抽出來當參數，所有的 <code>createCoverSlide()</code>、<code>createContentSlides()</code> 函式都接收 <code>style</code> 物件，根據參數來設定顏色。這樣同一份程式碼就能產出 6 種完全不同風格的簡報！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 14: 程式碼解析2 讀取試算表 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 2 — 讀取試算表資料</h2>
+        <p><strong>這段的目的：</strong>從試算表中讀取使用者填寫的主題、關鍵字和風格選擇。</p>
+
+        <pre><code>function getInputFromSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+
+  // A1 = 主題
+  var topic = sheet.getRange('A1').getValue().toString().trim();
+
+  // B 欄 = 關鍵字列表
+  var keywords = [];
+  var lastRow = sheet.getLastRow();
+  for (var i = 1; i &lt;= lastRow; i++) {
+    var val = sheet.getRange('B' + i).getValue().toString().trim();
+    if (val) keywords.push(val);
+  }
+
+  // C1 = 風格編號（1~6）
+  var styleNum = parseInt(sheet.getRange('C1').getValue()) || 1;
+  if (styleNum &lt; 1 || styleNum > 6) styleNum = 1;
+
+  return { topic: topic, keywords: keywords, styleNum: styleNum };
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>getRange('A1').getValue()</code> — 取得 A1 儲存格的值</li>
+            <li><code>toString().trim()</code> — 轉成字串並去除前後空格</li>
+            <li><code>for 迴圈</code> — 從 B1 開始往下讀，有值就加入 keywords 陣列</li>
+            <li><code>parseInt() || 1</code> — 轉成數字，如果無法轉換就用預設值 1</li>
+            <li><code>return { ... }</code> — 回傳一個包含三個欄位的物件</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ======================== Slide 15: 程式碼解析3 Prompt 設計 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 3 — Prompt 設計（含關鍵字）</h2>
+        <p><strong>這段的目的：</strong>把主題和關鍵字組合成 Prompt，要求 AI 回傳 JSON 格式的大綱。</p>
+
+        <pre><code>function buildPrompt(topic, keywords) {
+  var prompt = '請幫我製作一份關於「' + topic + '」的簡報大綱。\n\n';
+
+  if (keywords.length > 0) {
+    prompt += '請特別包含以下重點或關鍵字：\n';
+    for (var i = 0; i &lt; keywords.length; i++) {
+      prompt += '• ' + keywords[i] + '\n';
+    }
+    prompt += '\n';
+  }
+
+  prompt += '回覆格式必須是純 JSON（不要加 ```json 標記），結構如下：\n';
+  prompt += '{ "title": "...", "subtitle": "...", '
+         +  '"slides": [{ "heading": "...", "bullets": [...] }], '
+         +  '"conclusion": "..." }\n\n';
+  prompt += '請產生 5~8 頁，每頁 3~4 個重點，每個重點 25 字以內。';
+
+  return prompt;
+}</code></pre>
+
+        <ul class="explain-list">
+            <li><code>if (keywords.length > 0)</code> — 如果有填關鍵字，才加入 Prompt；沒填也不影響</li>
+            <li><strong>回傳 JSON 格式</strong> — 明確告訴 AI 要回傳什麼結構，程式才能解析</li>
+            <li><strong>限制字數</strong> — 「每個重點 25 字以內」避免文字太多溢出投影片</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 關鍵字的作用：</strong>如果你只填主題「人工智慧」，AI 會自己決定要講什麼。但如果你在 B 欄填了「機器學習、教育應用、未來趨勢」，AI 就會特別在簡報中包含這些內容。<strong>關鍵字 = 你引導 AI 的方向！</strong>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 16: 程式碼解析4 主函式 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 4 — 主函式 generatePresentation()</h2>
+        <p><strong>這段的目的：</strong>串起所有函式，完成「讀取 → AI → 解析 → 建立 → 記錄」的完整流程。</p>
+
+        <pre><code>function generatePresentation(styleOverride) {
+  var input = getInputFromSheet();        // 讀取試算表
+  var style = STYLES[styleOverride || input.styleNum] || STYLES[1];
+
+  var prompt = buildPrompt(input.topic, input.keywords);  // 組 Prompt
+  var aiReply = callGemini(prompt);       // 呼叫 AI
+  aiReply = aiReply.replace(/```json\n?/g, '')            // 清理格式
+                   .replace(/```\n?/g, '').trim();
+  var outline = JSON.parse(aiReply);      // 解析 JSON
+
+  var pres = SlidesApp.create(outline.title);  // 建立簡報
+  createCoverSlide(pres, outline.title, outline.subtitle, style);
+  createContentSlides(pres, outline.slides, style);
+  createEndSlide(pres, outline.conclusion, style);
+
+  return { success: true, url: pres.getUrl(), ... };
+}</code></pre>
+
+        <h3>7 步驟流程圖</h3>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 20px 0;">
+            <div class="flow-step">1️⃣ 讀取試算表</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">2️⃣ 組合 Prompt</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">3️⃣ 呼叫 AI</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">4️⃣ 解析 JSON</div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0;">
+            <div class="flow-step">5️⃣ 建立封面</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">6️⃣ 建立內容頁</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">7️⃣ 建立結尾頁</div>
+        </div>
+
+        <div class="box info">
+            <strong>💡 styleOverride 參數：</strong>從側邊欄呼叫時會傳入使用者點選的風格編號。直接執行函式時，就讀取 C1 的值。這讓同一個函式可以從兩種方式操作！
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 17: 程式碼解析5 側邊欄 ======================== -->
+<div class="slide">
+    <div class="content-card">
+        <h2>🔍 程式碼解析 5 — HTML 側邊欄</h2>
+        <p><strong>這段的目的：</strong>用 <code>HtmlService</code> 建立圖形化操作介面，讓使用者不用記函式名稱。</p>
+
+        <h3>GAS 端：顯示側邊欄</h3>
+        <pre><code>function showSidebar() {
+  var html = HtmlService
+    .createHtmlOutputFromFile('09_簡報風格選擇')
+    .setTitle('🎨 AI 簡報生成器')
+    .setWidth(360);
+  SpreadsheetApp.getUi().showSidebar(html);
+}</code></pre>
+
+        <h3>HTML 端：呼叫 GAS 函式</h3>
+        <pre><code>// 在 HTML 的 JavaScript 中，用這行呼叫 GAS 函式
+google.script.run
+  .withSuccessHandler(function(result) {
+    // 成功時執行：顯示簡報連結
+  })
+  .withFailureHandler(function(error) {
+    // 失敗時執行：顯示錯誤訊息
+  })
+  .generatePresentation(selectedStyle);</code></pre>
+
+        <ul class="explain-list">
+            <li><code>HtmlService.createHtmlOutputFromFile()</code> — 載入同專案中的 HTML 檔案</li>
+            <li><code>showSidebar()</code> — 在試算表右側顯示操作面板</li>
+            <li><code>google.script.run</code> — HTML 中呼叫 GAS 函式的橋樑</li>
+            <li><code>withSuccessHandler</code> — 函式成功後執行的回呼</li>
+            <li><code>withFailureHandler</code> — 函式失敗後執行的回呼</li>
+        </ul>
+
+        <div class="box info">
+            <strong>💡 HtmlService 的好處：</strong>讓你在 GAS 中建立真正的網頁 UI！側邊欄可以有按鈕、表單、CSS 樣式，使用者操作起來就像在用一個小工具，完全不需要看程式碼。
+        </div>
+    </div>
+</div>
+
+<!-- ======================== Slide 18: 常見問題排解 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>❓ 常見問題排解</h2>
@@ -644,15 +733,6 @@ function generatePresentation() {
 
         <div class="concept-grid" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
             <div class="concept-card">
-                <h3 style="color: #e53935;">❌ SyntaxError: Unexpected token</h3>
-                <p><strong>原因：</strong>AI 回覆的 JSON 格式不正確，無法用 <code>JSON.parse()</code> 解析</p>
-                <ul style="font-size: 16px;">
-                    <li>AI 可能在 JSON 前後加了 <code>```json</code> 標記</li>
-                    <li>AI 可能回覆了多餘的文字說明</li>
-                </ul>
-                <p><strong>解法：</strong>程式碼中的 <code>.replace()</code> 已經處理了大部分情況。如果還是失敗，再執行一次（AI 每次回覆可能不同）。</p>
-            </div>
-            <div class="concept-card">
                 <h3 style="color: #e53935;">❌ 403 或 429 錯誤</h3>
                 <p><strong>原因：</strong>API Key 無效或超過免費額度</p>
                 <ul style="font-size: 16px;">
@@ -660,31 +740,39 @@ function generatePresentation() {
                     <li>免費版每分鐘限 15 次請求</li>
                     <li>等一分鐘再試</li>
                 </ul>
-                <p><strong>解法：</strong>到 Google AI Studio 確認 API Key 狀態。</p>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ JSON 解析失敗</h3>
+                <p><strong>原因：</strong>AI 回覆格式不正確</p>
+                <ul style="font-size: 16px;">
+                    <li>再按一次「生成」（AI 每次回覆不同）</li>
+                    <li>通常第二次就會成功</li>
+                    <li>程式碼已內建清除 markdown 標記</li>
+                </ul>
+            </div>
+            <div class="concept-card">
+                <h3 style="color: #e53935;">❌ 選單沒出現</h3>
+                <p><strong>原因：</strong>onOpen 尚未執行</p>
+                <ul style="font-size: 16px;">
+                    <li>手動執行一次 <code>onOpen</code> 函式</li>
+                    <li>回到試算表按 F5 重新整理</li>
+                    <li>等 3~5 秒讓頁面載入</li>
+                </ul>
             </div>
             <div class="concept-card">
                 <h3 style="color: #e53935;">❌ 簡報排版很醜</h3>
-                <p><strong>原因：</strong>文字太多超出文字方塊範圍</p>
+                <p><strong>原因：</strong>AI 生成的文字太多</p>
                 <ul style="font-size: 16px;">
-                    <li>在 Prompt 中限制每頁重點數量（3~4 個）</li>
-                    <li>限制每個重點的字數（20 字以內）</li>
+                    <li>Prompt 已限制每點 25 字以內</li>
+                    <li>可在 B 欄加更具體的關鍵字引導</li>
+                    <li>生成後可手動微調簡報內容</li>
                 </ul>
-                <p><strong>解法：</strong>調整 Prompt，或修改文字方塊的大小參數。</p>
-            </div>
-            <div class="concept-card">
-                <h3 style="color: #e53935;">❌ 找不到簡報在哪</h3>
-                <p><strong>原因：</strong>簡報建立在 Google Drive 根目錄</p>
-                <ul style="font-size: 16px;">
-                    <li>查看執行記錄中的簡報網址</li>
-                    <li>到 Google Drive 首頁 → 最近存取</li>
-                </ul>
-                <p><strong>解法：</strong>點擊 Logger 印出的網址即可開啟。</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================== Slide 14: 重點回顧 ======================== -->
+<!-- ======================== Slide 19: 重點回顧 ======================== -->
 <div class="slide">
     <div class="content-card">
         <h2>📝 重點回顧</h2>
@@ -697,7 +785,7 @@ function generatePresentation() {
             <tbody>
                 <tr>
                     <td><strong>API 呼叫</strong></td>
-                    <td>呼叫天氣 API / 圖片 API</td>
+                    <td>呼叫天氣 / 圖片 API</td>
                     <td>呼叫 <code>Gemini AI API</code>，傳送 Prompt</td>
                 </tr>
                 <tr>
@@ -707,13 +795,18 @@ function generatePresentation() {
                 </tr>
                 <tr>
                     <td><strong>Google 服務</strong></td>
-                    <td>SpreadsheetApp 操作試算表</td>
+                    <td>SpreadsheetApp</td>
                     <td><code>SlidesApp</code> 建立與操作簡報</td>
                 </tr>
                 <tr>
-                    <td><strong>排版設計</strong></td>
+                    <td><strong>UI 介面</strong></td>
                     <td>（未涉及）</td>
-                    <td>用程式碼控制文字位置、顏色、背景</td>
+                    <td><code>HtmlService</code> 建立側邊欄 UI</td>
+                </tr>
+                <tr>
+                    <td><strong>設計模式</strong></td>
+                    <td>（未涉及）</td>
+                    <td>用物件儲存配色方案，切換風格</td>
                 </tr>
             </tbody>
         </table>
@@ -724,17 +817,21 @@ function generatePresentation() {
                 <tr><th>函式名稱</th><th>用途</th></tr>
             </thead>
             <tbody>
-                <tr><td><code>callGemini(prompt)</code></td><td>呼叫 Gemini API，傳送 Prompt 取得回覆</td></tr>
-                <tr><td><code>buildPrompt(topic)</code></td><td>根據主題組合 Prompt 文字</td></tr>
-                <tr><td><code>createCoverSlide(pres, title, subtitle)</code></td><td>建立封面頁（深色背景 + 大標題）</td></tr>
-                <tr><td><code>createContentSlides(pres, slides)</code></td><td>迴圈建立所有內容頁</td></tr>
+                <tr><td><code>onOpen()</code></td><td>建立擴充選單「🎨 AI 簡報」</td></tr>
+                <tr><td><code>showSidebar()</code></td><td>開啟右側操作面板</td></tr>
+                <tr><td><code>getInputFromSheet()</code></td><td>從試算表讀取主題、關鍵字、風格</td></tr>
+                <tr><td><code>callGemini(prompt)</code></td><td>呼叫 Gemini API</td></tr>
+                <tr><td><code>buildPrompt(topic, keywords)</code></td><td>組合含關鍵字的 Prompt</td></tr>
+                <tr><td><code>createCoverSlide()</code></td><td>建立封面頁</td></tr>
+                <tr><td><code>createContentSlides()</code></td><td>迴圈建立所有內容頁</td></tr>
+                <tr><td><code>createEndSlide()</code></td><td>建立結尾頁</td></tr>
                 <tr><td><code>generatePresentation()</code></td><td>主函式 — 一鍵生成完整簡報</td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- ======================== Slide 15: 完成頁 ======================== -->
+<!-- ======================== Slide 20: 完成頁 ======================== -->
 <div class="slide">
     <div class="content-card" style="text-align: center;">
         <div style="font-size: 80px; margin-bottom: 20px;">🎨</div>
@@ -748,19 +845,19 @@ function generatePresentation() {
                 <p>呼叫 AI 生成內容</p>
             </div>
             <div class="concept-card" style="text-align: center;">
+                <div style="font-size: 36px;">🎨</div>
+                <h3>6 種風格</h3>
+                <p>物件管理配色方案</p>
+            </div>
+            <div class="concept-card" style="text-align: center;">
                 <div style="font-size: 36px;">📊</div>
                 <h3>SlidesApp</h3>
-                <p>用程式建立簡報</p>
+                <p>自動建立簡報</p>
             </div>
             <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">🔄</div>
-                <h3>JSON 解析</h3>
-                <p>結構化資料處理</p>
-            </div>
-            <div class="concept-card" style="text-align: center;">
-                <div style="font-size: 36px;">🎨</div>
-                <h3>自動排版</h3>
-                <p>程式碼控制樣式</p>
+                <div style="font-size: 36px;">🖥️</div>
+                <h3>側邊欄 UI</h3>
+                <p>HtmlService 介面</p>
             </div>
         </div>
 
@@ -774,11 +871,11 @@ function generatePresentation() {
         </div>
 
         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-            <a href="../GAS程式碼/實作09_AI自動生成簡報.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載程式碼</a>
+            <a href="../GAS程式碼/實作09_AI自動生成簡報.gs" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2e7d32; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 .gs 程式碼</a>
+            <a href="../GAS程式碼/09_簡報風格選擇.html" download style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1565c0; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">📥 下載 .html 模板</a>
             <a href="篇2_實作10_RSS新聞推播機器人.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0f9b0f; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">▶ 下一個實作</a>
             <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1b5e20; color: white; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🏠 回到總覽</a>
         </div>
-        <p style="font-size: 16px; color: #999; margin-top: 20px;">準備好了嗎？讓我們繼續前進到實作 10！</p>
     </div>
 </div>
 
